@@ -1,0 +1,24 @@
+# Secrets & credentials — NE JAMAIS committer
+.env
+config/credentials.json
+config/token.json
+config/token_drive.json
+
+# Données collectées (volumineuses, non versionnées)
+01_Veille_brute/
+02_Veille_traitée/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+
+# OS / éditeurs
+.DS_Store
+.idea/
+.vscode/

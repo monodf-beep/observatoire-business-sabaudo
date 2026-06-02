@@ -1,0 +1,20 @@
+# Flux RSS à collecter — collecte quotidienne
+#
+# Format (un par ligne) :  url;territoire
+#   - url       : URL du flux RSS/Atom
+#   - territoire : Savoie | Piemonte | Vallee-Aoste | Nice
+#
+# Les lignes vides et celles commençant par # sont ignorées.
+# À COMPLÉTER avec les flux réels validés par Franck.
+
+# --- Savoie ---
+https://www.savoie-mont-blanc.com/rss;Savoie
+
+# --- Piémont ---
+https://www.i3p.it/feed;Piemonte
+
+# --- Vallée d'Aoste ---
+https://www.pepinieresvda.eu/feed;Vallee-Aoste
+
+# --- Transfrontalier / Nice ---
+https://www.interreg-alcotra.eu/fr/rss.xml;Nice

@@ -1,0 +1,16 @@
+# Observatoire Économique Espace Sabaudo — configuration scheduler (cron)
+#
+# Installation :  crontab crontab.txt   (ou copier/coller les lignes dans `crontab -e`)
+# Adapter PROJECT et PY aux chemins réels de la machine.
+
+PROJECT=/home/user/observatoire-business-sabaudo
+PY=/usr/bin/python3
+
+# Collecte Gmail — chaque lundi à 07h00
+0 7 * * 1 cd $PROJECT && $PY scripts/gmail_collect.py >> logs/cron_gmail.log 2>&1
+
+# Collecte RSS — tous les jours à 08h00
+0 8 * * * cd $PROJECT && $PY scripts/rss_collect.py >> logs/cron_rss.log 2>&1
+
+# Synthèse hebdomadaire — chaque vendredi à 18h00 (pas d'envoi auto : validation Franck)
+0 18 * * 5 cd $PROJECT && $PY scripts/synthesize.py >> logs/cron_synth.log 2>&1

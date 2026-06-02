@@ -1,0 +1,25 @@
+# Whitelist des expéditeurs à surveiller — collecte Gmail
+#
+# Format (un par ligne) :  motif;territoire
+#   - motif     : une adresse email complète OU un domaine (ex. lafrenchtech.com)
+#   - territoire : Savoie | Piemonte | Vallee-Aoste | Nice  (sans accents/espaces)
+#
+# Les lignes vides et celles commençant par # sont ignorées.
+# À COMPLÉTER / VÉRIFIER les domaines réels au fil de la veille.
+
+# --- Savoie ---
+lafrenchtech.com;Savoie
+savoie-mont-blanc.com;Savoie
+@savoie.cci.fr;Savoie
+
+# --- Piémont ---
+piemonteinnova.eu;Piemonte
+i3p.it;Piemonte
+@to.camcom.it;Piemonte
+
+# --- Vallée d'Aoste ---
+pepinieresvda.eu;Vallee-Aoste
+
+# --- Transfrontalier / Nice ---
+interreg-alcotra.eu;Nice
+@cote-azur.cci.fr;Nice
