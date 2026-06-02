@@ -1,27 +1,38 @@
 # Whitelist des expéditeurs à surveiller — collecte Gmail
 #
 # Format (un par ligne) :  motif;territoire
-#   - motif     : une adresse email complète OU un domaine (ex. lafrenchtech.com)
+#   - motif      : une adresse email complète OU un domaine (ex. i3p.it)
 #   - territoire : Savoie | Piemonte | Vallee-Aoste | Nice | Alcotra  (sans accents/espaces)
 #
+# IMPORTANT : pas de commentaire en fin de ligne (le « ; » sépare motif et territoire).
 # Les lignes vides et celles commençant par # sont ignorées.
-# À COMPLÉTER / VÉRIFIER les domaines réels au fil de la veille.
+#
+# ✅ = expéditeur confirmé (email réellement reçu sur la boîte de collecte)
+# ⏳ = abonnement à finaliser → réactiver la ligne une fois l'expéditeur confirmé
 
-# --- Savoie ---
-lafrenchtech.com;Savoie
-savoie-mont-blanc.com;Savoie
-@savoie.cci.fr;Savoie
+# ===================== SAVOIE / HAUTE-SAVOIE =====================
+# ✅ French Tech in the Alps (envoi routé via Brevo)
+fta.genevois.francais@8839714.brevosend.com;Savoie
+# ⏳ CCI Savoie — inscription à confirmer (compte requis), expéditeur non encore connu
+# @savoie.cci.fr;Savoie
+# (Savoie Mont Blanc : page d'inscription introuvable — non inscrit)
 
-# --- Piémont ---
-piemonteinnova.eu;Piemonte
+# ===================== PIÉMONT =====================
+# ✅ I3P — Incubatore Politecnico di Torino (newsletter@i3p.it + comunicazione@i3p.it)
 i3p.it;Piemonte
-@to.camcom.it;Piemonte
+# ✅ Camera di commercio di Torino (opt-in à valider — voir note dans le dossier Spam)
+to.camcom.it;Piemonte
+# ⏳ Piemonte Innova — reCAPTCHA à valider sur piemonteinnova.it/newsletter/
+# piemonteinnova.it;Piemonte
 
-# --- Vallée d'Aoste ---
-pepinieresvda.eu;Vallee-Aoste
+# ===================== VALLÉE D'AOSTE =====================
+# ✅ Pépinières d'entreprises VDA (gérées par la Fondazione Brodolini)
+pepinieres@fondazionebrodolini.eu;Vallee-Aoste
 
-# --- Nice / Alpes-Maritimes ---
-@cote-azur.cci.fr;Nice
+# ===================== NICE / ALPES-MARITIMES =====================
+# ✅ CCI Nice Côte d'Azur
+newsletter@cote-azur.cci.fr;Nice
 
-# --- Périmètre transfrontalier ALCOTRA France-Italie ---
+# ===================== TRANSFRONTALIER ALCOTRA =====================
+# ⏳ inscription validée sur le site ; expéditeur réel à confirmer au 1er envoi
 interreg-alcotra.eu;Alcotra
