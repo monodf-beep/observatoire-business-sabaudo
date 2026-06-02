@@ -2,7 +2,7 @@
 """Script 3 — Synthèse hebdomadaire via l'API Anthropic.
 
 - Entrée : fichiers JSON de la semaine ISO courante dans 01_Veille_brute/
-- Appel API Anthropic (modèle configurable, défaut claude-sonnet-4-20250514)
+- Appel API Anthropic (modèle configurable, défaut claude-sonnet-4-6)
 - Prompt : synthèse par territoire + 5 signaux forts + draft newsletter
 - Sortie : Markdown dans 02_Veille_traitée/Synthèses_hebdomadaires/AAAA-WNN.md
 - PAS d'envoi automatique : validation de Franck requise avant publication
@@ -28,7 +28,7 @@ from utils.logger import get_logger  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 INPUT_DIR = ROOT / "01_Veille_brute"
 OUTPUT_DIR = ROOT / "02_Veille_traitee" / "Syntheses_hebdomadaires"
-DEFAULT_MODEL = "claude-sonnet-4-20250514"
+DEFAULT_MODEL = "claude-sonnet-4-6"
 
 # Bornes pour rester dans une enveloppe de tokens raisonnable
 MAX_BODY_CHARS = 1500
