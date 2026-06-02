@@ -20,10 +20,10 @@ fta.genevois.francais@8839714.brevosend.com;Savoie
 # ===================== PIÉMONT =====================
 # ✅ I3P — Incubatore Politecnico di Torino (newsletter@i3p.it + comunicazione@i3p.it)
 i3p.it;Piemonte
-# ✅ Camera di commercio di Torino (opt-in à valider — voir note dans le dossier Spam)
+# ✅ Camera di commercio di Torino (double opt-in confirmé)
 to.camcom.it;Piemonte
-# ⏳ Piemonte Innova — reCAPTCHA à valider sur piemonteinnova.it/newsletter/
-# piemonteinnova.it;Piemonte
+# ✅ Piemonte Innova
+piemonteinnova.it;Piemonte
 
 # ===================== VALLÉE D'AOSTE =====================
 # ✅ Pépinières d'entreprises VDA (gérées par la Fondazione Brodolini)
