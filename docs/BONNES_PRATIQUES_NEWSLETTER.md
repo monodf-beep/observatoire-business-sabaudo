@@ -27,11 +27,33 @@ un cadre de *vente*. Pour une veille, on le combine :
 - **BLUF (Bottom Line Up Front)** : la conclusion d'abord, via un encadré
   « Signal de la semaine ».
 
-À éviter ici : les cadres purement commerciaux (PAS — Problème/Agitation/Solution),
-inadaptés au ton neutre d'une veille.
+### AIDA ou PASO ?
+
+**PASO** (Problème → Agitation → Solution → Outcome) — comme **PAS** — est un
+cadre de **copywriting persuasif / de vente**. Il n'est **pas** adapté comme
+structure d'une veille, pour deux raisons :
+
+1. **Une veille informe, elle ne vend pas.** L'étape « Agitation » (amplifier la
+   peur) est anxiogène et manipulatrice pour de l'intelligence économique neutre :
+   elle détruit l'autorité, qui est précisément ce qu'on vend.
+2. **Le contenu est multi-sujets** (5 territoires, plusieurs signaux). PASO suppose
+   *un seul* fil problème→solution avec *un seul* objectif de conversion.
+
+👉 **Règle d'usage** :
+- **AIDA = la newsletter** (objet / héros / CTA) + pyramide inversée pour le corps.
+- **PASO / PAS = les emails de conversion** : recrutement d'abonnés, invitation à
+  un événement, page d'inscription, future offre / mécénat. À garder dans la boîte
+  à outils pour ces usages précis.
+
+### La règle du « So what ? »
+
+Pour récupérer le côté actionnable de PAS **sans** le ton alarmiste : chaque brève
+doit répondre à **« Et alors ? »** — l'implication concrète pour le lecteur
+(opportunité, risque, décision à anticiper). C'est ce qui distingue une veille
+utile d'une simple revue de presse.
 
 > **Règle d'or** : une newsletter = une promesse claire + un fil de lecture
-> descendant (du plus fort au plus secondaire).
+> descendant (du plus fort au plus secondaire), où chaque brève répond à « So what ? ».
 
 ---
 

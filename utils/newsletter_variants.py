@@ -77,20 +77,37 @@ def _button(url: str, label: str) -> str:
 
 
 def _header(week_label: str, tagline: str, logo_url: str | None = None) -> str:
+    """Masthead éditorial sur fond blanc : éditeur (logo) + titre produit + date."""
     logo = ""
     if logo_url:
         logo = (
-            f'<div style="margin-bottom:14px;"><img src="{logo_url}" alt="Cultura Sabauda" '
-            'height="30" style="height:30px;border:0;display:block;"></div>'
+            '<tr><td style="padding:30px 36px 0;background:#fff;">'
+            f'<img src="{logo_url}" alt="Cultura Sabauda" height="26" '
+            'style="height:26px;border:0;display:block;"></td></tr>'
         )
     return (
-        f'<tr><td style="background:{BRAND};padding:24px 32px;">'
         f"{logo}"
-        '<div style="color:#fff;font-size:25px;font-weight:800;letter-spacing:.5px;">Business Sabaudo</div>'
-        f'<div style="color:#cfe0f4;font-size:13px;margin-top:3px;">{escape(tagline)}</div>'
-        f'<div style="color:#fff;font-size:11px;margin-top:13px;text-transform:uppercase;letter-spacing:1px;'
-        f'border-top:2px solid {ACCENT};display:inline-block;padding-top:7px;">{escape(week_label)}</div>'
+        '<tr><td style="padding:22px 36px 0;background:#fff;">'
+        f'<div style="font-size:33px;font-weight:800;letter-spacing:-.5px;color:{BRAND};line-height:1;">'
+        f'Business Sabaudo<span style="color:{ACCENT};">.</span></div>'
+        f'<div style="font-size:14px;color:{MUTED};margin-top:9px;">{escape(tagline)}</div>'
         "</td></tr>"
+        f'<tr><td style="padding:18px 36px 0;background:#fff;">'
+        f'<div style="height:1px;background:{BORDER};line-height:1px;font-size:0;">&nbsp;</div></td></tr>'
+        '<tr><td style="padding:12px 36px 22px;background:#fff;">'
+        f'<span style="font-size:11px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:{ACCENT};">'
+        f"{escape(week_label)}</span></td></tr>"
+    )
+
+
+def _eyebrow(text: str) -> str:
+    """Intertitre de section : petit filet orange + libellé en capitales."""
+    return (
+        '<div style="margin-bottom:14px;">'
+        f'<span style="display:inline-block;width:26px;height:3px;background:{ACCENT};'
+        'vertical-align:middle;margin-right:9px;border-radius:2px;"></span>'
+        f'<span style="font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;'
+        f'color:{BRAND};vertical-align:middle;">{escape(text)}</span></div>'
     )
 
 
@@ -144,7 +161,7 @@ def variant_magazine(data: dict) -> str:
         cards += (
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
             f'style="border-bottom:1px solid {BORDER};margin:0 0 22px;padding:0 0 18px;">'
-            f'<tr><td style="padding:0 0 10px;"><img src="{escape(it["image"])}" width="536" alt="" '
+            f'<tr><td style="padding:0 0 10px;"><img src="{escape(it["image"])}" width="528" alt="" '
             'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
             f'<tr><td style="padding:0 0 7px;">{_tag(it["territory"])}&nbsp;&nbsp;{_source(it)}</td></tr>'
             f'<tr><td style="padding:0 0 6px;font-size:19px;font-weight:700;color:{INK};line-height:1.3;">'
@@ -158,17 +175,15 @@ def variant_magazine(data: dict) -> str:
         # HÉROS (Attention)
         + f'<tr><td style="padding:0;"><img src="{escape(hero["image"])}" width="600" alt="" '
           'style="width:100%;height:auto;display:block;border:0;"></td></tr>'
-        + f'<tr><td style="padding:22px 32px 6px;">{_tag(hero["territory"])}'
+        + f'<tr><td style="padding:24px 36px 6px;">{_tag(hero["territory"])}'
           f'<div style="font-size:24px;font-weight:800;color:{INK};line-height:1.25;margin:10px 0 8px;">{escape(hero["title"])}</div>'
           f'<div style="font-size:15px;color:#374151;line-height:1.6;">{escape(hero["summary"])}</div>'
           f'<div style="margin-top:14px;">{_button(hero["url"], "Lire l’article")}</div></td></tr>'
         # SIGNAUX (Intérêt)
-        + f'<tr><td style="padding:26px 32px 4px;"><div style="font-size:13px;font-weight:800;color:{ACCENT};'
-          'text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Les signaux de la semaine</div>'
+        + f'<tr><td style="padding:28px 36px 4px;">{_eyebrow("Les signaux de la semaine")}'
           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{signaux}</table></td></tr>'
         # CARTES (Désir + Action)
-        + f'<tr><td style="padding:26px 32px 4px;"><div style="font-size:13px;font-weight:800;color:{ACCENT};'
-          'text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">Le tour des territoires</div>'
+        + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow("Le tour des territoires")}'
           f'{cards}</td></tr>'
         + _footer()
     )
@@ -196,9 +211,9 @@ def variant_digest(data: dict) -> str:
         )
     inner = (
         _header(data["week_label"], "L'essentiel de la semaine, en 2 minutes", data.get("logo_url"))
-        + f'<tr><td style="padding:22px 30px 6px;font-size:15px;color:{INK};line-height:1.6;">{escape(data["intro"])}</td></tr>'
-        + f'<tr><td style="padding:14px 30px 4px;">{rows}</td></tr>'
-        + f'<tr><td align="center" style="padding:8px 30px 28px;">{_button(data["cta_url"], "Voir toute la veille")}</td></tr>'
+        + f'<tr><td style="padding:24px 36px 8px;font-size:15px;color:{INK};line-height:1.6;">{escape(data["intro"])}</td></tr>'
+        + f'<tr><td style="padding:8px 36px 4px;">{_eyebrow("Au sommaire")}{rows}</td></tr>'
+        + f'<tr><td align="center" style="padding:8px 36px 30px;">{_button(data["cta_url"], "Voir toute la veille")}</td></tr>'
         + _footer()
     )
     return _shell(inner, preheader=data["preheader"])
@@ -220,7 +235,7 @@ def variant_editorial(data: dict) -> str:
             "</td></tr>"
         )
     sig = (
-        f'<tr><td style="padding:6px 32px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        f'<tr><td style="padding:8px 36px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
         f'style="background:#f3f7fc;border-left:4px solid {ACCENT};border-radius:8px;"><tr><td style="padding:18px 20px;">'
         f'<div style="font-size:12px;font-weight:800;color:{ACCENT};text-transform:uppercase;letter-spacing:1px;">Le signal de la semaine</div>'
         f'<div style="font-size:20px;font-weight:800;color:{INK};line-height:1.3;margin:8px 0 6px;">{escape(hero["title"])}</div>'
@@ -230,12 +245,11 @@ def variant_editorial(data: dict) -> str:
     )
     inner = (
         _header(data["week_label"], "La lettre économique de l'espace sabaudo", data.get("logo_url"))
-        + f'<tr><td style="padding:24px 32px 10px;font-size:16px;color:{INK};line-height:1.65;">{escape(data["edito"])}</td></tr>'
+        + f'<tr><td style="padding:26px 36px 12px;font-size:16px;color:{INK};line-height:1.65;">{escape(data["edito"])}</td></tr>'
         + sig
-        + f'<tr><td style="padding:22px 32px 2px;"><div style="font-size:13px;font-weight:800;color:{ACCENT};'
-          'text-transform:uppercase;letter-spacing:1px;">Le tour des territoires</div>'
+        + f'<tr><td style="padding:26px 36px 2px;">{_eyebrow("Le tour des territoires")}'
           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{blocks}</table></td></tr>'
-        + f'<tr><td style="padding:18px 32px 26px;font-size:14px;color:{INK};line-height:1.6;">{escape(data["signature"]).replace(chr(10), "<br>")}</td></tr>'
+        + f'<tr><td style="padding:20px 36px 28px;font-size:14px;color:{INK};line-height:1.6;">{escape(data["signature"]).replace(chr(10), "<br>")}</td></tr>'
         + _footer()
     )
     return _shell(inner, preheader=data["preheader"])
