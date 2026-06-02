@@ -73,35 +73,18 @@ def match_territory(sender: str, whitelist: list[tuple[str, str]]) -> str:
 # --------------------------------------------------------------------------- #
 # Authentification & service Gmail
 # --------------------------------------------------------------------------- #
-def build_service():
+def build_service(manual: bool = False):
     try:
-        from google.auth.transport.requests import Request
-        from google.oauth2.credentials import Credentials
-        from google_auth_oauthlib.flow import InstalledAppFlow
         from googleapiclient.discovery import build
     except ImportError as exc:
         raise SystemExit(
             "Dépendances Google manquantes. Exécuter : pip install -r requirements.txt"
         ) from exc
 
+    from utils.google_auth import load_credentials
+
     cred_file = Path(os.getenv("GMAIL_CREDENTIALS_PATH", CONFIG_DIR / "credentials.json"))
-    creds = None
-    if TOKEN_PATH.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_PATH), SCOPES)
-
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            if not cred_file.exists():
-                raise FileNotFoundError(
-                    f"Identifiants OAuth2 introuvables : {cred_file}. "
-                    "Déposer credentials.json depuis Google Cloud Console."
-                )
-            flow = InstalledAppFlow.from_client_secrets_file(str(cred_file), SCOPES)
-            creds = flow.run_local_server(port=0)
-        TOKEN_PATH.write_text(creds.to_json(), encoding="utf-8")
-
+    creds = load_credentials(SCOPES, TOKEN_PATH, cred_file, manual=manual)
     return build("gmail", "v1", credentials=creds, cache_discovery=False)
 
 

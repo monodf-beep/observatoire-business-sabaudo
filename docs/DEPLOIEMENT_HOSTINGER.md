@@ -4,9 +4,9 @@ Ton VPS est parfait : il est allumé en permanence, donc les collectes et la
 synthèse se déclenchent toutes seules aux bonnes heures. Suis les étapes dans
 l'ordre. Tu n'as **rien à coder**, juste à copier-coller.
 
-> 🧩 Le seul point délicat : l'autorisation Google a besoin d'un navigateur
-> **une seule fois**. Un VPS n'en a pas → on autorise sur **ton ordinateur**
-> (Partie B), puis on copie les jetons sur le VPS (Partie C). C'est tout.
+> 🧩 Seul point un peu technique : l'autorisation Google (Partie B). On la fait
+> en **mode manuel** directement sur le VPS — tu copies une URL, tu autorises
+> dans ton navigateur, tu recolles l'URL de retour. C'est tout.
 
 ---
 
@@ -14,8 +14,7 @@ l'ordre. Tu n'as **rien à coder**, juste à copier-coller.
 
 ```
 A. Préparer le VPS        (terminal Hostinger — copier/coller)
-B. Autoriser Google       (UNE fois, sur ton ordinateur, avec navigateur)
-C. Copier les jetons      (de ton ordinateur vers le VPS)
+B. Autoriser Google       (UNE fois, en mode manuel, directement sur le VPS)
 D. Tester                 (une exécution manuelle)
 E. Automatiser            (cron — et hop, ça tourne seul)
 ```
@@ -86,41 +85,34 @@ Ouvre le `credentials.json` sur ton ordinateur avec un éditeur de texte,
 
 ---
 
-## Partie B — Autoriser Google (sur TON ordinateur, une seule fois)
+## Partie B — Autoriser Google directement sur le VPS (mode manuel)
 
-Cette étape ouvre une page Google pour valider l'accès. Elle se fait sur ta
-machine (qui a un navigateur), pas sur le VPS.
+Pas besoin d'ordinateur ni de tunnel : le **mode manuel** fonctionne dans le
+terminal du VPS. Le script affiche une URL, tu l'ouvres dans ton navigateur,
+tu autorises, et tu recolles l'URL de redirection.
 
-> 💡 Si installer Python sur ton ordinateur te bloque, dis-le moi : je t'aide,
-> ou on commence directement en faisant tourner l'outil sur ton ordinateur le
-> temps de produire la première synthèse.
-
-Sur ton ordinateur, dans le dossier du projet :
+Sur le VPS :
 
 ```bash
-bash install.sh                 # si pas déjà fait
-# place ton credentials.json dans config/  puis :
-source .venv/bin/activate       # (Windows : .venv\Scripts\activate)
-python scripts/authorize.py
+cd ~/observatoire-business-sabaudo
+source .venv/bin/activate
+python scripts/authorize.py --manual
 ```
 
-Une page Google s'ouvre **deux fois** (Gmail puis Drive). À chaque fois :
-choisis `franck.monod@culturasabauda.eu` → « Paramètres avancés » → « Accéder à
-… (non sécurisé) » → coche et **Continuer**.
+Le script demande l'autorisation **deux fois** (Gmail puis Drive). À chaque fois :
 
-À la fin, deux fichiers sont créés dans `config/` :
-`token.json` et `token_drive.json`.
+1. Le terminal affiche une longue **URL** → copie-la et ouvre-la dans ton
+   navigateur (connecté à `franck.monod@culturasabauda.eu`).
+2. Google affiche « Google n'a pas validé cette application » (normal en test) :
+   **« Paramètres avancés » → « Accéder à Observatoire Sabaudo (non sécurisé) »**,
+   coche les accès, **Continuer**.
+3. Le navigateur affiche alors une page d'erreur **« localhost a refusé la
+   connexion »** : **c'est NORMAL et attendu.** Regarde la barre d'adresse :
+   l'URL contient `...?code=...`. **Copie l'URL complète.**
+4. Reviens au terminal et **colle cette URL** à l'invite, puis Entrée.
 
----
-
-## Partie C — Copier les jetons vers le VPS
-
-Sur le VPS, recrée les deux fichiers avec `nano` (même méthode qu'en A7) :
-
-```bash
-nano config/token.json          # colle le contenu, Ctrl+O, Entrée, Ctrl+X
-nano config/token_drive.json    # idem
-```
+À la fin, deux fichiers sont créés dans `config/` : `token.json` et
+`token_drive.json`.
 
 > Ces jetons se renouvellent ensuite **tout seuls** : tu ne referas plus jamais
 > cette étape (sauf si tu changes les autorisations Google).

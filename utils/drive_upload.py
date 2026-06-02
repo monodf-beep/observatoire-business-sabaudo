@@ -30,36 +30,18 @@ def _credentials_path() -> Path:
     return Path(os.getenv("GMAIL_CREDENTIALS_PATH", CONFIG_DIR / "credentials.json"))
 
 
-def _get_service():
+def _get_service(manual: bool = False):
     """Construit le service Drive (gère le jeton et son rafraîchissement)."""
     try:
-        from google.auth.transport.requests import Request
-        from google.oauth2.credentials import Credentials
-        from google_auth_oauthlib.flow import InstalledAppFlow
         from googleapiclient.discovery import build
     except ImportError as exc:  # pragma: no cover
         raise SystemExit(
             "Dépendances Google manquantes. Exécuter : pip install -r requirements.txt"
         ) from exc
 
-    creds = None
-    if TOKEN_PATH.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_PATH), SCOPES)
+    from utils.google_auth import load_credentials
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            cred_file = _credentials_path()
-            if not cred_file.exists():
-                raise FileNotFoundError(
-                    f"Fichier d'identifiants introuvable : {cred_file}. "
-                    "Le déposer depuis Google Cloud Console."
-                )
-            flow = InstalledAppFlow.from_client_secrets_file(str(cred_file), SCOPES)
-            creds = flow.run_local_server(port=0)
-        TOKEN_PATH.write_text(creds.to_json(), encoding="utf-8")
-
+    creds = load_credentials(SCOPES, TOKEN_PATH, _credentials_path(), manual=manual)
     return build("drive", "v3", credentials=creds, cache_discovery=False)
 
 
