@@ -39,11 +39,15 @@ def favicon(domain: str, size: int = 64) -> str:
 
 
 def _tag(territory: str) -> str:
-    bg, fg, label = _TERRITORY.get(territory, ("#eceff3", "#374151", territory or "—"))
+    _, dotc, label = _TERRITORY.get(territory, ("", "#64748b", territory or "—"))
+    dot = (
+        f'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;'
+        f'background:{dotc};margin-right:6px;vertical-align:middle;"></span>'
+    )
     return (
-        f'<span style="display:inline-block;background:{bg};color:{fg};font-size:11px;'
-        'font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:3px 10px;'
-        f'border-radius:20px;">{escape(label)}</span>'
+        '<span style="display:inline-block;background:#eef2f7;color:#42526b;font-size:11px;'
+        'font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:4px 11px;'
+        f'border-radius:20px;vertical-align:middle;">{dot}{escape(label)}</span>'
     )
 
 
@@ -115,15 +119,22 @@ def _eyebrow(text: str) -> str:
     )
 
 
-def _footer() -> str:
+def _footer(logo_url: str | None = None) -> str:
+    logo = ""
+    if logo_url:
+        logo = (
+            f'<div style="margin-bottom:16px;"><img src="{logo_url}" alt="Cultura Sabauda" '
+            'height="30" style="height:30px;border:0;display:block;"></div>'
+        )
     return (
-        f'<tr><td style="background:#f7f9fc;padding:22px 32px;border-top:1px solid {BORDER};">'
-        f'<div style="color:{INK};font-size:13px;line-height:1.6;margin-bottom:10px;">'
+        f'<tr><td style="background:#f7f9fc;padding:26px 36px;border-top:1px solid {BORDER};">'
+        f"{logo}"
+        f'<div style="color:{INK};font-size:13px;line-height:1.6;margin-bottom:12px;">'
         "💬 Une source à suggérer, une coquille repérée&nbsp;? "
         "<strong>Répondez à cet email</strong>, on lit tout."
         "</div>"
         f'<div style="color:{MUTED};font-size:12px;line-height:1.6;">'
-        f'<strong style="color:{BRAND};">Cultura Sabauda</strong> — Observatoire économique de l\'espace sabaudo<br>'
+        "Observatoire économique de l'espace sabaudo — "
         "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra<br>"
         "<em>Veille assistée par IA, sélectionnée et validée par la rédaction de Cultura Sabauda.</em><br>"
         f'<a href="https://culturasabauda.eu" style="color:{MUTED};">culturasabauda.eu</a> · '
@@ -155,41 +166,58 @@ def _shell(inner: str, *, preheader: str) -> str:
 # --------------------------------------------------------------------------- #
 def variant_magazine(data: dict) -> str:
     hero = data["hero"]
-    signaux = "".join(
-        f'<tr><td style="padding:8px 0;border-bottom:1px solid {BORDER};font-size:14px;color:{INK};line-height:1.5;">'
-        f'{_tag(s["territory"])}&nbsp;&nbsp;<strong>{escape(s["title"])}</strong></td></tr>'
-        for s in data["signaux"]
-    )
+    sig_list = data["signaux"]
+    signaux = ""
+    for i, s in enumerate(sig_list, 1):
+        border = "" if i == len(sig_list) else f"border-bottom:1px solid {BORDER};"
+        badge = (
+            f'<span style="display:inline-block;width:24px;height:24px;border-radius:50%;'
+            f'background:{BRAND};color:#fff;font-size:12px;font-weight:800;line-height:24px;'
+            f'text-align:center;">{i}</span>'
+        )
+        signaux += (
+            "<tr>"
+            f'<td width="36" valign="top" style="padding:12px 0;{border}">{badge}</td>'
+            f'<td valign="top" style="padding:12px 0;{border}">{_tag(s["territory"])}'
+            f'<div style="font-size:15px;color:{INK};font-weight:700;line-height:1.4;margin-top:5px;">'
+            f'{escape(s["title"])}</div></td></tr>'
+        )
+    items = data["items"]
     cards = ""
-    for it in data["items"]:
+    for idx, it in enumerate(items):
+        wrap = (
+            "margin:0;padding:0;" if idx == len(items) - 1
+            else f"border-bottom:1px solid {BORDER};margin:0 0 24px;padding:0 0 22px;"
+        )
         cards += (
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
-            f'style="border-bottom:1px solid {BORDER};margin:0 0 22px;padding:0 0 18px;">'
-            f'<tr><td style="padding:0 0 10px;"><img src="{escape(it["image"])}" width="528" alt="" '
+            f'style="{wrap}">'
+            f'<tr><td style="padding:0 0 12px;"><img src="{escape(it["image"])}" width="528" alt="" '
             'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
-            f'<tr><td style="padding:0 0 7px;">{_tag(it["territory"])}&nbsp;&nbsp;{_source(it)}</td></tr>'
+            f'<tr><td style="padding:0 0 8px;">{_tag(it["territory"])}&nbsp;&nbsp;{_source(it)}</td></tr>'
             f'<tr><td style="padding:0 0 6px;font-size:19px;font-weight:700;color:{INK};line-height:1.3;">'
             f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{escape(it["title"])}</a></td></tr>'
             f'<tr><td style="font-size:15px;color:#374151;line-height:1.6;">{escape(it["summary"])}</td></tr>'
-            f'<tr><td style="padding:9px 0 0;">{_cta(it["url"])}</td></tr>'
+            f'<tr><td style="padding:10px 0 0;">{_cta(it["url"])}</td></tr>'
             "</table>"
         )
     inner = (
         _header(data["week_label"], "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra", data.get("logo_url"))
-        # HÉROS (Attention)
-        + f'<tr><td style="padding:0;"><img src="{escape(hero["image"])}" width="600" alt="" '
-          'style="width:100%;height:auto;display:block;border:0;"></td></tr>'
-        + f'<tr><td style="padding:24px 36px 6px;">{_tag(hero["territory"])}'
-          f'<div style="font-size:24px;font-weight:800;color:{INK};line-height:1.25;margin:10px 0 8px;">{escape(hero["title"])}</div>'
+        # HÉROS / À LA UNE (Attention)
+        + f'<tr><td style="padding:26px 36px 0;">{_eyebrow("À la une")}</td></tr>'
+        + f'<tr><td style="padding:0 36px;"><img src="{escape(hero["image"])}" width="528" alt="" '
+          'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
+        + f'<tr><td style="padding:14px 36px 6px;">{_tag(hero["territory"])}&nbsp;&nbsp;{_source(hero)}'
+          f'<div style="font-size:25px;font-weight:800;color:{INK};line-height:1.25;margin:11px 0 8px;">{escape(hero["title"])}</div>'
           f'<div style="font-size:15px;color:#374151;line-height:1.6;">{escape(hero["summary"])}</div>'
-          f'<div style="margin-top:14px;">{_button(hero["url"], "Lire l’article")}</div></td></tr>'
+          f'<div style="margin-top:16px;">{_button(hero["url"], "Lire l’article")}</div></td></tr>'
         # SIGNAUX (Intérêt)
-        + f'<tr><td style="padding:28px 36px 4px;">{_eyebrow("Les signaux de la semaine")}'
+        + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow("Les signaux de la semaine")}'
           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{signaux}</table></td></tr>'
         # CARTES (Désir + Action)
-        + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow("Le tour des territoires")}'
+        + f'<tr><td style="padding:30px 36px 6px;">{_eyebrow("Le tour des territoires")}'
           f'{cards}</td></tr>'
-        + _footer()
+        + _footer(data.get("logo_url"))
     )
     return _shell(inner, preheader=data["preheader"])
 
@@ -218,7 +246,7 @@ def variant_digest(data: dict) -> str:
         + f'<tr><td style="padding:24px 36px 8px;font-size:15px;color:{INK};line-height:1.6;">{escape(data["intro"])}</td></tr>'
         + f'<tr><td style="padding:8px 36px 4px;">{_eyebrow("Au sommaire")}{rows}</td></tr>'
         + f'<tr><td align="center" style="padding:8px 36px 30px;">{_button(data["cta_url"], "Voir toute la veille")}</td></tr>'
-        + _footer()
+        + _footer(data.get("logo_url"))
     )
     return _shell(inner, preheader=data["preheader"])
 
@@ -254,6 +282,6 @@ def variant_editorial(data: dict) -> str:
         + f'<tr><td style="padding:26px 36px 2px;">{_eyebrow("Le tour des territoires")}'
           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{blocks}</table></td></tr>'
         + f'<tr><td style="padding:20px 36px 28px;font-size:14px;color:{INK};line-height:1.6;">{escape(data["signature"]).replace(chr(10), "<br>")}</td></tr>'
-        + _footer()
+        + _footer(data.get("logo_url"))
     )
     return _shell(inner, preheader=data["preheader"])
