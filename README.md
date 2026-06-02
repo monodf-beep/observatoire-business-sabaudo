@@ -74,7 +74,9 @@ Territoires reconnus : `Savoie`, `Piemonte`, `Vallee-Aoste`, `Nice`, `Alcotra`.
 python scripts/gmail_collect.py            # collecte les emails récents de la whitelist
 python scripts/rss_collect.py              # collecte les flux RSS
 python scripts/synthesize.py               # synthèse de la semaine ISO courante
-python scripts/synthesize.py --week 2026-W23 --upload   # semaine précise + upload Drive
+python scripts/synthesize.py --upload --brevo           # + upload Drive + brouillon Brevo
+python scripts/push_brevo.py --check       # liste les expéditeurs et listes Brevo
+python scripts/push_brevo.py --week 2026-W24            # brouillon Brevo d'une semaine
 python utils/drive_upload.py fichier.md    # upload manuel vers Drive
 ```
 
@@ -84,6 +86,10 @@ python utils/drive_upload.py fichier.md    # upload manuel vers Drive
   (déduplication par message-id pour Gmail, par URL pour RSS).
 - **Synthèse** : `02_Veille_traitee/Syntheses_hebdomadaires/AAAA-WNN.md`.
   ⚠ **Aucun envoi automatique** — la synthèse est un brouillon à valider avant publication.
+- **Brevo** (option `--brevo`) : la section newsletter de la synthèse est convertie
+  en HTML et déposée comme **campagne en BROUILLON** dans Brevo (jamais envoyée).
+  Configurer `BREVO_*` dans `.env` (voir `.env.example`) ; `push_brevo.py --check`
+  affiche les expéditeurs et listes pour renseigner `BREVO_SENDER_EMAIL`/`BREVO_LIST_ID`.
 
 ## Planification (cron)
 

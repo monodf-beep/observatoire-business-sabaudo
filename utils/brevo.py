@@ -1,0 +1,85 @@
+"""Client minimal pour l'API Brevo (création de campagnes email en BROUILLON).
+
+100 % bibliothèque standard (urllib) — pas de dépendance externe.
+
+⚠ Aucune campagne n'est jamais envoyée : on crée un BROUILLON (pas de
+`scheduledAt`). Franck relit dans Brevo puis déclenche l'envoi lui-même.
+"""
+from __future__ import annotations
+
+import json
+import urllib.error
+import urllib.parse
+import urllib.request
+
+API_BASE = "https://api.brevo.com/v3"
+
+
+class BrevoError(RuntimeError):
+    """Erreur renvoyée par l'API Brevo ou la connexion réseau."""
+
+
+def _request(method: str, path: str, api_key: str, payload: dict | None = None, timeout: int = 30) -> dict:
+    url = f"{API_BASE}{path}"
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = urllib.request.Request(url, data=data, method=method)
+    req.add_header("api-key", api_key)
+    req.add_header("accept", "application/json")
+    if data is not None:
+        req.add_header("content-type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            body = resp.read().decode("utf-8")
+            return json.loads(body) if body else {}
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "replace")
+        raise BrevoError(f"HTTP {exc.code} sur {method} {path} : {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise BrevoError(f"Connexion à Brevo impossible : {exc.reason}") from exc
+
+
+def create_draft_campaign(
+    *,
+    api_key: str,
+    name: str,
+    subject: str,
+    sender_name: str,
+    sender_email: str,
+    list_ids: list[int],
+    html_content: str,
+    timeout: int = 30,
+) -> int:
+    """Crée une campagne email « classic » en BROUILLON et renvoie son id.
+
+    L'absence de `scheduledAt` garantit que la campagne reste un brouillon :
+    rien n'est envoyé tant que Franck ne le décide pas depuis Brevo.
+    """
+    payload = {
+        "name": name,
+        "subject": subject,
+        "sender": {"name": sender_name, "email": sender_email},
+        "type": "classic",
+        "htmlContent": html_content,
+        "recipients": {"listIds": list_ids},
+    }
+    result = _request("POST", "/emailCampaigns", api_key, payload, timeout)
+    campaign_id = result.get("id")
+    if not campaign_id:
+        raise BrevoError(f"Réponse inattendue de Brevo (pas d'id) : {result}")
+    return int(campaign_id)
+
+
+def list_senders(api_key: str, timeout: int = 30) -> list[dict]:
+    """Liste les expéditeurs validés du compte (name + email)."""
+    return _request("GET", "/senders", api_key, None, timeout).get("senders", [])
+
+
+def list_contact_lists(api_key: str, timeout: int = 30) -> list[dict]:
+    """Liste les listes de contacts (id + name + nombre d'abonnés)."""
+    query = urllib.parse.urlencode({"limit": 50, "sort": "desc"})
+    return _request("GET", f"/contacts/lists?{query}", api_key, None, timeout).get("lists", [])
+
+
+def campaign_edit_url(campaign_id: int) -> str:
+    """URL d'édition du brouillon dans l'interface Brevo."""
+    return f"https://app.brevo.com/camp/template/{campaign_id}/message-setup"

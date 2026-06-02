@@ -130,10 +130,16 @@ def build_prompt(by_territory: dict[str, list[dict]], target_week: str) -> str:
         "   - Nice / Alpes-Maritimes\n"
         "   - Périmètre Alcotra\n\n"
         "3. DRAFT NEWSLETTER \"Business Sabaudo\"\n"
-        "   - Objet email (max 60 caractères)\n"
-        "   - Intro (2 phrases, ton éditorial, pas communiqué de presse)\n"
-        "   - 5 à 7 brèves éditorialisées (pas de copier-coller de titres)\n"
-        "   - Signature\n\n"
+        "   Encadre EXACTEMENT cette section avec les balises techniques ci-dessous\n"
+        "   (elles servent à l'export automatique vers l'outil d'emailing : ne les\n"
+        "   traduis pas, ne les commente pas, ne les supprime pas). Modèle à suivre :\n\n"
+        "   <!-- BREVO:SUBJECT: objet de l'email ici, 60 caractères maximum -->\n"
+        "   <!-- BREVO:START -->\n"
+        "   ## Business Sabaudo — semaine en cours\n"
+        "   Intro (2 phrases, ton éditorial, pas communiqué de presse).\n"
+        "   5 à 7 brèves éditorialisées (liste à puces, pas de copier-coller de titres).\n"
+        "   Signature.\n"
+        "   <!-- BREVO:END -->\n\n"
         "Tonalité : sérieux, B2B, sans buzzword. Analyse, pas relation presse.\n"
         "Langue : français (avec termes italiens conservés quand pertinents).\n"
         "Reste factuel, n'invente aucune information absente des sources.\n"
@@ -210,6 +216,11 @@ def main() -> int:
         action="store_true",
         help="Téléverser la synthèse sur Google Drive après génération.",
     )
+    parser.add_argument(
+        "--brevo",
+        action="store_true",
+        help="Créer un BROUILLON de campagne Brevo à partir de la newsletter générée.",
+    )
     args = parser.parse_args()
 
     log.info("=== Démarrage synthèse hebdomadaire ===")
@@ -246,6 +257,12 @@ def main() -> int:
             log.info("Synthèse téléversée sur Drive (id=%s).", file_id)
         else:
             log.warning("Upload Drive échoué — le fichier local reste disponible.")
+
+    if args.brevo:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from push_brevo import push_file
+
+        push_file(out, target_week)
 
     log.info("=== Fin synthèse hebdomadaire ===")
     return 0

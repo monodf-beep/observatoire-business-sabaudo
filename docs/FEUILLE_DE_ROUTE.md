@@ -39,8 +39,12 @@ Chaque semaine, une synthèse structurée (format texte, dans le Drive) :
 3. **Un brouillon de newsletter « Business Sabaudo »** — objet, intro, brèves,
    signature, ton B2B, prêt à relire.
 
-> ⚠️ L'outil **ne publie jamais tout seul**. Tu gardes la main : tu relis,
-> tu ajustes, tu publies où tu veux.
+En plus, chaque vendredi, ce brouillon de newsletter est **déposé directement dans
+Brevo en BROUILLON** (déjà mis en forme en HTML). Tu n'as plus qu'à l'ouvrir dans
+Brevo, le relire/ajuster, et cliquer sur « Envoyer » quand tu le décides.
+
+> ⚠️ L'outil **ne publie / n'envoie jamais tout seul**. Tu gardes la main : tu relis,
+> tu ajustes, tu envoies où tu veux.
 
 ---
 
@@ -75,12 +79,13 @@ Au quotidien, c'est **`02_Veille_traitee`** qui compte : les synthèses y arrive
 - [x] Collecte automatique des newsletters (Gmail)
 - [x] Synthèse hebdomadaire rédigée (5 signaux + territoires + newsletter)
 - [x] Dépôt automatique dans le Drive
+- [x] Brouillon de newsletter déposé automatiquement dans Brevo (jamais envoyé)
 - [x] Déploiement sur le VPS + planification automatique
 - [ ] Alimentation des sources réelles (newsletters + flux à surveiller)
 
 ### 🔮 Pistes pour la suite (à décider ensemble, optionnel)
 - **Lecture plus agréable** : synthèses en Google Doc plutôt qu'en fichier texte.
-- **Envoi automatique** de la newsletter après validation.
+- **Envoi automatique** de la newsletter Brevo après validation.
 - **Tableau de bord visuel** « Business Sabaudo » (page web : tendances, carte du
   territoire, évolution des signaux).
 - **Statistiques** : nombre de signaux par territoire, dynamiques dans le temps.
