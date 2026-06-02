@@ -32,7 +32,19 @@ observatoire-business-sabaudo/
 └── requirements.txt
 ```
 
+## Guides
+
+- 🔑 **[docs/SETUP_GOOGLE_OAUTH.md](docs/SETUP_GOOGLE_OAUTH.md)** — donner les droits Gmail + Drive (pas-à-pas, non technique).
+- 🚀 **[docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md)** — où faire tourner l'outil et comment l'installer.
+
 ## Installation
+
+```bash
+bash install.sh                 # crée .venv, installe les dépendances, prépare .env
+# puis : éditer .env (ANTHROPIC_API_KEY) et déposer config/credentials.json
+```
+
+Installation manuelle équivalente :
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate   # Python 3.11+
