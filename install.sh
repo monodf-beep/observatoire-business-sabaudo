@@ -13,8 +13,9 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 python3 - <<'PY'
 import sys
-if sys.version_info < (3, 11):
-    sys.exit("ERREUR : Python 3.11+ requis (version detectee : %d.%d)" % sys.version_info[:2])
+# 3.11+ recommandé ; le code reste compatible 3.10 (annotations différées).
+if sys.version_info < (3, 10):
+    sys.exit("ERREUR : Python 3.10+ requis (version detectee : %d.%d)" % sys.version_info[:2])
 PY
 
 echo "==> Création de l'environnement virtuel (.venv)"
@@ -31,7 +32,7 @@ else
   echo "==> .env déjà présent, conservé tel quel"
 fi
 
-mkdir -p config 01_Veille_brute "02_Veille_traitée/Synthèses_hebdomadaires" logs
+mkdir -p config 01_Veille_brute "02_Veille_traitee/Syntheses_hebdomadaires" logs
 
 echo ""
 echo "✅ Installation terminée."

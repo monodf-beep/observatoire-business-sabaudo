@@ -6,7 +6,7 @@ config/token_drive.json
 
 # Données collectées (volumineuses, non versionnées)
 01_Veille_brute/
-02_Veille_traitée/
+02_Veille_traitee/
 logs/
 
 # Python

@@ -1,9 +1,9 @@
 # Observatoire Économique Espace Sabaudo — Sprint 1
 # Python 3.11+
 
-google-auth>=2.28
-google-auth-oauthlib>=1.2        # flux OAuth2 installé (InstalledAppFlow)
-google-api-python-client>=2.120  # Gmail + Drive API
-feedparser>=6.0
-anthropic>=0.40
-python-dotenv>=1.0
+google-auth>=2.0.0
+google-auth-oauthlib>=1.0.0      # flux OAuth2 installé (InstalledAppFlow)
+google-api-python-client>=2.0.0  # Gmail + Drive API
+feedparser>=6.0.0
+anthropic>=0.25.0
+python-dotenv>=1.0.0

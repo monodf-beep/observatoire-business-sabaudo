@@ -27,7 +27,7 @@ from utils.logger import get_logger  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 INPUT_DIR = ROOT / "01_Veille_brute"
-OUTPUT_DIR = ROOT / "02_Veille_traitée" / "Synthèses_hebdomadaires"
+OUTPUT_DIR = ROOT / "02_Veille_traitee" / "Syntheses_hebdomadaires"
 DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 # Bornes pour rester dans une enveloppe de tokens raisonnable
@@ -71,9 +71,10 @@ def load_week_records(target_week: str) -> dict[str, list[dict]]:
 
 
 def _territory_from_path(json_file: Path) -> str:
-    # Dossier au format AAAA-MM-Territoire
-    parts = json_file.parent.name.split("-")
-    return parts[-1] if len(parts) >= 3 else "Indetermine"
+    # Dossier au format AAAA-MM-Territoire (le territoire peut contenir un tiret,
+    # ex. Vallee-Aoste) → on découpe seulement sur les deux premiers tirets.
+    parts = json_file.parent.name.split("-", 2)
+    return parts[2] if len(parts) == 3 else "Indetermine"
 
 
 def build_prompt(by_territory: dict[str, list[dict]], target_week: str) -> str:
@@ -95,22 +96,35 @@ def build_prompt(by_territory: dict[str, list[dict]], target_week: str) -> str:
                 lines.append(f"- Contenu : {body}")
     corpus = "\n".join(lines)
 
+    # Prompt issu du brief Sprint 1 (intégré dans le code, pas de fichier externe).
+    instructions = (
+        "Tu es l'assistant éditorial de Cultura Sabauda, média culturel et économique\n"
+        "de l'espace sabaudo (Savoie, Piémont, Vallée d'Aoste, Nice).\n\n"
+        "À partir des contenus collectés cette semaine (emails newsletters + flux RSS),\n"
+        "produis une synthèse structurée en Markdown :\n\n"
+        "1. SIGNAUX FORTS (5 maximum)\n"
+        "   - Un titre accrocheur par signal\n"
+        "   - 2-3 phrases de contexte\n"
+        "   - Territoire concerné\n"
+        "   - Source\n\n"
+        "2. PAR TERRITOIRE\n"
+        "   - Savoie (73+74)\n"
+        "   - Piémont\n"
+        "   - Vallée d'Aoste\n"
+        "   - Nice / Alpes-Maritimes\n"
+        "   - Périmètre Alcotra\n\n"
+        "3. DRAFT NEWSLETTER \"Business Sabaudo\"\n"
+        "   - Objet email (max 60 caractères)\n"
+        "   - Intro (2 phrases, ton éditorial, pas communiqué de presse)\n"
+        "   - 5 à 7 brèves éditorialisées (pas de copier-coller de titres)\n"
+        "   - Signature\n\n"
+        "Tonalité : sérieux, B2B, sans buzzword. Analyse, pas relation presse.\n"
+        "Langue : français (avec termes italiens conservés quand pertinents).\n"
+        "Reste factuel, n'invente aucune information absente des sources.\n"
+    )
     return (
-        "Tu es analyste pour l'Observatoire Économique de l'Espace Sabaudo "
-        "(Savoie, Piémont, Vallée d'Aoste, Nice). À partir des éléments de veille "
-        f"de la semaine {target_week} ci-dessous, rédige en français une synthèse "
-        "structurée en Markdown comportant EXACTEMENT ces sections :\n\n"
-        "1. `## Synthèse par territoire` — un paragraphe d'analyse par territoire "
-        "présent (Savoie, Piémont, Vallée d'Aoste, Nice), mettant en avant les "
-        "dynamiques économiques, dispositifs et acteurs clés.\n"
-        "2. `## 5 signaux forts de la semaine` — liste numérotée des 5 signaux les "
-        "plus significatifs (tendances, opportunités, alertes), chacun avec une "
-        "phrase d'explication.\n"
-        "3. `## Draft newsletter` — un brouillon de newsletter prêt à relire "
-        "(titre accrocheur, chapô, 3 à 5 brèves), ton professionnel et accessible.\n\n"
-        "Reste factuel, n'invente aucune information absente des sources. "
-        "Si un territoire n'a aucun élément, indique-le brièvement.\n\n"
-        "=== ÉLÉMENTS DE VEILLE ===\n"
+        f"{instructions}\n"
+        f"=== CONTENUS COLLECTÉS — semaine {target_week} ===\n"
         f"{corpus}\n"
     )
 
@@ -134,8 +148,9 @@ def call_anthropic(prompt: str, model: str) -> str | None:
             model=model,
             max_tokens=4096,
             system=(
-                "Tu es un analyste économique territorial rigoureux. "
-                "Tu produis des synthèses claires, factuelles, en Markdown."
+                "Tu es l'assistant éditorial de Cultura Sabauda. Tu produis des "
+                "synthèses économiques claires, factuelles et éditorialisées, en Markdown. "
+                "Ton B2B, sérieux, sans buzzword."
             ),
             messages=[{"role": "user", "content": prompt}],
         )
@@ -205,7 +220,8 @@ def main() -> int:
     if args.upload:
         from utils.drive_upload import upload_file
 
-        file_id = upload_file(out)
+        subfolder = os.getenv("DRIVE_VEILLE_TRAITEE_SUBFOLDER", "02_Veille_traitee")
+        file_id = upload_file(out, subfolder=subfolder)
         if file_id:
             log.info("Synthèse téléversée sur Drive (id=%s).", file_id)
         else:

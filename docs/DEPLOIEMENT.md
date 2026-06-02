@@ -37,6 +37,9 @@ la planification automatique.
 C'est l'option que je **recommande une fois les essais concluants** : fiable,
 peu coûteuse, et tu n'as plus rien à gérer.
 
+> 👉 **Tu as déjà un VPS Hostinger ?** Suis le guide dédié, clé en main :
+> **[docs/DEPLOIEMENT_HOSTINGER.md](DEPLOIEMENT_HOSTINGER.md)**.
+
 ## Option 3 — Hébergement Google Cloud (avancé)
 
 Possible (le tout étant déjà chez Google), mais la configuration est plus
@@ -78,7 +81,7 @@ python scripts/gmail_collect.py      # collecte Gmail (ouvre l'autorisation Goog
 python scripts/synthesize.py --upload  # synthèse + dépôt dans le Drive
 ```
 
-La synthèse apparaît dans `02_Veille_traitée/Synthèses_hebdomadaires/` **et**
+La synthèse apparaît dans `02_Veille_traitee/Syntheses_hebdomadaires/` **et**
 (avec `--upload`) dans le dossier Drive « Observatoire économique Sabaudo ».
 
 ## Activer la planification automatique

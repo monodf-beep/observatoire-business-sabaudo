@@ -2,7 +2,7 @@
 #
 # Format (un par ligne) :  motif;territoire
 #   - motif     : une adresse email complète OU un domaine (ex. lafrenchtech.com)
-#   - territoire : Savoie | Piemonte | Vallee-Aoste | Nice  (sans accents/espaces)
+#   - territoire : Savoie | Piemonte | Vallee-Aoste | Nice | Alcotra  (sans accents/espaces)
 #
 # Les lignes vides et celles commençant par # sont ignorées.
 # À COMPLÉTER / VÉRIFIER les domaines réels au fil de la veille.
@@ -20,6 +20,8 @@ i3p.it;Piemonte
 # --- Vallée d'Aoste ---
 pepinieresvda.eu;Vallee-Aoste
 
-# --- Transfrontalier / Nice ---
-interreg-alcotra.eu;Nice
+# --- Nice / Alpes-Maritimes ---
 @cote-azur.cci.fr;Nice
+
+# --- Périmètre transfrontalier ALCOTRA France-Italie ---
+interreg-alcotra.eu;Alcotra

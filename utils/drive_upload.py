@@ -63,11 +63,42 @@ def _get_service():
     return build("drive", "v3", credentials=creds, cache_discovery=False)
 
 
-def upload_file(local_path: str | Path, folder_id: str | None = None) -> str | None:
+def _find_or_create_subfolder(service, parent_id: str, name: str) -> str:
+    """Retourne l'ID d'un sous-dossier (créé s'il n'existe pas) sous `parent_id`."""
+    safe = name.replace("'", "\\'")
+    query = (
+        f"name = '{safe}' and '{parent_id}' in parents and "
+        "mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+    )
+    found = (
+        service.files()
+        .list(q=query, spaces="drive", fields="files(id)", pageSize=1)
+        .execute()
+        .get("files", [])
+    )
+    if found:
+        return found[0]["id"]
+    metadata = {
+        "name": name,
+        "mimeType": "application/vnd.google-apps.folder",
+        "parents": [parent_id],
+    }
+    created = service.files().create(body=metadata, fields="id").execute()
+    log.info("Sous-dossier Drive créé : %s (id=%s)", name, created["id"])
+    return created["id"]
+
+
+def upload_file(
+    local_path: str | Path,
+    folder_id: str | None = None,
+    subfolder: str | None = None,
+) -> str | None:
     """Téléverse un fichier vers Drive. Retourne l'ID Drive, ou None en cas d'échec.
 
-    Si un fichier du même nom existe déjà dans le dossier, son contenu est mis
-    à jour (pas de doublon).
+    - `folder_id` : dossier racine (défaut : DRIVE_FOLDER_ID).
+    - `subfolder` : nom d'un sous-dossier sous la racine (créé au besoin).
+    Si un fichier du même nom existe déjà dans le dossier cible, son contenu est
+    mis à jour (pas de doublon).
     """
     from googleapiclient.errors import HttpError
     from googleapiclient.http import MediaFileUpload
@@ -84,6 +115,8 @@ def upload_file(local_path: str | Path, folder_id: str | None = None) -> str | N
 
     try:
         service = _get_service()
+        if subfolder:
+            folder_id = _find_or_create_subfolder(service, folder_id, subfolder)
         media = MediaFileUpload(str(local_path), resumable=True)
 
         # Recherche d'un fichier existant de même nom dans le dossier

@@ -25,7 +25,7 @@ observatoire-business-sabaudo/
 │   ├── logger.py               # logs horodatés
 │   └── textutils.py            # nettoyage HTML -> texte
 ├── 01_Veille_brute/            # sorties JSON  (AAAA-MM-[territoire]/, non versionné)
-├── 02_Veille_traitée/          # synthèses Markdown            (non versionné)
+├── 02_Veille_traitee/          # synthèses Markdown            (non versionné)
 ├── logs/                       # journaux horodatés            (non versionné)
 ├── .env                        # ANTHROPIC_API_KEY + DRIVE_FOLDER_ID (non versionné)
 ├── crontab.txt                 # configuration scheduler
@@ -36,6 +36,7 @@ observatoire-business-sabaudo/
 
 - 🔑 **[docs/SETUP_GOOGLE_OAUTH.md](docs/SETUP_GOOGLE_OAUTH.md)** — donner les droits Gmail + Drive (pas-à-pas, non technique).
 - 🚀 **[docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md)** — où faire tourner l'outil et comment l'installer.
+- 🟣 **[docs/DEPLOIEMENT_HOSTINGER.md](docs/DEPLOIEMENT_HOSTINGER.md)** — déploiement clé en main sur un VPS Hostinger.
 
 ## Installation
 
@@ -65,7 +66,7 @@ Au premier lancement, une fenêtre d'autorisation OAuth s'ouvre et un jeton
 | `config/rss_feeds.txt`       | Flux RSS — `url;territoire` |
 | `.env`                       | `ANTHROPIC_API_KEY`, `GMAIL_CREDENTIALS_PATH`, `DRIVE_FOLDER_ID` |
 
-Territoires reconnus : `Savoie`, `Piemonte`, `Vallee-Aoste`, `Nice`.
+Territoires reconnus : `Savoie`, `Piemonte`, `Vallee-Aoste`, `Nice`, `Alcotra`.
 
 ## Utilisation
 
@@ -81,7 +82,7 @@ python utils/drive_upload.py fichier.md    # upload manuel vers Drive
 
 - **Veille brute** : un JSON par élément dans `01_Veille_brute/AAAA-MM-[territoire]/`
   (déduplication par message-id pour Gmail, par URL pour RSS).
-- **Synthèse** : `02_Veille_traitée/Synthèses_hebdomadaires/AAAA-WNN.md`.
+- **Synthèse** : `02_Veille_traitee/Syntheses_hebdomadaires/AAAA-WNN.md`.
   ⚠ **Aucun envoi automatique** — la synthèse est un brouillon à valider avant publication.
 
 ## Planification (cron)
