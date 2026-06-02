@@ -77,25 +77,29 @@ def _button(url: str, label: str) -> str:
 
 
 def _header(week_label: str, tagline: str, logo_url: str | None = None) -> str:
-    """Masthead éditorial sur fond blanc : éditeur (logo) + titre produit + date."""
-    logo = ""
+    """Masthead éditorial blanc : surtitre + logo éditeur (petit) + titre + date."""
+    logo_cell = ""
     if logo_url:
-        logo = (
-            '<tr><td style="padding:30px 36px 0;background:#fff;">'
-            f'<img src="{logo_url}" alt="Cultura Sabauda" height="26" '
-            'style="height:26px;border:0;display:block;"></td></tr>'
+        logo_cell = (
+            f'<td align="right" valign="middle"><img src="{logo_url}" alt="Une publication Cultura Sabauda" '
+            'height="20" style="height:20px;border:0;display:inline-block;"></td>'
         )
     return (
-        f"{logo}"
-        '<tr><td style="padding:22px 36px 0;background:#fff;">'
-        f'<div style="font-size:33px;font-weight:800;letter-spacing:-.5px;color:{BRAND};line-height:1;">'
+        '<tr><td style="padding:28px 36px 0;background:#fff;">'
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
+        f'<td valign="middle" style="font-size:11px;font-weight:800;letter-spacing:1.8px;'
+        f'text-transform:uppercase;color:{ACCENT};">Observatoire économique</td>'
+        f"{logo_cell}"
+        "</tr></table></td></tr>"
+        '<tr><td style="padding:14px 36px 0;background:#fff;">'
+        f'<div style="font-size:34px;font-weight:800;letter-spacing:-.5px;color:{BRAND};line-height:1;">'
         f'Business Sabaudo<span style="color:{ACCENT};">.</span></div>'
-        f'<div style="font-size:14px;color:{MUTED};margin-top:9px;">{escape(tagline)}</div>'
+        f'<div style="font-size:13px;color:{MUTED};margin-top:9px;letter-spacing:.2px;">{escape(tagline)}</div>'
         "</td></tr>"
-        f'<tr><td style="padding:18px 36px 0;background:#fff;">'
+        '<tr><td style="padding:18px 36px 0;background:#fff;">'
         f'<div style="height:1px;background:{BORDER};line-height:1px;font-size:0;">&nbsp;</div></td></tr>'
         '<tr><td style="padding:12px 36px 22px;background:#fff;">'
-        f'<span style="font-size:11px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:{ACCENT};">'
+        f'<span style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:{MUTED};">'
         f"{escape(week_label)}</span></td></tr>"
     )
 
@@ -171,7 +175,7 @@ def variant_magazine(data: dict) -> str:
             "</table>"
         )
     inner = (
-        _header(data["week_label"], "La veille économique de l'espace sabaudo", data.get("logo_url"))
+        _header(data["week_label"], "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra", data.get("logo_url"))
         # HÉROS (Attention)
         + f'<tr><td style="padding:0;"><img src="{escape(hero["image"])}" width="600" alt="" '
           'style="width:100%;height:auto;display:block;border:0;"></td></tr>'
