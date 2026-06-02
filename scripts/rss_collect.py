@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import socket
 import sys
 from datetime import datetime, timezone
@@ -72,6 +73,27 @@ def _entry_summary(entry) -> str:
     return html_to_text(raw) if raw else ""
 
 
+_IMG_RE = re.compile(r"""<img[^>]+src=["']([^"']+)["']""", re.I)
+
+
+def _entry_image(entry) -> str:
+    """URL d'une image illustrant l'article (media, enclosure, ou 1er <img>)."""
+    for key in ("media_content", "media_thumbnail"):
+        media = entry.get(key)
+        if media and media[0].get("url"):
+            return media[0]["url"]
+    for link in entry.get("links", []):
+        if link.get("rel") == "enclosure" and str(link.get("type", "")).startswith("image"):
+            if link.get("href"):
+                return link["href"]
+    html = ""
+    if entry.get("content"):
+        html = entry["content"][0].get("value", "")
+    html = html or entry.get("summary", "")
+    match = _IMG_RE.search(html)
+    return match.group(1) if match else ""
+
+
 def _url_id(url: str) -> str:
     return hashlib.sha1(url.encode("utf-8")).hexdigest()[:16]
 
@@ -111,6 +133,7 @@ def collect_feed(url: str, territory: str, feed_lib) -> tuple[int, int]:
             "title": clean_text(entry.get("title", "")),
             "link": link,
             "body": _entry_summary(entry),
+            "image": _entry_image(entry),
             "feed_title": clean_text(getattr(parsed.feed, "title", "")),
             "collected_at": datetime.now(timezone.utc).isoformat(),
         }

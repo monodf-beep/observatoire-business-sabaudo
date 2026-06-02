@@ -189,11 +189,16 @@ def variant_magazine(data: dict) -> str:
             "margin:0;padding:0;" if idx == len(items) - 1
             else f"border-bottom:1px solid {BORDER};margin:0 0 24px;padding:0 0 22px;"
         )
+        img = ""
+        if it.get("image"):
+            img = (
+                f'<tr><td style="padding:0 0 12px;"><img src="{escape(it["image"])}" width="528" alt="" '
+                'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
+            )
         cards += (
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
             f'style="{wrap}">'
-            f'<tr><td style="padding:0 0 12px;"><img src="{escape(it["image"])}" width="528" alt="" '
-            'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
+            f"{img}"
             f'<tr><td style="padding:0 0 8px;">{_tag(it["territory"])}&nbsp;&nbsp;{_source(it)}</td></tr>'
             f'<tr><td style="padding:0 0 6px;font-size:19px;font-weight:700;color:{INK};line-height:1.3;">'
             f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{escape(it["title"])}</a></td></tr>'
@@ -205,12 +210,16 @@ def variant_magazine(data: dict) -> str:
         _header(data["week_label"], "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra", data.get("logo_url"))
         # HÉROS / À LA UNE (Attention)
         + f'<tr><td style="padding:26px 36px 0;">{_eyebrow("À la une")}</td></tr>'
-        + f'<tr><td style="padding:0 36px;"><img src="{escape(hero["image"])}" width="528" alt="" '
-          'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
+        + (
+            f'<tr><td style="padding:0 36px;"><img src="{escape(hero["image"])}" width="528" alt="" '
+            'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
+            if hero.get("image") else ""
+        )
         + f'<tr><td style="padding:14px 36px 6px;">{_tag(hero["territory"])}&nbsp;&nbsp;{_source(hero)}'
           f'<div style="font-size:25px;font-weight:800;color:{INK};line-height:1.25;margin:11px 0 8px;">{escape(hero["title"])}</div>'
           f'<div style="font-size:15px;color:#374151;line-height:1.6;">{escape(hero["summary"])}</div>'
-          f'<div style="margin-top:16px;">{_button(hero["url"], "Lire l’article")}</div></td></tr>'
+          + (f'<div style="margin-top:16px;">{_button(hero["url"], "Lire l’article")}</div>' if hero.get("url") else "")
+          + "</td></tr>"
         # SIGNAUX (Intérêt)
         + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow("Les signaux de la semaine")}'
           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{signaux}</table></td></tr>'

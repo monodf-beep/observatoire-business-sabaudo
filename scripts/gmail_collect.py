@@ -178,6 +178,38 @@ def extract_body(payload: dict) -> str:
     return ""
 
 
+_IMG_RE = re.compile(r"""<img[^>]+src=["']([^"']+)["'][^>]*>""", re.I)
+# Indices d'images de traçage / décoratives à écarter.
+_IMG_SKIP = ("pixel", "track", "beacon", "spacer", "/o/", "open.", "1x1", "transparent")
+
+
+def extract_image(payload: dict) -> str:
+    """1ʳᵉ image http « réelle » de l'email HTML (hors pixels de traçage)."""
+    htmls: list[str] = []
+
+    def walk(part: dict) -> None:
+        body = part.get("body", {})
+        data = body.get("data")
+        if part.get("parts"):
+            for sub in part["parts"]:
+                walk(sub)
+        elif data and part.get("mimeType") == "text/html":
+            htmls.append(_decode_part(data))
+
+    walk(payload)
+    for match in _IMG_RE.finditer("\n".join(htmls)):
+        tag = match.group(0).lower()
+        src = match.group(1)
+        if not src.lower().startswith("http"):
+            continue
+        if any(t in tag for t in _IMG_SKIP):
+            continue
+        if re.search(r'(width|height)=["\']?1\b', tag):
+            continue
+        return src
+    return ""
+
+
 def _header(headers: list[dict], name: str) -> str:
     name = name.lower()
     for h in headers:
@@ -217,6 +249,7 @@ def parse_message(msg: dict) -> dict:
         "from": sender,
         "title": subject,
         "body": extract_body(payload),
+        "image": extract_image(payload),
         "collected_at": datetime.now(timezone.utc).isoformat(),
     }
 

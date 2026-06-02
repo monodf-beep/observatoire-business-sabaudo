@@ -15,9 +15,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -62,6 +63,7 @@ def load_all_records() -> dict[str, dict[str, list[dict]]]:
         week = iso_week_id(dt)
         # Territoire : champ explicite (RSS) ou déduit du dossier parent (Gmail)
         territory = record.get("territoire") or _territory_from_path(json_file)
+        record["territoire"] = territory
         weeks[week][territory].append(record)
 
     return weeks
@@ -93,18 +95,30 @@ def _territory_from_path(json_file: Path) -> str:
     return parts[2] if len(parts) == 3 else "Indetermine"
 
 
-def build_prompt(by_territory: dict[str, list[dict]], target_week: str) -> str:
-    lines: list[str] = []
+def build_registry(by_territory: dict[str, list[dict]]) -> dict[int, dict]:
+    """Numérote chaque enregistrement de la semaine (id stable -> enregistrement)."""
+    registry: dict[int, dict] = {}
+    next_id = 1
     for territory in sorted(by_territory):
-        items = by_territory[territory][:MAX_ITEMS_PER_TERRITORY]
-        lines.append(f"\n## Territoire : {territory} ({len(items)} élément(s))")
-        for i, rec in enumerate(items, 1):
-            title = rec.get("title", "(sans titre)")
-            origin = rec.get("from") or rec.get("feed_title") or rec.get("feed_url", "")
+        for rec in by_territory[territory][:MAX_ITEMS_PER_TERRITORY]:
+            registry[next_id] = rec
+            next_id += 1
+    return registry
+
+
+def build_prompt(registry: dict[int, dict], target_week: str) -> str:
+    lines: list[str] = []
+    by_terr: dict[str, list[tuple[int, dict]]] = defaultdict(list)
+    for rid, rec in registry.items():
+        by_terr[rec.get("territoire", "Indetermine")].append((rid, rec))
+    for territory in sorted(by_terr):
+        lines.append(f"\n## Territoire : {territory} ({len(by_terr[territory])} élément(s))")
+        for rid, rec in by_terr[territory]:
+            origin = rec.get("feed_title") or rec.get("from") or rec.get("feed_url", "")
             date = rec.get("date", "")[:10]
             body = (rec.get("body") or "").strip()[:MAX_BODY_CHARS]
             link = rec.get("link", "")
-            lines.append(f"\n### [{i}] {title}")
+            lines.append(f"\n### [#{rid}] {rec.get('title', '(sans titre)')}")
             lines.append(f"- Source : {origin} | Date : {date}")
             if link:
                 lines.append(f"- Lien : {link}")
@@ -112,43 +126,114 @@ def build_prompt(by_territory: dict[str, list[dict]], target_week: str) -> str:
                 lines.append(f"- Contenu : {body}")
     corpus = "\n".join(lines)
 
-    # Prompt issu du brief Sprint 1 (intégré dans le code, pas de fichier externe).
     instructions = (
-        "Tu es l'assistant éditorial de Cultura Sabauda, média culturel et économique\n"
-        "de l'espace sabaudo (Savoie, Piémont, Vallée d'Aoste, Nice).\n\n"
-        "À partir des contenus collectés cette semaine (emails newsletters + flux RSS),\n"
-        "produis une synthèse structurée en Markdown :\n\n"
-        "1. SIGNAUX FORTS (5 maximum)\n"
-        "   - Un titre accrocheur par signal\n"
-        "   - 2-3 phrases de contexte\n"
-        "   - Territoire concerné\n"
-        "   - Source\n\n"
-        "2. PAR TERRITOIRE\n"
-        "   - Savoie (73+74)\n"
-        "   - Piémont\n"
-        "   - Vallée d'Aoste\n"
-        "   - Nice / Alpes-Maritimes\n"
-        "   - Périmètre Alcotra\n\n"
-        "3. DRAFT NEWSLETTER \"Business Sabaudo\"\n"
-        "   Encadre EXACTEMENT cette section avec les balises techniques ci-dessous\n"
-        "   (elles servent à l'export automatique vers l'outil d'emailing : ne les\n"
-        "   traduis pas, ne les commente pas, ne les supprime pas). Modèle à suivre :\n\n"
-        "   <!-- BREVO:SUBJECT: objet de l'email ici, 60 caractères maximum -->\n"
-        "   <!-- BREVO:START -->\n"
-        "   ## Business Sabaudo — semaine en cours\n"
-        "   Intro (2 phrases, ton éditorial, pas communiqué de presse).\n"
-        "   5 à 7 brèves éditorialisées (liste à puces, pas de copier-coller de titres).\n"
-        "   Signature.\n"
-        "   <!-- BREVO:END -->\n\n"
-        "Tonalité : sérieux, B2B, sans buzzword. Analyse, pas relation presse.\n"
-        "Langue : français (avec termes italiens conservés quand pertinents).\n"
-        "Reste factuel, n'invente aucune information absente des sources.\n"
+        "Tu es l'assistant éditorial de Cultura Sabauda, média économique de l'espace\n"
+        "sabaudo (Savoie, Piémont, Vallée d'Aoste, Nice, périmètre Alcotra).\n\n"
+        "À partir des contenus collectés cette semaine (chacun identifié par [#id]),\n"
+        "produis DEUX choses, dans cet ordre.\n\n"
+        "PARTIE 1 — Synthèse éditoriale en Markdown (pour archive interne) :\n"
+        "  1. SIGNAUX FORTS (5 max) : titre + 2-3 phrases de contexte + territoire + source.\n"
+        "  2. PAR TERRITOIRE : Savoie (73+74), Piémont, Vallée d'Aoste, Nice/Alpes-Maritimes,\n"
+        "     Périmètre Alcotra.\n\n"
+        "PARTIE 2 — Données de la newsletter, dans UN SEUL bloc de code ```json``` à la fin.\n"
+        "  Schéma EXACT (n'invente aucun texte absent des sources ; réfère chaque élément\n"
+        "  par son id [#id] pour qu'on rattache le lien, la source et l'image d'origine) :\n"
+        "  ```json\n"
+        "  {\n"
+        '    "objet": "objet email, 60 caractères max, porteur de valeur",\n'
+        '    "preheader": "phrase de prévisualisation qui complète l\'objet",\n'
+        '    "une": {"id": 0, "titre": "titre éditorialisé", "resume": "2-3 phrases"},\n'
+        '    "signaux": [{"id": 0, "titre": "titre court"}],\n'
+        '    "articles": [{"id": 0, "titre": "titre éditorialisé", "resume": "2-3 phrases"}],\n'
+        '    "signature": "Bonne lecture,\\nLa rédaction — Cultura Sabauda"\n'
+        "  }\n"
+        "  ```\n"
+        "  - 'une' = l'actualité la plus marquante (le héros).\n"
+        "  - 'signaux' = 3 à 5 signaux forts (titres courts).\n"
+        "  - 'articles' = 4 à 6 brèves éditorialisées (hors 'une'), une par sujet fort.\n"
+        "  - Chaque 'id' DOIT exister dans les contenus fournis. Réutilise des id différents.\n\n"
+        "Tonalité : sérieux, B2B, sans buzzword. Chaque brève répond à « et alors ? »\n"
+        "(l'implication concrète). Langue : français (termes italiens conservés si pertinents).\n"
+        "Reste strictement factuel : pas de source = pas de brève.\n"
     )
     return (
         f"{instructions}\n"
         f"=== CONTENUS COLLECTÉS — semaine {target_week} ===\n"
         f"{corpus}\n"
     )
+
+
+def split_markdown_json(text: str) -> tuple[str, dict | None]:
+    """Sépare la synthèse Markdown du bloc JSON de la newsletter."""
+    match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.S)
+    if not match:
+        match = re.search(r"(\{(?:[^{}]|\{[^{}]*\})*\})\s*$", text.strip(), re.S)
+    if not match:
+        return text.strip(), None
+    raw = match.group(1)
+    markdown = text[: match.start()].rstrip()
+    try:
+        return markdown, json.loads(raw)
+    except json.JSONDecodeError as exc:
+        log.warning("Bloc JSON newsletter illisible : %s", exc)
+        return markdown, None
+
+
+def _enrich(entry: dict, registry: dict[int, dict]) -> dict | None:
+    """Complète une entrée {id,titre,resume} avec lien/source/image d'origine."""
+    from utils.sources import domain_of, source_label
+
+    rec = registry.get(int(entry.get("id", -1))) if str(entry.get("id", "")).strip().lstrip("-").isdigit() else None
+    if rec is None:
+        return None
+    return {
+        "title": entry.get("titre") or rec.get("title", ""),
+        "summary": entry.get("resume", ""),
+        "url": rec.get("link", ""),
+        "image": rec.get("image", ""),
+        "territory": rec.get("territoire", "Indetermine"),
+        "source": source_label(rec),
+        "domain": domain_of(rec),
+    }
+
+
+def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str, logo_url: str) -> dict | None:
+    """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
+    une = parsed.get("une") or {}
+    hero = _enrich(une, registry)
+    items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry))]
+    signaux = []
+    for s in parsed.get("signaux", []):
+        rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None
+        if rec is not None and s.get("titre"):
+            signaux.append({"title": s["titre"], "territory": rec.get("territoire", "Indetermine")})
+    if hero is None and not items:
+        log.warning("Aucun élément newsletter exploitable (ids introuvables).")
+        return None
+    if hero is None and items:  # repli : le 1er article devient la une
+        hero = items.pop(0)
+    return {
+        "week_label": week_label,
+        "logo_url": logo_url,
+        "preheader": parsed.get("preheader", ""),
+        "subject": (parsed.get("objet") or f"Business Sabaudo — {week_label}")[:120],
+        "hero": hero,
+        "signaux": signaux,
+        "items": items,
+        "signature": parsed.get("signature", "La rédaction — Cultura Sabauda"),
+        "cta_url": "https://culturasabauda.eu",
+    }
+
+
+def week_label_human(week_id: str) -> str:
+    """'2026-W23' -> 'Semaine du 01/06 au 07/06/2026' (sans dépendance locale)."""
+    try:
+        year, wk = week_id.split("-W")
+        monday = date.fromisocalendar(int(year), int(wk), 1)
+        sunday = date.fromisocalendar(int(year), int(wk), 7)
+        return f"Semaine du {monday:%d/%m} au {sunday:%d/%m/%Y}"
+    except (ValueError, AttributeError):
+        return f"Semaine {week_id}"
 
 
 def call_anthropic(prompt: str, model: str) -> str | None:
@@ -238,14 +323,28 @@ def main() -> int:
 
     model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
     log.info("Appel Anthropic (%s) sur %d élément(s)…", model, total_items)
-    prompt = build_prompt(by_territory, target_week)
+    registry = build_registry(by_territory)
+    prompt = build_prompt(registry, target_week)
     content = call_anthropic(prompt, model)
     if not content:
         log.error("Synthèse non générée (erreur API). Arrêt.")
         return 1
 
-    out = write_markdown(target_week, content, total_items)
+    # Séparation : Markdown (archive Drive) + JSON structuré (newsletter)
+    markdown, parsed = split_markdown_json(content)
+    out = write_markdown(target_week, markdown, total_items)
     log.info("Synthèse écrite : %s", out)
+
+    data = None
+    if parsed:
+        logo_url = os.getenv("BREVO_LOGO_URL", "")
+        data = build_email_data(parsed, registry, week_label_human(target_week), logo_url)
+    if data:
+        data_path = OUTPUT_DIR / f"{target_week}.json"
+        data_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        log.info("Données newsletter écrites : %s", data_path)
+    else:
+        log.warning("Pas de données newsletter structurées (Brevo sera ignoré).")
     log.info("⚠ Validation de Franck requise avant toute publication.")
 
     if args.upload:
@@ -258,11 +357,13 @@ def main() -> int:
         else:
             log.warning("Upload Drive échoué — le fichier local reste disponible.")
 
-    if args.brevo:
+    if args.brevo and data:
         sys.path.insert(0, str(ROOT / "scripts"))
-        from push_brevo import push_file
+        from push_brevo import create_from_data
 
-        push_file(out, target_week)
+        create_from_data(data)
+    elif args.brevo:
+        log.warning("--brevo demandé mais aucune donnée structurée : brouillon non créé.")
 
     log.info("=== Fin synthèse hebdomadaire ===")
     return 0
