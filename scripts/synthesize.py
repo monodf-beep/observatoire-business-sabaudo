@@ -42,12 +42,12 @@ def iso_week_id(dt: datetime) -> str:
     return f"{year}-W{week:02d}"
 
 
-def load_week_records(target_week: str) -> dict[str, list[dict]]:
-    """Charge les enregistrements de la semaine cible, groupés par territoire."""
-    by_territory: dict[str, list[dict]] = defaultdict(list)
+def load_all_records() -> dict[str, dict[str, list[dict]]]:
+    """Charge tous les enregistrements, groupés par semaine ISO puis territoire."""
+    weeks: dict[str, dict[str, list[dict]]] = defaultdict(lambda: defaultdict(list))
     if not INPUT_DIR.exists():
         log.warning("Dossier de veille brute absent : %s", INPUT_DIR)
-        return by_territory
+        return weeks
 
     for json_file in INPUT_DIR.rglob("*.json"):
         try:
@@ -59,15 +59,31 @@ def load_week_records(target_week: str) -> dict[str, list[dict]]:
             dt = datetime.fromisoformat(record.get("date", ""))
         except ValueError:
             continue
-        if iso_week_id(dt) != target_week:
-            continue
+        week = iso_week_id(dt)
         # Territoire : champ explicite (RSS) ou déduit du dossier parent (Gmail)
         territory = record.get("territoire") or _territory_from_path(json_file)
-        by_territory[territory].append(record)
+        weeks[week][territory].append(record)
 
-    counts = {t: len(v) for t, v in by_territory.items()}
-    log.info("Semaine %s : %s", target_week, counts or "aucun élément")
-    return by_territory
+    return weeks
+
+
+def select_week(all_weeks: dict[str, dict], requested: str | None, now: datetime) -> str:
+    """Choisit la semaine à synthétiser.
+
+    - Si une semaine est explicitement demandée (--week), on la respecte.
+    - Sinon on prend la semaine courante ; si elle est vide, on se replie sur la
+      dernière semaine passée contenant des données (cas fréquent : flux RSS en retard).
+    """
+    if requested:
+        return requested
+    current = iso_week_id(now)
+    if current in all_weeks:
+        return current
+    prior = sorted(w for w in all_weeks if w <= current)
+    if prior:
+        log.info("Semaine courante %s sans donnée → repli sur %s", current, prior[-1])
+        return prior[-1]
+    return current
 
 
 def _territory_from_path(json_file: Path) -> str:
@@ -197,9 +213,13 @@ def main() -> int:
     args = parser.parse_args()
 
     log.info("=== Démarrage synthèse hebdomadaire ===")
-    target_week = args.week or iso_week_id(datetime.now(timezone.utc))
+    all_weeks = load_all_records()
+    target_week = select_week(all_weeks, args.week, datetime.now(timezone.utc))
 
-    by_territory = load_week_records(target_week)
+    by_territory = all_weeks.get(target_week, {})
+    counts = {t: len(v) for t, v in by_territory.items()}
+    log.info("Semaine %s : %s", target_week, counts or "aucun élément")
+
     total_items = sum(len(v) for v in by_territory.values())
     if total_items == 0:
         log.warning("Aucun élément de veille pour la semaine %s. Pas de synthèse générée.", target_week)
