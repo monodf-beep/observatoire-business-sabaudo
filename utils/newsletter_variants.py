@@ -244,8 +244,8 @@ def _shell(inner: str, *, preheader: str, lang: str = "fr") -> str:
         f'<div style="display:none;max-height:0;overflow:hidden;opacity:0;">{escape(preheader)}</div>'
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG};padding:24px 12px;">'
         '<tr><td align="center">'
-        '<table role="presentation" class="eb" width="600" cellpadding="0" cellspacing="0" '
-        'style="width:600px;max-width:100%;background:#fff;border-radius:14px;overflow:hidden;">'
+        '<table role="presentation" class="eb" width="100%" cellpadding="0" cellspacing="0" '
+        'style="width:100%;max-width:600px;background:#fff;border-radius:14px;overflow:hidden;">'
         '<tr><td class="ep" style="padding:7px 32px;background:#fff;text-align:right;font-size:11px;color:#9aa3af;">'
         f'<a href="{{{{ mirror }}}}" style="color:#9aa3af;text-decoration:none;">{escape(L["voir_en_ligne"])}</a></td></tr>'
         f"{inner}"
