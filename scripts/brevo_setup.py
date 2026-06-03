@@ -154,11 +154,15 @@ def main() -> int:
     apply = not args.dry_run
     log.info("=== Configuration Brevo — personnalisation %s ===",
              "(DRY-RUN : aucune écriture)" if args.dry_run else "(application)")
-    log.info("Attributs de contact :")
-    ensure_attributes(api_key, apply=apply)
-    if not args.no_lists:
-        log.info("Dossier & listes par langue :")
-        ensure_lists(api_key, apply=apply)
+    try:
+        log.info("Attributs de contact :")
+        ensure_attributes(api_key, apply=apply)
+        if not args.no_lists:
+            log.info("Dossier & listes par langue :")
+            ensure_lists(api_key, apply=apply)
+    except BrevoError as exc:
+        log.error("Configuration interrompue : %s", exc)
+        return 1
     log.info("=== Terminé. Lancer --check pour vérifier l'état. ===")
     return 0
 

@@ -50,6 +50,14 @@ python scripts/brevo_setup.py --no-lists
 Le script est **sûr** : il ne fait que **créer ce qui manque** et ne supprime
 jamais rien. On peut le relancer autant de fois qu'on veut.
 
+> ⚠ **À lancer depuis le VPS.** Si le compte Brevo applique une **liste d'IP
+> autorisées** (*Sécurité → Adresses IP autorisées*), seuls les appels venant
+> d'une IP autorisée passent (sinon : `HTTP 401 unrecognised IP`). Le VPS a une
+> IP stable à autoriser une fois. Les environnements de session (Claude Code web)
+> ont au contraire une **IP de sortie qui change à chaque requête** : on ne peut
+> donc pas y faire la config Brevo via l'allowlist. Vérifier l'IP autorisée :
+> <https://app.brevo.com/security/authorised_ips>.
+
 Après création des listes, le script affiche leurs **id** : reporter ces id dans
 le `.env` (voir §4).
 
