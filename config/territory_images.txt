@@ -5,15 +5,15 @@
 # Les sources INSTITUTIONNELLES gardent, elles, leur propre image.
 #
 # Format : territoire;url    (territoire : Savoie | Piemonte | Vallee-Aoste | Nice | Alcotra)
-# Mets-en PLUSIEURS par territoire pour varier (le choix est déterministe par article).
-# Héberge tes images (Brevo > Bibliothèque de contenu) et colle ici leurs URLs.
+# Plusieurs lignes par territoire = variation (choix déterministe par article).
 # 'default' sert de repli si un territoire n'a aucune image.
 #
-# >>> À COMPLÉTER avec les URLs des visuels (bannières de marque ou photos libres de droits).
-# Exemples (à remplacer) :
-# Savoie;https://img.mailinblue.com/.../savoie.png
-# Piemonte;https://img.mailinblue.com/.../piemonte.png
-# Vallee-Aoste;https://img.mailinblue.com/.../vda.png
-# Nice;https://img.mailinblue.com/.../nice.png
-# Alcotra;https://img.mailinblue.com/.../alcotra.png
-# default;https://img.mailinblue.com/.../sabaudo.png
+# Visuels actuels : bannières de marque Cultura Sabauda (hébergées dans Brevo).
+# Générées par scripts/make_banners.py.
+
+Savoie;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec783405f1c822ac64fc.png
+Piemonte;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec788ff3307ae7c9f3b2.png
+Vallee-Aoste;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec78d63faa2a8aba3560.png
+Nice;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec78d63faa2a8aba355f.png
+Alcotra;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec783405f1c822ac64fd.png
+default;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec7850ae0c94d653a7e6.png
