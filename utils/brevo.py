@@ -45,22 +45,30 @@ def create_draft_campaign(
     subject: str,
     sender_name: str,
     sender_email: str,
-    list_ids: list[int],
     html_content: str,
+    list_ids: list[int] | None = None,
+    segment_ids: list[int] | None = None,
     timeout: int = 30,
 ) -> int:
     """Crée une campagne email « classic » en BROUILLON et renvoie son id.
 
-    L'absence de `scheduledAt` garantit que la campagne reste un brouillon :
-    rien n'est envoyé tant que Franck ne le décide pas depuis Brevo.
+    Destinataires : `segment_ids` (ciblage dynamique par attribut) s'il est fourni,
+    sinon `list_ids`. L'absence de `scheduledAt` garantit que la campagne reste un
+    BROUILLON : rien n'est envoyé tant que Franck ne le décide pas depuis Brevo.
     """
+    if segment_ids:
+        recipients: dict = {"segmentIds": segment_ids}
+    elif list_ids:
+        recipients = {"listIds": list_ids}
+    else:
+        raise BrevoError("Aucun destinataire : fournir list_ids ou segment_ids.")
     payload = {
         "name": name,
         "subject": subject,
         "sender": {"name": sender_name, "email": sender_email},
         "type": "classic",
         "htmlContent": html_content,
-        "recipients": {"listIds": list_ids},
+        "recipients": recipients,
     }
     result = _request("POST", "/emailCampaigns", api_key, payload, timeout)
     campaign_id = result.get("id")
@@ -78,6 +86,12 @@ def list_contact_lists(api_key: str, timeout: int = 30) -> list[dict]:
     """Liste les listes de contacts (id + name + nombre d'abonnés)."""
     query = urllib.parse.urlencode({"limit": 50, "sort": "desc"})
     return _request("GET", f"/contacts/lists?{query}", api_key, None, timeout).get("lists", [])
+
+
+def list_segments(api_key: str, timeout: int = 30) -> list[dict]:
+    """Liste les segments de contacts (id + segmentName) pour le ciblage dynamique."""
+    query = urllib.parse.urlencode({"limit": 50})
+    return _request("GET", f"/contacts/segments?{query}", api_key, None, timeout).get("segments", [])
 
 
 def list_attributes(api_key: str, timeout: int = 30) -> list[dict]:

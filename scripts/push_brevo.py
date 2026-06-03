@@ -5,20 +5,22 @@
 - Rendu : gabarit « magazine » (utils/newsletter_variants.variant_magazine)
 - ⚠ N'ENVOIE JAMAIS : Franck relit dans Brevo puis déclenche l'envoi lui-même.
 
-Personnalisation par langue : si BREVO_LIST_ID_FR et/ou BREVO_LIST_ID_IT sont
-définis, un brouillon est créé PAR LANGUE (le contenu IT est traduit via l'IA à
-partir de la même sélection éditoriale). À défaut, repli sur BREVO_LIST_ID (FR).
+Personnalisation : un brouillon est créé par ÉDITION (langue, et territoire si
+configuré). Le ciblage privilégie les SEGMENTS dynamiques (les contacts se rangent
+seuls selon LANGUE/TERRITOIRE), avec repli sur des LISTES. Le contenu IT est
+traduit via l'IA à partir de la même sélection éditoriale.
 
-Configuration (.env) :
+Configuration (.env) — pour chaque édition, SEGMENT prioritaire puis LISTE :
     BREVO_API_KEY        clé API Brevo
     BREVO_SENDER_NAME    nom de l'expéditeur (ex. Cultura Sabauda)
     BREVO_SENDER_EMAIL   email expéditeur VALIDÉ dans Brevo
-    BREVO_LIST_ID        id(s) de la liste (héritage / mono-langue FR)
-    BREVO_LIST_ID_FR     id(s) de la liste francophone (perso langue)
-    BREVO_LIST_ID_IT     id(s) de la liste italophone  (perso langue)
-    BREVO_LIST_ID_<LANG>_<TERR>  (option) liste par territoire d'ancrage :
-                         <TERR> ∈ SAVOIE, PIEMONTE, VALLEE_AOSTE, NICE → édition
-                         « Chez vous » en tête (les autres territoires restent).
+    BREVO_SEGMENT_ID_FR / _IT            segment par langue (recommandé)
+    BREVO_SEGMENT_ID_<LANG>_<TERR>       segment par territoire d'ancrage
+    BREVO_LIST_ID_FR / _IT               (repli) liste par langue
+    BREVO_LIST_ID_<LANG>_<TERR>          (repli) liste par territoire
+    BREVO_LIST_ID                        (héritage) liste unique FR
+        <TERR> ∈ SAVOIE, PIEMONTE, VALLEE_AOSTE, NICE → édition « Chez vous » en
+        tête + une locale (les autres territoires restent visibles).
     BREVO_LOGO_URL       (option) URL du logo hébergé (bibliothèque média Brevo)
 
 Usage :
@@ -83,32 +85,48 @@ _TERRITORIES = [
 ]
 
 
-def _editions() -> dict[str, list[tuple[str | None, list[int], str | None]]]:
+# Une édition = (anchor|None, kind, ids, libellé|None) avec kind ∈ {"segment","list"}.
+Edition = tuple
+
+
+def _resolve(seg_var: str, list_var: str) -> tuple[str, list[int]] | None:
+    """Cible d'une édition : segment prioritaire, sinon liste, sinon rien."""
+    seg = _parse_ids(os.getenv(seg_var, ""))
+    if seg:
+        return ("segment", seg)
+    lst = _parse_ids(os.getenv(list_var, ""))
+    if lst:
+        return ("list", lst)
+    return None
+
+
+def _editions() -> dict[str, list[Edition]]:
     """Éditions à produire, groupées par langue (pour ne traduire qu'une fois/langue).
 
-    Pour chaque langue (fr/it) :
-      - une édition PAR territoire si BREVO_LIST_ID_<LANG>_<TERR> est défini
-        (anchor = territoire → rubrique « Chez vous » en tête) ;
-      - une édition GÉNÉRALE (anchor=None) vers BREVO_LIST_ID_<LANG> si défini.
+    Cible, par ordre de priorité, un SEGMENT dynamique puis une LISTE :
+      - territoire : BREVO_SEGMENT_ID_<LANG>_<TERR> ou BREVO_LIST_ID_<LANG>_<TERR>
+        (anchor = territoire → « Chez vous » en tête, une locale) ;
+      - général    : BREVO_SEGMENT_ID_<LANG> ou BREVO_LIST_ID_<LANG> (anchor=None).
     Repli : BREVO_LIST_ID (héritage) → une édition générale FR.
-    Renvoie { lang: [(anchor|None, list_ids, libellé|None), …] }.
+    Renvoie { lang: [(anchor|None, kind, ids, libellé|None), …] }.
     """
-    result: dict[str, list[tuple[str | None, list[int], str | None]]] = {}
+    result: dict[str, list[Edition]] = {}
     for lang in ("fr", "it"):
-        eds: list[tuple[str | None, list[int], str | None]] = []
+        U = lang.upper()
+        eds: list[Edition] = []
         for terr_key, env_suffix, label in _TERRITORIES:
-            ids = _parse_ids(os.getenv(f"BREVO_LIST_ID_{lang.upper()}_{env_suffix}", ""))
-            if ids:
-                eds.append((terr_key, ids, label))
-        base = _parse_ids(os.getenv(f"BREVO_LIST_ID_{lang.upper()}", ""))
-        if base:
-            eds.append((None, base, None))
+            tgt = _resolve(f"BREVO_SEGMENT_ID_{U}_{env_suffix}", f"BREVO_LIST_ID_{U}_{env_suffix}")
+            if tgt:
+                eds.append((terr_key, tgt[0], tgt[1], label))
+        gen = _resolve(f"BREVO_SEGMENT_ID_{U}", f"BREVO_LIST_ID_{U}")
+        if gen:
+            eds.append((None, gen[0], gen[1], None))
         if eds:
             result[lang] = eds
     if not result:
         legacy = _parse_ids(os.getenv("BREVO_LIST_ID", ""))
         if legacy:
-            result["fr"] = [(None, legacy, None)]
+            result["fr"] = [(None, "list", legacy, None)]
     return result
 
 
@@ -125,7 +143,7 @@ def create_from_data(data: dict, force: bool = False) -> list[int]:
     missing = [k for k, v in {
         "BREVO_API_KEY": api_key, "BREVO_SENDER_NAME": sender_name,
         "BREVO_SENDER_EMAIL": sender_email,
-        "BREVO_LIST_ID(_FR/_IT[/_TERR])": editions,
+        "BREVO_SEGMENT_ID_* ou BREVO_LIST_ID_*": editions,
     }.items() if not v]
     if missing:
         log.warning("Configuration Brevo incomplète (%s). Brouillon non créé.", ", ".join(missing))
@@ -154,7 +172,7 @@ def create_from_data(data: dict, force: bool = False) -> list[int]:
 
         week_label = data_lang.get("week_label", "")
         subject = data_lang.get("subject") or f"Business Sabaudo — {week_label}"
-        for anchor, list_ids, label in lang_editions:
+        for anchor, kind, ids, label in lang_editions:
             # Même contenu traduit ; on ne change QUE l'ordre (territoire d'ancrage).
             data_v = {**data_lang, "anchor": anchor}
             html = variant_magazine(data_v)
@@ -162,17 +180,18 @@ def create_from_data(data: dict, force: bool = False) -> list[int]:
             name = " ".join(filter(None, ["Business Sabaudo", tag, label]))
             name = f"{name} — {week_label}".strip(" —")
 
+            recipients = {"segment_ids": ids} if kind == "segment" else {"list_ids": ids}
             try:
                 campaign_id = create_draft_campaign(
                     api_key=api_key, name=name, subject=subject,
                     sender_name=sender_name, sender_email=sender_email,
-                    list_ids=list_ids, html_content=html,
+                    html_content=html, **recipients,
                 )
             except BrevoError as exc:
                 log.error("Création du brouillon Brevo (%s) échouée : %s", name, exc)
                 continue
 
-            log.info("Brouillon Brevo créé (id=%s) — %s", campaign_id, name)
+            log.info("Brouillon Brevo créé (id=%s, %s) — %s", campaign_id, kind, name)
             log.info("À relire/envoyer ici : %s", campaign_edit_url(campaign_id))
             created.append(campaign_id)
 

@@ -39,6 +39,7 @@ from utils.brevo import (  # noqa: E402
     list_attributes,
     list_contact_lists,
     list_folders,
+    list_segments,
 )
 from utils.logger import get_logger  # noqa: E402
 
@@ -132,6 +133,16 @@ def do_check(api_key: str) -> int:
     for lst in lists:
         log.info("  id=%s — %s (%s abonnés)", lst.get("id"), lst.get("name", "?"),
                  lst.get("totalSubscribers", "?"))
+    try:
+        segments = list_segments(api_key)
+    except BrevoError as exc:
+        log.warning("Segments non listés : %s", exc)
+        segments = []
+    log.info("=== Segments (ciblage dynamique → BREVO_SEGMENT_ID_*) ===")
+    for seg in segments:
+        log.info("  id=%s — %s", seg.get("id"), seg.get("segmentName", seg.get("name", "?")))
+    if not segments:
+        log.info("  (aucun segment — à créer dans Brevo > Contacts > Segments)")
     return 0
 
 

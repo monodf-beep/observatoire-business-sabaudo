@@ -111,9 +111,9 @@ ajouter, dans l'ordre :
 1. ✅ **Rubrique « Ponts & connexions »** (schéma JSON + prompt + gabarit) — *fait
    à l'Étape 0, éditorial pur.*
 2. ✅ **Attributs contacts** dans Brevo (`LANGUE`, `TERRITOIRE`, `SECTEURS`) +
-   dossier/listes par langue — *outillé : `scripts/brevo_setup.py`, voir
-   `docs/SETUP_BREVO_PERSONNALISATION.md`. Reste à exécuter sur le VPS et à
-   renseigner les contacts.*
+   **ciblage par segments dynamiques** (modèle A par segment, anti-doublon par
+   exclusions) — *outillé : `scripts/brevo_setup.py`, code segment/liste dans
+   `push_brevo.py`, voir `docs/SETUP_BREVO_PERSONNALISATION.md §5 bis`.*
 3. ✅ **Logique de variantes (langue)** : gabarit bilingue (`newsletter_variants`),
    traduction automatique du contenu (`utils/translate.py`) et **un brouillon Brevo
    par langue** (`push_brevo.py`, via `BREVO_LIST_ID_FR` / `BREVO_LIST_ID_IT`).

@@ -102,6 +102,37 @@ BREVO_LIST_ID=2             # liste par défaut (envoi FR actuel)
 
 ---
 
+## 5 bis. Ciblage par segments dynamiques (recommandé)
+
+Plutôt que de trier les contacts dans des listes à la main, on **cible des
+segments** : des filtres dynamiques sur `LANGUE` et `TERRITOIRE`. Un contact qui
+remplit le formulaire se range **tout seul** dans le bon segment.
+
+> ⚠ **Règle anti-doublon** : l'édition « générale » d'une langue doit EXCLURE les
+> territoires qui ont leur propre édition, sinon un lecteur niçois reçoit deux
+> emails. Les définitions ci-dessous intègrent ces exclusions.
+
+Segments à créer (Contacts → Segments) — exemple de démarrage (FR + Nice +
+Savoie, IT + Piémont) :
+
+| Segment | Définition (conditions ET) | Variable `.env` |
+|---------|----------------------------|-----------------|
+| `Business Sabaudo — FR` (général) | `LANGUE = FR` **ET** `TERRITOIRE ≠ Nice` **ET** `TERRITOIRE ≠ Savoie` | `BREVO_SEGMENT_ID_FR` |
+| `Business Sabaudo — IT` (général) | `LANGUE = IT` **ET** `TERRITOIRE ≠ Piémont` | `BREVO_SEGMENT_ID_IT` |
+| `Business Sabaudo — FR — Nice` | `LANGUE = FR` **ET** `TERRITOIRE = Nice` | `BREVO_SEGMENT_ID_FR_NICE` |
+| `Business Sabaudo — FR — Savoie` | `LANGUE = FR` **ET** `TERRITOIRE = Savoie` | `BREVO_SEGMENT_ID_FR_SAVOIE` |
+| `Business Sabaudo — IT — Piémont` | `LANGUE = IT` **ET** `TERRITOIRE = Piémont` | `BREVO_SEGMENT_ID_IT_PIEMONTE` |
+
+Renseigner les **id de segment** (affichés par `brevo_setup.py --check`) dans le
+`.env`. Le segment est **prioritaire** sur la liste de même portée ; les listes
+restent un repli.
+
+> Pour activer un nouveau territoire plus tard : créer le segment territorial
+> `LANGUE = X ET TERRITOIRE = Y`, **et** ajouter `ET TERRITOIRE ≠ Y` au segment
+> général de la même langue.
+
+---
+
 ## 6. Le formulaire d'inscription
 
 Pour que **les nouveaux abonnés arrivent déjà étiquetés** (et qu'on n'ait pas à
