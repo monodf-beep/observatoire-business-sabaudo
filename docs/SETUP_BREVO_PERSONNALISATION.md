@@ -162,15 +162,24 @@ collecter les attributs dès le départ.
 - **Double opt-in** activé (l'abonné confirme par email → liste saine, meilleure
   délivrabilité ; voir `BONNES_PRATIQUES_NEWSLETTER.md §10`).
 - **Case de consentement RGPD** explicite.
-- **Liste cible** : rattacher l'inscrit à la liste correspondant à sa langue
-  (`Business Sabaudo — FR` ou `IT`). Si Brevo ne permet pas le routage
-  conditionnel sur un seul formulaire, créer **deux formulaires** (un par langue)
-  ou rattacher tout le monde à une liste maître et router ensuite par segment sur
-  l'attribut `LANGUE`.
+- **Liste cible** : `Business Sabaudo — FR` (tout le monde, le routing fin se
+  fait par segment sur l'attribut `LANGUE`).
 - **Page de confirmation** + email de bienvenue (facultatif mais recommandé).
 
 > Si `TERRITOIRE` est laissé vide, l'abonné reçoit l'**édition générale** (tous
 > les territoires, sans réordonnancement) — aucun blocage.
+
+**Formulaire actif (publié juin 2026) :**
+
+```html
+<iframe width="540" height="305"
+  src="https://edc621dc.sibforms.com/v2/serve/MUIFAIZCPQc5rEfI-yeyntYofwicTDWiwAKpjSeYTAp8RhhZgnSnjXPVyrXtRowmmNhneqCz0PlwEBws_JhyCaJ6BMQhSkvYTjXb6kY8kLeedIxMvvvmQrqsAWPLLtW9nqwB6PBHpDv6Fn_s8hltwAp5hUYELqN0nZC8Ni_kV32x6IZxOtwtSz9qbqPknqQgfHXHOBgG2JqmBAOuRg=="
+  frameborder="0" scrolling="auto" allowfullscreen
+  style="display: block;margin-left: auto;margin-right: auto;max-width: 100%;">
+</iframe>
+```
+
+À intégrer sur le site ou à partager directement via l'URL `src`.
 
 ---
 
