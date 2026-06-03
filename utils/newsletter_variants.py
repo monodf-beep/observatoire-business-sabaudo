@@ -224,7 +224,7 @@ def variant_magazine(data: dict) -> str:
         + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow("Les signaux de la semaine")}'
           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{signaux}</table></td></tr>'
         # CARTES (Désir + Action)
-        + f'<tr><td style="padding:30px 36px 6px;">{_eyebrow("Le tour des territoires")}'
+        + f'<tr><td style="padding:30px 36px 34px;">{_eyebrow("Le tour des territoires")}'
           f'{cards}</td></tr>'
         + _footer(data.get("pictogram_url") or data.get("logo_url"))
     )
