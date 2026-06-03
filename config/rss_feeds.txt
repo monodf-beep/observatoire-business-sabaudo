@@ -35,11 +35,11 @@ https://news.google.com/rss/search?q=economia+%22Valle+d%27Aosta%22&hl=it&gl=IT&
 # Radar presse régionale
 https://www.aostasera.it/feed/;Vallee-Aoste
 
-# ===================== NICE (arrondissement de Nice) =====================
-# Périmètre : Nice, Menton + Université Côte d'Azur ; arrondissement de Grasse
-# (Cannes, Antibes, Grasse) exclu — sauf l'université, gardée explicitement.
+# ===================== NICE (Nice + Sophia-Antipolis + pôles) =====================
+# Périmètre : Nice, Menton, Éco-Vallée + Sophia-Antipolis, Université Côte d'Azur
+# et pôles de compétitivité. Exclus : Cannes (cinéma/tourisme) et Grasse-ville.
 # Radar éco (Google News)
-https://news.google.com/rss/search?q=%C3%A9conomie+Nice+OR+Menton+OR+%22Universit%C3%A9+C%C3%B4te+d%27Azur%22+-Cannes+-Grasse&hl=fr&gl=FR&ceid=FR:fr;Nice
+https://news.google.com/rss/search?q=%C3%A9conomie+Nice+OR+Menton+OR+%22Sophia+Antipolis%22+OR+%22Universit%C3%A9+C%C3%B4te+d%27Azur%22+-Cannes+-Grasse&hl=fr&gl=FR&ceid=FR:fr;Nice
 # Radar presse : Nice-Matin rubrique Économie (contenu complet)
 https://www.nicematin.com/economie/rss;Nice
 
