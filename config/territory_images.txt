@@ -1,0 +1,19 @@
+# Images de SUBSTITUTION par territoire.
+#
+# Utilisées quand un article n'a pas d'image réutilisable (cas presse : on ne
+# reprend pas l'image du journal) ou quand le flux ne fournit aucun visuel.
+# Les sources INSTITUTIONNELLES gardent, elles, leur propre image.
+#
+# Format : territoire;url    (territoire : Savoie | Piemonte | Vallee-Aoste | Nice | Alcotra)
+# Mets-en PLUSIEURS par territoire pour varier (le choix est déterministe par article).
+# Héberge tes images (Brevo > Bibliothèque de contenu) et colle ici leurs URLs.
+# 'default' sert de repli si un territoire n'a aucune image.
+#
+# >>> À COMPLÉTER avec les URLs des visuels (bannières de marque ou photos libres de droits).
+# Exemples (à remplacer) :
+# Savoie;https://img.mailinblue.com/.../savoie.png
+# Piemonte;https://img.mailinblue.com/.../piemonte.png
+# Vallee-Aoste;https://img.mailinblue.com/.../vda.png
+# Nice;https://img.mailinblue.com/.../nice.png
+# Alcotra;https://img.mailinblue.com/.../alcotra.png
+# default;https://img.mailinblue.com/.../sabaudo.png

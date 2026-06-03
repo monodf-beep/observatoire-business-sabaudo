@@ -169,7 +169,11 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "  2. PAR TERRITOIRE : 1-2 lignes par territoire (Savoie, Piémont, Vallée d'Aoste,\n"
         "     Nice/Alpes-Maritimes, Alcotra). Sois concis.\n\n"
         "Tonalité : sérieux, B2B, sans buzzword. Chaque brève répond à « et alors ? »\n"
-        "(l'implication concrète). Langue : français (termes italiens conservés si pertinents).\n"
+        "(l'implication concrète).\n"
+        "LANGUE : français correct et idiomatique, relu. Garde les NOMS PROPRES italiens\n"
+        "tels quels (Politecnico, Confindustria…) mais N'ITALIANISE PAS les mots courants :\n"
+        "écris « Casino » (pas « Casinò »), « le mois de mai » (pas « mai » seul), « la Vallée\n"
+        "d'Aoste ». Soigne grammaire, accords et tournures.\n"
         "Reste strictement factuel : pas de source = pas de brève.\n"
     )
     return (
@@ -250,6 +254,17 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         return None
     if hero is None and items:  # repli : le 1er article devient la une
         hero = items.pop(0)
+
+    # Images de substitution par territoire quand l'image d'origine manque
+    # (presse sans image réutilisable, ou flux sans visuel).
+    from utils.sources import load_territory_images, pick_image
+    terr_images = load_territory_images()
+    if hero and not hero.get("image"):
+        hero["image"] = pick_image(hero["territory"], hero["title"], terr_images)
+    for it in items:
+        if not it.get("image"):
+            it["image"] = pick_image(it["territory"], it["title"], terr_images)
+
     return {
         "week_label": week_label,
         "logo_url": logo_url,

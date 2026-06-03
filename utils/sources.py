@@ -35,6 +35,36 @@ def is_press(domain: str, press: set[str]) -> bool:
     return any(domain == p or domain.endswith("." + p) for p in press)
 
 
+_IMAGES_FILE = Path(__file__).resolve().parent.parent / "config" / "territory_images.txt"
+
+
+def load_territory_images(path: Path | None = None) -> dict[str, list[str]]:
+    """Charge les images de substitution par territoire : {territoire: [url, ...]}."""
+    path = path or _IMAGES_FILE
+    images: dict[str, list[str]] = {}
+    if not path.exists():
+        return images
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or ";" not in line:
+            continue
+        territory, url = (p.strip() for p in line.split(";", 1))
+        if territory and url:
+            images.setdefault(territory, []).append(url)
+    return images
+
+
+def pick_image(territory: str, key: str, images: dict[str, list[str]]) -> str:
+    """Choisit une image de substitution (déterministe par 'key', pour varier)."""
+    import hashlib
+
+    pool = images.get(territory) or images.get("default") or []
+    if not pool:
+        return ""
+    idx = int(hashlib.md5(key.encode("utf-8")).hexdigest(), 16) % len(pool)
+    return pool[idx]
+
+
 def domain_of(record: dict) -> str:
     """Domaine de la source (sans www), pour le favicon. '' si introuvable."""
     link = record.get("link") or record.get("feed_url") or ""
