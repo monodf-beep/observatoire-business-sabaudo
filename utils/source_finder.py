@@ -53,8 +53,17 @@ def _url_reachable(url: str) -> bool:
         return False
 
 
+# Langue à privilégier pour le lien, selon le territoire (la version locale prime
+# sur une éventuelle version anglaise renvoyée par défaut).
+_LANG_BY_TERRITORY = {
+    "Savoie": "français", "Nice": "français", "Alcotra": "français",
+    "Piemonte": "italien", "Vallee-Aoste": "italien",
+}
+
+
 def _ask_link(title: str, actor: str, territory: str, *, api_key: str, model: str) -> dict | None:
     """Demande à Claude (recherche web) le meilleur lien selon la hiérarchie éditoriale."""
+    lang_pref = _LANG_BY_TERRITORY.get(territory, "français")
     prompt = (
         "Tu sources un article pour un observatoire économique de l'espace sabaudo.\n"
         f"Sujet : « {title} »\n"
@@ -64,12 +73,17 @@ def _ask_link(title: str, actor: str, territory: str, *, api_key: str, model: st
         "l'article », par ordre de priorité STRICT :\n"
         "1) Un article du média partenaire NOS ALPES (site nosalpes.eu) qui traite "
         "CE sujet précis. S'il existe et correspond clairement → kind = \"partner\".\n"
-        "2) Sinon, une SOURCE PRIMAIRE/officielle : communiqué de l'entreprise ou de "
-        "l'organisme concerné, site institutionnel, organisme public, université, "
-        "site officiel de l'événement (ex. choosefrance.fr). → kind = \"primary\".\n"
+        "2) Sinon, une SOURCE PRIMAIRE/officielle : le SITE OFFICIEL DE L'ACTEUR nommé "
+        "ci-dessus (entreprise, université, organisme public, Région…) ou son "
+        "communiqué, le site officiel de l'événement (ex. choosefrance.fr). Cherche-le "
+        "MÊME SI l'information a d'abord été relayée par la presse. → kind = \"primary\".\n"
         "INTERDIT : un site de presse ou d'actualité généraliste concurrent "
         "(journaux régionaux, agrégateurs, Google News), les réseaux sociaux, les "
         "annuaires, Wikipédia.\n"
+        f"LANGUE : privilégie la version en {lang_pref} de la page (Nos Alpes est "
+        "bilingue FR/IT : choisis la bonne langue). Si tu tombes d'abord sur une "
+        f"version anglaise (/en/…), cherche et renvoie plutôt la version en {lang_pref} "
+        "si elle existe.\n"
         "Le lien doit pointer vers la PAGE PRÉCISE (l'article ou le communiqué), pas "
         "une page d'accueil générique.\n"
         "Réponds UNIQUEMENT par un objet JSON, sans autre texte :\n"

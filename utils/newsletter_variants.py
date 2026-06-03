@@ -207,7 +207,8 @@ def _footer(logo_url: str | None = None, lang: str = "fr") -> str:
     if logo_url:
         logo = (
             f'<div style="margin-bottom:16px;"><img src="{logo_url}" alt="Cultura Sabauda" '
-            'height="46" style="height:46px;border:0;display:block;"></div>'
+            'height="36" width="auto" style="height:36px;width:auto;max-width:180px;'
+            'border:0;display:block;"></div>'
         )
     return (
         f'<tr><td class="ep" style="background:#f7f9fc;padding:26px 36px;border-top:1px solid {BORDER};">'
@@ -234,7 +235,6 @@ def _shell(inner: str, *, preheader: str, lang: str = "fr") -> str:
         "@media only screen and (max-width:620px){"
         ".eb{border-radius:8px!important;width:100%!important;}"
         ".ep{padding-left:18px!important;padding-right:18px!important;}"
-        ".ep img{max-width:100%!important;height:auto!important;}"
         ".mast{font-size:27px!important;}"
         ".herotitle{font-size:21px!important;}"
         "}"

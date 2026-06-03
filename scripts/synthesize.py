@@ -364,7 +364,7 @@ def _autofind_sources(items: list[dict], press: set[str]) -> None:
     if not targets:
         return
     model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
-    budget = int(os.getenv("AUTO_SOURCE_MAX", "4") or 4)
+    budget = int(os.getenv("AUTO_SOURCE_MAX", "6") or 6)
     try:
         from utils.source_finder import find_canonical_link
     except Exception as exc:  # pragma: no cover
