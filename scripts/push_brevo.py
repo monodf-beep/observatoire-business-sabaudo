@@ -159,6 +159,12 @@ def create_from_data(data: dict, force: bool = False) -> list[int]:
         base["logo_url"] = os.getenv("BREVO_LOGO_URL")
     if os.getenv("BREVO_PICTO_URL"):
         base["pictogram_url"] = os.getenv("BREVO_PICTO_URL")
+    # Images de substitution AU RENDU : le héros reçoit toujours un visuel (impact
+    # AIDA), les cartes une image tous les 3 articles. Appliqué ici (et pas seulement
+    # à la synthèse) pour que les JSON déjà générés profitent de config/territory_images.txt
+    # sans relancer l'IA.
+    from utils.sources import apply_fallback_images
+    apply_fallback_images(base)
 
     created: list[int] = []
     for lang, lang_editions in editions.items():

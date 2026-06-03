@@ -178,7 +178,7 @@ def _header(week_label: str, tagline: str, logo_url: str | None = None, lang: st
         f"{logo_cell}"
         "</tr></table></td></tr>"
         '<tr><td class="ep" style="padding:14px 36px 0;background:#fff;">'
-        f'<div style="font-size:34px;font-weight:800;letter-spacing:-.5px;color:{BRAND};line-height:1;">'
+        f'<div class="mast" style="font-size:34px;font-weight:800;letter-spacing:-.5px;color:{BRAND};line-height:1;">'
         f'Business Sabaudo<span style="color:{ACCENT};">.</span></div>'
         f'<div style="font-size:13px;color:{MUTED};margin-top:9px;letter-spacing:.2px;">{escape(tagline)}</div>'
         "</td></tr>"
@@ -226,30 +226,47 @@ def _footer(logo_url: str | None = None, lang: str = "fr") -> str:
 
 def _shell(inner: str, *, preheader: str, lang: str = "fr") -> str:
     L = labels(lang)
+    # Responsive « fluide » : la largeur tient à width:100% + max-width:600px (inline,
+    # donc indépendant du <style> que certains clients suppriment). La media query, en
+    # plus, resserre les marges et réduit les gros titres sur petit écran.
     css = (
         "<style>"
         "@media only screen and (max-width:620px){"
-        ".eb{border-radius:8px!important;}"
-        ".ep{padding-left:16px!important;padding-right:16px!important;}"
-        ".ep img{max-width:100%!important;}"
+        ".eb{border-radius:8px!important;width:100%!important;}"
+        ".ep{padding-left:18px!important;padding-right:18px!important;}"
+        ".ep img{max-width:100%!important;height:auto!important;}"
+        ".mast{font-size:27px!important;}"
+        ".herotitle{font-size:21px!important;}"
         "}"
         "</style>"
     )
+    # Ghost table MSO : Outlook (Word) ignore max-width ; on lui impose 600px ; les
+    # autres clients utilisent le tableau fluide width:100%/max-width:600px.
     return (
-        f'<!DOCTYPE html><html lang="{L["html_lang"]}"><head><meta charset="utf-8">'
+        '<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" '
+        'xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" '
+        f'lang="{L["html_lang"]}"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+        '<meta http-equiv="X-UA-Compatible" content="IE=edge">'
+        '<meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">'
+        '<!--[if mso]><style>table,td,div,p,a{font-family:Arial,Helvetica,sans-serif!important;}</style><![endif]-->'
         f"{css}"
         "<title>Business Sabaudo</title></head>"
-        f'<body style="margin:0;padding:0;background:{BG};font-family:{_FONT};">'
+        f'<body style="margin:0;padding:0;background:{BG};font-family:{_FONT};'
+        '-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">'
         f'<div style="display:none;max-height:0;overflow:hidden;opacity:0;">{escape(preheader)}</div>'
-        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG};padding:24px 12px;">'
-        '<tr><td align="center">'
-        '<table role="presentation" class="eb" width="100%" cellpadding="0" cellspacing="0" '
-        'style="width:100%;max-width:600px;background:#fff;border-radius:14px;overflow:hidden;">'
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'style="background:{BG};">'
+        '<tr><td align="center" style="padding:24px 12px;">'
+        '<!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->'
+        '<table role="presentation" class="eb" width="100%" cellpadding="0" cellspacing="0" border="0" '
+        'style="width:100%;max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;">'
         '<tr><td class="ep" style="padding:7px 32px;background:#fff;text-align:right;font-size:11px;color:#9aa3af;">'
         f'<a href="{{{{ mirror }}}}" style="color:#9aa3af;text-decoration:none;">{escape(L["voir_en_ligne"])}</a></td></tr>'
         f"{inner}"
-        "</table></td></tr></table></body></html>"
+        '</table>'
+        '<!--[if mso]></td></tr></table><![endif]-->'
+        "</td></tr></table></body></html>"
     )
 
 
@@ -313,7 +330,7 @@ def variant_magazine(data: dict) -> str:
             if it.get("image"):
                 img = (
                     f'<tr><td style="padding:0 0 12px;"><img src="{escape(it["image"])}" width="528" alt="" '
-                    'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
+                    'style="width:100%;max-width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
                 )
             out += (
                 '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
@@ -386,11 +403,11 @@ def variant_magazine(data: dict) -> str:
         + f'<tr><td class="ep" style="padding:26px 36px 0;">{_eyebrow(L["a_la_une"])}</td></tr>'
         + (
             f'<tr><td class="ep" style="padding:0 36px;"><img src="{escape(hero["image"])}" width="528" alt="" '
-            'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
+            'style="width:100%;max-width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
             if hero.get("image") else ""
         )
         + f'<tr><td class="ep" style="padding:14px 36px 6px;">{_tag(hero["territory"], lang)}&nbsp;&nbsp;{_source(hero)}'
-          f'<div style="font-size:25px;font-weight:800;color:{INK};line-height:1.25;margin:11px 0 8px;">{escape(hero["title"])}</div>'
+          f'<div class="herotitle" style="font-size:25px;font-weight:800;color:{INK};line-height:1.25;margin:11px 0 8px;">{escape(hero["title"])}</div>'
           f'<div style="font-size:15px;color:#374151;line-height:1.6;">{escape(hero["summary"])}</div>'
           + (f'<div style="margin-top:16px;">{_button(hero["url"], L["lire_article"])}</div>' if hero.get("url") else "")
           + "</td></tr>"

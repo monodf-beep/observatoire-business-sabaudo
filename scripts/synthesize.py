@@ -258,7 +258,7 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
 def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
                      logo_url: str, picto_url: str = "") -> dict | None:
     """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
-    from utils.sources import load_partner_media, load_press_domains
+    from utils.sources import apply_fallback_images, load_partner_media, load_press_domains
     press = load_press_domains()
     partners = load_partner_media()
 
@@ -281,21 +281,7 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     if hero is None and items:  # repli : le 1er article devient la une
         hero = items.pop(0)
 
-    # Images de substitution : le héros en bénéficie toujours si nécessaire ;
-    # pour les articles, une substitution tous les 3 articles sans image —
-    # rythme visuel sans saturation (4 articles vides → 2 substitutions max).
-    from utils.sources import load_territory_images, pick_image
-    terr_images = load_territory_images()
-    if hero and not hero.get("image"):
-        hero["image"] = pick_image(hero["territory"], hero["title"], terr_images)
-    _gap = 0
-    for it in items:
-        if not it.get("image"):
-            if _gap == 0:
-                it["image"] = pick_image(it["territory"], it["title"], terr_images)
-            _gap = (_gap + 1) % 3
-
-    return {
+    return apply_fallback_images({
         "week_label": week_label,
         "logo_url": logo_url,
         "pictogram_url": picto_url,
@@ -307,7 +293,7 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         "ponts": ponts,
         "signature": parsed.get("signature", "La rédaction — Cultura Sabauda"),
         "cta_url": "https://culturasabauda.eu",
-    }
+    })
 
 
 def week_label_human(week_id: str) -> str:

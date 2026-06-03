@@ -83,6 +83,31 @@ def pick_image(territory: str, key: str, images: dict[str, list[str]]) -> str:
     return pool[idx]
 
 
+def apply_fallback_images(data: dict, images: dict[str, list[str]] | None = None) -> dict:
+    """Pose les images de substitution sur le héros et les cartes d'une newsletter.
+
+    Le HÉROS reçoit toujours une image s'il n'en a pas (impact AIDA en ouverture).
+    Pour les CARTES, une substitution tous les 3 articles sans image — rythme visuel
+    sans saturation. Idempotent (n'écrase jamais une image native) et appliqué au
+    rendu, donc il s'adapte automatiquement à config/territory_images.txt sans
+    relancer la synthèse IA. Modifie et renvoie `data`.
+    """
+    if images is None:
+        images = load_territory_images()
+    if not images:
+        return data
+    hero = data.get("hero")
+    if hero and not hero.get("image"):
+        hero["image"] = pick_image(hero.get("territory", ""), hero.get("title", ""), images)
+    gap = 0
+    for it in data.get("items", []):
+        if not it.get("image"):
+            if gap == 0:
+                it["image"] = pick_image(it.get("territory", ""), it.get("title", ""), images)
+            gap = (gap + 1) % 3
+    return data
+
+
 def domain_of(record: dict) -> str:
     """Domaine de la source (sans www), pour le favicon. '' si introuvable."""
     link = record.get("link") or record.get("feed_url") or ""
