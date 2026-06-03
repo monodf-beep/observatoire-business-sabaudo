@@ -118,10 +118,15 @@ Savoie, IT + Piémont) :
 | Segment | Définition (conditions ET) | Variable `.env` |
 |---------|----------------------------|-----------------|
 | `Business Sabaudo — FR` (général) | `LANGUE = FR` **ET** `TERRITOIRE ≠ Nice` **ET** `TERRITOIRE ≠ Savoie` | `BREVO_SEGMENT_ID_FR` |
-| `Business Sabaudo — IT` (général) | `LANGUE = IT` **ET** `TERRITOIRE ≠ Piémont` | `BREVO_SEGMENT_ID_IT` |
+| `Business Sabaudo — IT` (général) | `LANGUE = IT` **ET** `TERRITOIRE ≠ Piemonte` | `BREVO_SEGMENT_ID_IT` |
 | `Business Sabaudo — FR — Nice` | `LANGUE = FR` **ET** `TERRITOIRE = Nice` | `BREVO_SEGMENT_ID_FR_NICE` |
 | `Business Sabaudo — FR — Savoie` | `LANGUE = FR` **ET** `TERRITOIRE = Savoie` | `BREVO_SEGMENT_ID_FR_SAVOIE` |
-| `Business Sabaudo — IT — Piémont` | `LANGUE = IT` **ET** `TERRITOIRE = Piémont` | `BREVO_SEGMENT_ID_IT_PIEMONTE` |
+| `Business Sabaudo — IT — Piemonte` | `LANGUE = IT` **ET** `TERRITOIRE = Piemonte` | `BREVO_SEGMENT_ID_IT_PIEMONTE` |
+
+> ⚠ Les valeurs de `TERRITOIRE` dans les segments doivent être EXACTEMENT celles
+> de l'attribut Catégorie : **Savoie, Piemonte, Vallee-Aoste, Nice** (clés sans
+> accent, identiques à celles du code). Une valeur accentuée (« Piémont ») ne
+> matcherait aucun contact.
 
 Renseigner les **id de segment** (affichés par `brevo_setup.py --check`) dans le
 `.env`. Le segment est **prioritaire** sur la liste de même portée ; les listes
