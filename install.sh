@@ -34,6 +34,12 @@ fi
 
 mkdir -p config 01_Veille_brute "02_Veille_traitee/Syntheses_hebdomadaires" logs
 
+echo "==> Verrouillage des permissions des secrets (lecture par le seul propriétaire)"
+# Coffre-fort « niveau 0 » : les secrets ne doivent être lisibles que par l'utilisateur.
+for secret in .env config/credentials.json config/token.json config/token_drive.json; do
+  [ -f "$secret" ] && chmod 600 "$secret" && echo "    chmod 600 $secret"
+done
+
 echo ""
 echo "✅ Installation terminée."
 echo ""
