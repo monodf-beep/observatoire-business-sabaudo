@@ -94,7 +94,43 @@ BREVO_LIST_ID=2             # liste par défaut (envoi FR actuel)
 
 ---
 
-## 6. Vérifier
+## 6. Le formulaire d'inscription
+
+Pour que **les nouveaux abonnés arrivent déjà étiquetés** (et qu'on n'ait pas à
+deviner leur langue/territoire après coup), le formulaire d'inscription doit
+collecter les attributs dès le départ.
+
+> ⚠ Un formulaire Brevo se construit dans l'**éditeur de formulaires**
+> (*Contacts → Formulaires → Créer un formulaire*). Il **n'est pas créable par
+> script** (l'API Brevo n'expose pas cette opération de façon fiable). Voici la
+> spécification exacte à reproduire.
+
+**Champs du formulaire :**
+
+| Champ | Type | Lié à l'attribut | Obligatoire |
+|-------|------|------------------|-------------|
+| Email | email | (email de contact) | ✅ |
+| Langue préférée | liste déroulante / boutons radio : `FR`, `IT` | `LANGUE` | ✅ |
+| Territoire | liste déroulante : `Savoie`, `Piemonte`, `Vallee-Aoste`, `Nice`, `Hors zone` | `TERRITOIRE` | optionnel |
+| Centres d'intérêt | cases à cocher (deeptech, industrie, tourisme, agroalimentaire, finance, recherche…) | `SECTEURS` | optionnel |
+
+**Réglages :**
+- **Double opt-in** activé (l'abonné confirme par email → liste saine, meilleure
+  délivrabilité ; voir `BONNES_PRATIQUES_NEWSLETTER.md §10`).
+- **Case de consentement RGPD** explicite.
+- **Liste cible** : rattacher l'inscrit à la liste correspondant à sa langue
+  (`Business Sabaudo — FR` ou `IT`). Si Brevo ne permet pas le routage
+  conditionnel sur un seul formulaire, créer **deux formulaires** (un par langue)
+  ou rattacher tout le monde à une liste maître et router ensuite par segment sur
+  l'attribut `LANGUE`.
+- **Page de confirmation** + email de bienvenue (facultatif mais recommandé).
+
+> Si `TERRITOIRE` est laissé vide, l'abonné reçoit l'**édition générale** (tous
+> les territoires, sans réordonnancement) — aucun blocage.
+
+---
+
+## 7. Vérifier
 
 ```bash
 python scripts/brevo_setup.py --check
