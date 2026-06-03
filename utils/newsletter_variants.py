@@ -171,20 +171,20 @@ def _header(week_label: str, tagline: str, logo_url: str | None = None, lang: st
             'height="24" style="height:24px;border:0;display:inline-block;"></td>'
         )
     return (
-        '<tr><td style="padding:28px 36px 0;background:#fff;">'
+        '<tr><td class="ep" style="padding:28px 36px 0;background:#fff;">'
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
         f'<td valign="middle" style="font-size:11px;font-weight:800;letter-spacing:1.8px;'
         f'text-transform:uppercase;color:{ACCENT};">{escape(labels(lang)["surtitre"])}</td>'
         f"{logo_cell}"
         "</tr></table></td></tr>"
-        '<tr><td style="padding:14px 36px 0;background:#fff;">'
+        '<tr><td class="ep" style="padding:14px 36px 0;background:#fff;">'
         f'<div style="font-size:34px;font-weight:800;letter-spacing:-.5px;color:{BRAND};line-height:1;">'
         f'Business Sabaudo<span style="color:{ACCENT};">.</span></div>'
         f'<div style="font-size:13px;color:{MUTED};margin-top:9px;letter-spacing:.2px;">{escape(tagline)}</div>'
         "</td></tr>"
-        '<tr><td style="padding:18px 36px 0;background:#fff;">'
+        '<tr><td class="ep" style="padding:18px 36px 0;background:#fff;">'
         f'<div style="height:1px;background:{BORDER};line-height:1px;font-size:0;">&nbsp;</div></td></tr>'
-        '<tr><td style="padding:12px 36px 22px;background:#fff;">'
+        '<tr><td class="ep" style="padding:12px 36px 22px;background:#fff;">'
         f'<span style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:{MUTED};">'
         f"{escape(week_label)}</span></td></tr>"
     )
@@ -210,7 +210,7 @@ def _footer(logo_url: str | None = None, lang: str = "fr") -> str:
             'height="46" style="height:46px;border:0;display:block;"></div>'
         )
     return (
-        f'<tr><td style="background:#f7f9fc;padding:26px 36px;border-top:1px solid {BORDER};">'
+        f'<tr><td class="ep" style="background:#f7f9fc;padding:26px 36px;border-top:1px solid {BORDER};">'
         f"{logo}"
         f'<div style="color:{INK};font-size:13px;line-height:1.6;margin-bottom:12px;">'
         f'{L["footer_feedback"]}'
@@ -226,17 +226,27 @@ def _footer(logo_url: str | None = None, lang: str = "fr") -> str:
 
 def _shell(inner: str, *, preheader: str, lang: str = "fr") -> str:
     L = labels(lang)
+    css = (
+        "<style>"
+        "@media only screen and (max-width:620px){"
+        ".eb{border-radius:8px!important;}"
+        ".ep{padding-left:16px!important;padding-right:16px!important;}"
+        ".ep img{max-width:100%!important;}"
+        "}"
+        "</style>"
+    )
     return (
         f'<!DOCTYPE html><html lang="{L["html_lang"]}"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+        f"{css}"
         "<title>Business Sabaudo</title></head>"
         f'<body style="margin:0;padding:0;background:{BG};font-family:{_FONT};">'
         f'<div style="display:none;max-height:0;overflow:hidden;opacity:0;">{escape(preheader)}</div>'
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG};padding:24px 12px;">'
         '<tr><td align="center">'
-        '<table role="presentation" width="600" cellpadding="0" cellspacing="0" '
+        '<table role="presentation" class="eb" width="600" cellpadding="0" cellspacing="0" '
         'style="width:600px;max-width:100%;background:#fff;border-radius:14px;overflow:hidden;">'
-        '<tr><td style="padding:7px 32px;background:#fff;text-align:right;font-size:11px;color:#9aa3af;">'
+        '<tr><td class="ep" style="padding:7px 32px;background:#fff;text-align:right;font-size:11px;color:#9aa3af;">'
         f'<a href="{{{{ mirror }}}}" style="color:#9aa3af;text-decoration:none;">{escape(L["voir_en_ligne"])}</a></td></tr>'
         f"{inner}"
         "</table></td></tr></table></body></html>"
@@ -271,15 +281,26 @@ def variant_magazine(data: dict) -> str:
 
     # ANCRAGE DE LA UNE : pour une édition territoriale, la « une » doit être LOCALE.
     # Si la une n'est pas du territoire d'ancrage mais qu'une brève locale existe,
-    # on promeut la 1re brève locale en une, et l'ancienne une redevient une carte.
+    # on promeut la 1re brève locale en une — en préférant celle qui a une image
+    # (AIDA : Attention → impact visuel immédiat). L'ancienne une rejoint les cartes.
     if anchor and (not hero or hero.get("territory") != anchor):
         local = [it for it in items if it.get("territory") == anchor]
         if local:
-            new_hero = local[0]
+            local_with_img = [it for it in local if it.get("image")]
+            new_hero = (local_with_img or local)[0]
             rest = [it for it in items if it is not new_hero]
             if hero:
-                rest = [hero] + rest  # l'ancienne une rejoint les cartes
+                rest = [hero] + rest
             hero, items = new_hero, rest
+
+    # AIDA — sans ancrage territorial : si le héros n'a pas d'image mais qu'une
+    # carte en a une, on les échange pour maximiser l'impact visuel en ouverture.
+    if not anchor and hero and not hero.get("image"):
+        items_with_img = [it for it in items if it.get("image")]
+        if items_with_img:
+            promoted = items_with_img[0]
+            items = [hero] + [it for it in items if it is not promoted]
+            hero = promoted
 
     def _cards_html(card_items: list[dict]) -> str:
         out = ""
@@ -323,7 +344,7 @@ def variant_magazine(data: dict) -> str:
     anchored = bool(anchor) and (bool(home) or (hero and hero.get("territory") == anchor))
 
     def _section(eyebrow_text: str, cards_html: str, pad: str) -> str:
-        return f'<tr><td style="padding:{pad};">{_eyebrow(eyebrow_text)}{cards_html}</td></tr>'
+        return f'<tr><td class="ep" style="padding:{pad};">{_eyebrow(eyebrow_text)}{cards_html}</td></tr>'
 
     if home:
         territoires_html = _section(
@@ -354,7 +375,7 @@ def variant_magazine(data: dict) -> str:
             + "</td></tr></table>"
         )
     ponts_section = (
-        f'<tr><td style="padding:4px 36px 34px;">{_eyebrow(L["ponts"])}'
+        f'<tr><td class="ep" style="padding:4px 36px 34px;">{_eyebrow(L["ponts"])}'
         f'<div style="font-size:13px;color:{MUTED};line-height:1.5;margin:-4px 0 16px;">'
         f'{escape(L["ponts_intro"])}</div>'
         f"{ponts_rows}</td></tr>"
@@ -362,19 +383,19 @@ def variant_magazine(data: dict) -> str:
     inner = (
         _header(data["week_label"], L["tagline_magazine"], data.get("logo_url"), lang)
         # HÉROS / À LA UNE (Attention)
-        + f'<tr><td style="padding:26px 36px 0;">{_eyebrow(L["a_la_une"])}</td></tr>'
+        + f'<tr><td class="ep" style="padding:26px 36px 0;">{_eyebrow(L["a_la_une"])}</td></tr>'
         + (
-            f'<tr><td style="padding:0 36px;"><img src="{escape(hero["image"])}" width="528" alt="" '
+            f'<tr><td class="ep" style="padding:0 36px;"><img src="{escape(hero["image"])}" width="528" alt="" '
             'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
             if hero.get("image") else ""
         )
-        + f'<tr><td style="padding:14px 36px 6px;">{_tag(hero["territory"], lang)}&nbsp;&nbsp;{_source(hero)}'
+        + f'<tr><td class="ep" style="padding:14px 36px 6px;">{_tag(hero["territory"], lang)}&nbsp;&nbsp;{_source(hero)}'
           f'<div style="font-size:25px;font-weight:800;color:{INK};line-height:1.25;margin:11px 0 8px;">{escape(hero["title"])}</div>'
           f'<div style="font-size:15px;color:#374151;line-height:1.6;">{escape(hero["summary"])}</div>'
           + (f'<div style="margin-top:16px;">{_button(hero["url"], L["lire_article"])}</div>' if hero.get("url") else "")
           + "</td></tr>"
         # SIGNAUX (Intérêt)
-        + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow(L["signaux"])}'
+        + f'<tr><td class="ep" style="padding:30px 36px 4px;">{_eyebrow(L["signaux"])}'
           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{signaux}</table></td></tr>'
         # CARTES (Désir + Action) — réordonnées par territoire d'ancrage si fourni
         + territoires_html
