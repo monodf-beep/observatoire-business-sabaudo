@@ -188,6 +188,11 @@ def create_from_data(data: dict, force: bool = False) -> list[int]:
                     html_content=html, **recipients,
                 )
             except BrevoError as exc:
+                # Segment/liste sans destinataire : cas NORMAL (territoire pas
+                # encore peuplé). Brevo refuse la campagne — on saute sans bruit.
+                if exc.status == 400 and "no recipients" in (exc.body or "").lower():
+                    log.info("Édition %s ignorée : aucun destinataire (segment/liste vide).", name)
+                    continue
                 log.error("Création du brouillon Brevo (%s) échouée : %s", name, exc)
                 continue
 

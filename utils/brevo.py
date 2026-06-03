@@ -16,7 +16,17 @@ API_BASE = "https://api.brevo.com/v3"
 
 
 class BrevoError(RuntimeError):
-    """Erreur renvoyée par l'API Brevo ou la connexion réseau."""
+    """Erreur renvoyée par l'API Brevo ou la connexion réseau.
+
+    `status` = code HTTP (None si erreur réseau) ; `body` = corps brut de la
+    réponse. Permet à l'appelant de distinguer un cas attendu (ex. segment vide
+    → HTTP 400 « no recipients ») d'une vraie erreur, sans deviner via le message.
+    """
+
+    def __init__(self, message: str, status: int | None = None, body: str = ""):
+        super().__init__(message)
+        self.status = status
+        self.body = body
 
 
 def _request(method: str, path: str, api_key: str, payload: dict | None = None, timeout: int = 30) -> dict:
@@ -33,7 +43,8 @@ def _request(method: str, path: str, api_key: str, payload: dict | None = None, 
             return json.loads(body) if body else {}
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")
-        raise BrevoError(f"HTTP {exc.code} sur {method} {path} : {detail}") from exc
+        raise BrevoError(f"HTTP {exc.code} sur {method} {path} : {detail}",
+                         status=exc.code, body=detail) from exc
     except urllib.error.URLError as exc:
         raise BrevoError(f"Connexion à Brevo impossible : {exc.reason}") from exc
 
