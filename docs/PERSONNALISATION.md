@@ -117,9 +117,10 @@ ajouter, dans l'ordre :
 3. ✅ **Logique de variantes (langue)** : gabarit bilingue (`newsletter_variants`),
    traduction automatique du contenu (`utils/translate.py`) et **un brouillon Brevo
    par langue** (`push_brevo.py`, via `BREVO_LIST_ID_FR` / `BREVO_LIST_ID_IT`).
-4. ✅ **Réordonnancement par territoire** (Étape 2) : rubrique « Chez vous » en
-   tête + « Dans l'espace sabaudo » pour les autres, sans rien masquer. Édition
-   produite si `BREVO_LIST_ID_<LANG>_<TERRITOIRE>` est défini.
+4. ✅ **Réordonnancement par territoire** (Étape 2) : la **une devient locale**
+   (la 1re brève du territoire passe en tête ; à défaut, une générale conservée),
+   puis rubrique « Chez vous » + « Dans l'espace sabaudo » pour les autres, sans
+   rien masquer. Édition produite si `BREVO_LIST_ID_<LANG>_<TERRITOIRE>` est défini.
 5. ⬜ **Tag secteur** / page web pour les centres d'intérêt (Étape 3).
 
 ---

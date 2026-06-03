@@ -257,6 +257,19 @@ def variant_magazine(data: dict) -> str:
             f'{escape(s["title"])}</div></td></tr>'
         )
     items = data["items"]
+    anchor = data.get("anchor")
+
+    # ANCRAGE DE LA UNE : pour une édition territoriale, la « une » doit être LOCALE.
+    # Si la une n'est pas du territoire d'ancrage mais qu'une brève locale existe,
+    # on promeut la 1re brève locale en une, et l'ancienne une redevient une carte.
+    if anchor and (not hero or hero.get("territory") != anchor):
+        local = [it for it in items if it.get("territory") == anchor]
+        if local:
+            new_hero = local[0]
+            rest = [it for it in items if it is not new_hero]
+            if hero:
+                rest = [hero] + rest  # l'ancienne une rejoint les cartes
+            hero, items = new_hero, rest
 
     def _cards_html(card_items: list[dict]) -> str:
         out = ""
@@ -284,12 +297,13 @@ def variant_magazine(data: dict) -> str:
             )
         return out
 
-    # PERSONNALISATION PAR TERRITOIRE : si un territoire d'ancrage est fourni
-    # (data['anchor']), ses brèves remontent sous « Chez vous », les autres restent
-    # sous « Dans l'espace sabaudo ». Sans ancrage : un seul « Tour des territoires ».
-    anchor = data.get("anchor")
+    # PERSONNALISATION PAR TERRITOIRE : les brèves locales remontent sous « Chez
+    # vous », les autres sous « Dans l'espace sabaudo ». Sans ancrage (ou si rien
+    # n'est local) : un seul « Tour des territoires ». La une est déjà ancrée ci-dessus.
     home = [it for it in items if anchor and it.get("territory") == anchor]
     others = [it for it in items if not (anchor and it.get("territory") == anchor)]
+    # Édition « ancrée » dès que la une OU une carte relève du territoire.
+    anchored = bool(anchor) and (bool(home) or (hero and hero.get("territory") == anchor))
 
     def _section(eyebrow_text: str, cards_html: str, pad: str) -> str:
         return f'<tr><td style="padding:{pad};">{_eyebrow(eyebrow_text)}{cards_html}</td></tr>'
@@ -302,6 +316,9 @@ def variant_magazine(data: dict) -> str:
         )
         if others:
             territoires_html += _section(L["autres_territoires"], _cards_html(others), "24px 36px 34px")
+    elif anchored:
+        # La une porte déjà le territoire ; le reste va sous « Dans l'espace sabaudo ».
+        territoires_html = _section(L["autres_territoires"], _cards_html(others), "30px 36px 34px")
     else:
         territoires_html = _section(L["territoires"], _cards_html(others), "30px 36px 34px")
     # PONTS & CONNEXIONS — la dimension transfrontalière (commune à tous les lecteurs).
