@@ -46,5 +46,8 @@ https://www.nicematin.com/economie/rss;Nice
 # ===================== TRANSFRONTALIER ALCOTRA France-Italie =====================
 # Institutionnel : programme Interreg Alcotra (crédité + lié)
 https://www.interreg-alcotra.eu/fr/rss.xml;Alcotra
+# Média partenaire : Nos Alpes, journal transfrontalier FR/IT (crédité + lié,
+# voir config/partner_media.txt). Flux direct → vrai lien « Lire l'article ».
+https://nosalpes.eu/feed/;Alcotra
 # Radar éco (Google News)
 https://news.google.com/rss/search?q=Alcotra+cooperazione+transfrontaliera+Alpi&hl=it&gl=IT&ceid=IT:it;Alcotra
