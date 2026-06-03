@@ -130,12 +130,8 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "Tu es l'assistant éditorial de Cultura Sabauda, média économique de l'espace\n"
         "sabaudo (Savoie, Piémont, Vallée d'Aoste, Nice, périmètre Alcotra).\n\n"
         "À partir des contenus collectés cette semaine (chacun identifié par [#id]),\n"
-        "produis DEUX choses, dans cet ordre.\n\n"
-        "PARTIE 1 — Synthèse éditoriale en Markdown (pour archive interne) :\n"
-        "  1. SIGNAUX FORTS (5 max) : titre + 2-3 phrases de contexte + territoire + source.\n"
-        "  2. PAR TERRITOIRE : Savoie (73+74), Piémont, Vallée d'Aoste, Nice/Alpes-Maritimes,\n"
-        "     Périmètre Alcotra.\n\n"
-        "PARTIE 2 — Données de la newsletter, dans UN SEUL bloc de code ```json``` à la fin.\n"
+        "produis DEUX choses, dans cet ordre IMPÉRATIF (le bloc JSON d'abord).\n\n"
+        "PARTIE 1 — COMMENCE par les données de la newsletter, dans UN SEUL bloc ```json```.\n"
         "  Schéma EXACT (n'invente aucun texte absent des sources ; réfère chaque élément\n"
         "  par son id [#id] pour qu'on rattache le lien, la source et l'image d'origine) :\n"
         "  ```json\n"
@@ -154,8 +150,13 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "  - 'signaux' = 3 à 5 signaux forts (titres courts).\n"
         "  - 'articles' = 4 à 6 brèves éditorialisées (hors 'une'), une par sujet fort.\n"
         "  - Ne retiens que les contenus à VALEUR ÉCONOMIQUE/ÉDITORIALE. Ignore les emails\n"
-        "    de service (réponses automatiques, confirmations, fils internes). Si rien n'a\n"
-        "    de valeur, renvoie des listes vides et 'une': null.\n\n"
+        "    de service (réponses automatiques, confirmations, fils internes) et les sujets\n"
+        "    non économiques (faits divers, sport, météo). Si rien n'a de valeur,\n"
+        "    renvoie des listes vides et 'une': null.\n\n"
+        "PARTIE 2 — APRÈS le bloc JSON, une synthèse Markdown COURTE (archive interne) :\n"
+        "  1. SIGNAUX FORTS (5 max) : titre + 1-2 phrases + territoire + source.\n"
+        "  2. PAR TERRITOIRE : 1-2 lignes par territoire (Savoie, Piémont, Vallée d'Aoste,\n"
+        "     Nice/Alpes-Maritimes, Alcotra). Sois concis.\n\n"
         "Tonalité : sérieux, B2B, sans buzzword. Chaque brève répond à « et alors ? »\n"
         "(l'implication concrète). Langue : français (termes italiens conservés si pertinents).\n"
         "Reste strictement factuel : pas de source = pas de brève.\n"
@@ -175,7 +176,8 @@ def split_markdown_json(text: str) -> tuple[str, dict | None]:
     if not match:
         return text.strip(), None
     raw = match.group(1)
-    markdown = text[: match.start()].rstrip()
+    # Le JSON peut être en tête : on le retire d'où qu'il soit pour garder le Markdown.
+    markdown = (text[: match.start()] + text[match.end():]).strip()
     try:
         return markdown, json.loads(raw)
     except json.JSONDecodeError as exc:
@@ -263,7 +265,7 @@ def call_anthropic(prompt: str, model: str) -> str | None:
     try:
         message = client.messages.create(
             model=model,
-            max_tokens=4096,
+            max_tokens=8192,
             system=(
                 "Tu es l'assistant éditorial de Cultura Sabauda. Tu produis des "
                 "synthèses économiques claires, factuelles et éditorialisées, en Markdown. "
