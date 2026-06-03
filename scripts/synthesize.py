@@ -141,6 +141,7 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         '    "une": {"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases", "acteur": "source primaire"},\n'
         '    "signaux": [{"id": <id>, "titre": "titre court"}],\n'
         '    "articles": [{"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases", "acteur": "source primaire"}],\n'
+        '    "ponts": [{"id": <id>, "titre": "titre orienté lien", "resume": "le lien transfrontalier", "acteur": "source primaire"}],\n'
         '    "signature": "Bonne lecture,\\nLa rédaction — Cultura Sabauda"\n'
         "  }\n"
         "  ```\n"
@@ -152,6 +153,15 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "  - 'une' = l'actualité la plus marquante (le héros).\n"
         "  - 'signaux' = 3 à 5 signaux forts (titres courts).\n"
         "  - 'articles' = 4 à 6 brèves éditorialisées (hors 'une'), une par sujet fort.\n"
+        "  - 'ponts' = 0 à 3 « ponts & connexions » : des actualités de l'espace sabaudo\n"
+        "    qui ont un LIEN CONCRET avec l'extérieur (Grenoble, Lyon, Genève, la Suisse, le\n"
+        "    reste de la France, le marché italien, l'international). Ex. : une entreprise\n"
+        "    valdôtaine qui exporte en France, un projet Nice–Turin, un partenariat\n"
+        "    Savoie–Genève, une PME qui attaque le marché italien. Le 'resume' EXPLICITE le\n"
+        "    lien transfrontalier. N'y mets QUE des sujets à dimension extérieure réelle ;\n"
+        "    si rien ne s'y prête, renvoie une liste vide. Même règle factuelle : un id réel,\n"
+        "    pas de source = pas de pont. Un même sujet ne va PAS à la fois dans 'articles'\n"
+        "    et dans 'ponts'.\n"
         "  - Ne retiens que les contenus à VALEUR ÉCONOMIQUE/ÉDITORIALE. Ignore les emails\n"
         "    de service (réponses automatiques, confirmations, fils internes) et les sujets\n"
         "    non économiques (faits divers, sport, météo). Si rien n'a de valeur,\n"
@@ -240,6 +250,7 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     une = parsed.get("une") or {}
     hero = _enrich(une, registry, press)
     items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry, press))]
+    ponts = [d for e in parsed.get("ponts", []) if (d := _enrich(e, registry, press))]
     signaux = []
     for s in parsed.get("signaux", []):
         rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None
@@ -274,6 +285,7 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         "hero": hero,
         "signaux": signaux,
         "items": items,
+        "ponts": ponts,
         "signature": parsed.get("signature", "La rédaction — Cultura Sabauda"),
         "cta_url": "https://culturasabauda.eu",
     }

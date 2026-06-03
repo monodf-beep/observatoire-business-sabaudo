@@ -206,6 +206,28 @@ def variant_magazine(data: dict) -> str:
             f'<tr><td style="padding:10px 0 0;">{_cta(it["url"])}</td></tr>'
             "</table>"
         )
+    # PONTS & CONNEXIONS — la dimension transfrontalière (commune à tous les lecteurs).
+    # Liste compacte sans image : l'espace sabaudo relié à ses voisins.
+    ponts = data.get("ponts") or []
+    ponts_rows = ""
+    for p in ponts:
+        ponts_rows += (
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+            f'style="border-bottom:1px solid {BORDER};margin:0 0 14px;padding:0 0 14px;"><tr>'
+            f'<td valign="top">{_tag(p["territory"])}&nbsp;&nbsp;{_source(p)}'
+            f'<div style="font-size:16px;font-weight:700;color:{INK};line-height:1.3;margin:6px 0 4px;">'
+            f'<a href="{escape(p["url"])}" style="color:{INK};text-decoration:none;">{escape(p["title"])}</a></div>'
+            f'<div style="font-size:14px;color:#4b5563;line-height:1.6;">{escape(p["summary"])}</div>'
+            + (f'<div style="margin-top:6px;">{_cta(p["url"])}</div>' if p.get("url") else "")
+            + "</td></tr></table>"
+        )
+    ponts_section = (
+        f'<tr><td style="padding:4px 36px 34px;">{_eyebrow("Ponts & connexions")}'
+        f'<div style="font-size:13px;color:{MUTED};line-height:1.5;margin:-4px 0 16px;">'
+        "L'espace sabaudo relié à ses voisins — Grenoble, Lyon, Genève, la Suisse, "
+        "la France, l'international.</div>"
+        f"{ponts_rows}</td></tr>"
+    ) if ponts else ""
     inner = (
         _header(data["week_label"], "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra", data.get("logo_url"))
         # HÉROS / À LA UNE (Attention)
@@ -226,6 +248,8 @@ def variant_magazine(data: dict) -> str:
         # CARTES (Désir + Action)
         + f'<tr><td style="padding:30px 36px 34px;">{_eyebrow("Le tour des territoires")}'
           f'{cards}</td></tr>'
+        # PONTS & CONNEXIONS (dimension transfrontalière)
+        + ponts_section
         + _footer(data.get("pictogram_url") or data.get("logo_url"))
     )
     return _shell(inner, preheader=data["preheader"])

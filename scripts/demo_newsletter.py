@@ -53,6 +53,18 @@ def demo_data() -> dict:
         {"title": "Conjoncture azuréenne en hausse au 2ᵉ trimestre", "territory": "Nice"},
         {"title": "Nouvel appel à projets Alcotra en préparation", "territory": "Alcotra"},
     ]
+    ponts = [
+        {"title": "Une PME valdôtaine décroche un marché à Lyon",
+         "summary": "Le fabricant aostois ouvre un bureau commercial dans la métropole lyonnaise : "
+                    "un pont concret entre la Vallée d'Aoste et le marché rhônalpin.",
+         "url": "https://www.pepinieresvda.eu/", "image": "",
+         "source": "Pépinières VDA", "domain": "pepinieresvda.eu", "territory": "Vallee-Aoste"},
+        {"title": "Un projet de R&D relie Sophia-Antipolis et l'EPFL",
+         "summary": "Laboratoires niçois et lausannois s'associent sur l'IA embarquée — "
+                    "une coopération Nice–Suisse romande qui dépasse l'espace sabaudo.",
+         "url": "https://www.cote-azur.cci.fr/", "image": "",
+         "source": "CCI Nice Côte d'Azur", "domain": "cote-azur.cci.fr", "territory": "Nice"},
+    ]
     return {
         "week_label": "Édition de démonstration",
         "logo_url": os.getenv("BREVO_LOGO_URL", ""),
@@ -62,6 +74,7 @@ def demo_data() -> dict:
         "hero": hero,
         "signaux": signaux,
         "items": items,
+        "ponts": ponts,
         "signature": "Bonne lecture,\nLa rédaction — Cultura Sabauda",
         "cta_url": "https://culturasabauda.eu",
     }
