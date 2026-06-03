@@ -287,6 +287,45 @@ def _autofind_hero_photo(hero: dict) -> None:
         log.info("Photo automatique posée sur la une : %s", url)
 
 
+def _autofind_sources(items: list[dict], press: set[str]) -> None:
+    """Complète le lien « Lire l'article » des items SANS lien (issus de la presse).
+
+    Hiérarchie : Nos Alpes (partenaire) d'abord, sinon une source primaire/officielle
+    (jamais un concurrent presse). Désactivable via AUTO_SOURCE=0. Plafonné pour
+    borner le coût/la durée. Silencieux : un échec laisse le lien vide.
+    """
+    if os.getenv("AUTO_SOURCE", "1").strip().lower() in ("0", "false", "no", "off", ""):
+        return
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        return
+    targets = [it for it in items if it and not it.get("url")]
+    if not targets:
+        return
+    model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
+    budget = int(os.getenv("AUTO_SOURCE_MAX", "8") or 8)
+    try:
+        from utils.source_finder import find_canonical_link
+    except Exception as exc:  # pragma: no cover
+        log.warning("Module de recherche de source indisponible : %s", exc)
+        return
+    for it in targets:
+        if budget <= 0:
+            break
+        budget -= 1
+        try:
+            found = find_canonical_link(
+                it.get("title", ""), it.get("source", ""), it.get("territory", ""),
+                press=press, api_key=api_key, model=model,
+            )
+        except Exception as exc:  # robustesse : jamais bloquant en cron
+            log.warning("Recherche de source échouée pour « %s » : %s", it.get("title", ""), exc)
+            continue
+        if found:
+            it["url"] = found["url"]
+            it["domain"] = found["domain"]
+
+
 def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
                      logo_url: str, picto_url: str = "") -> dict | None:
     """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
@@ -312,6 +351,10 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         return None
     if hero is None and items:  # repli : le 1er article devient la une
         hero = items.pop(0)
+
+    # LIEN « Lire l'article » : pour les sujets issus de la presse (lien retiré),
+    # on cherche un lien légitime — Nos Alpes (partenaire) puis source primaire.
+    _autofind_sources([hero, *items, *ponts], press)
 
     # PHOTO RÉELLE pour la une : recherche web automatique de l'image de l'acteur,
     # avant de retomber sur la bannière de territoire générique (apply_fallback_images).
