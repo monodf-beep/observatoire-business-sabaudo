@@ -18,8 +18,9 @@ fta.genevois.francais@8839714.brevosend.com;Savoie
 # (Savoie Mont Blanc : page d'inscription introuvable — non inscrit)
 
 # ===================== PIÉMONT =====================
-# ✅ I3P — Incubatore Politecnico di Torino (newsletter@i3p.it + comunicazione@i3p.it)
-i3p.it;Piemonte
+# ✅ I3P — adresses de newsletter uniquement (le domaine entier captait des emails humains)
+newsletter@i3p.it;Piemonte
+comunicazione@i3p.it;Piemonte
 # ✅ Camera di commercio di Torino (double opt-in confirmé)
 to.camcom.it;Piemonte
 # ✅ Piemonte Innova

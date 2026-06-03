@@ -5,16 +5,38 @@
 #   - territoire : Savoie | Piemonte | Vallee-Aoste | Nice | Alcotra
 #
 # Les lignes vides et celles commençant par # sont ignorées.
-# À COMPLÉTER avec les flux réels validés par Franck.
+# ✅ = flux vérifié (renvoie du XML valide)   ⏳ = candidat à valider sur le VPS
+# (certains sites de presse sont bloqués depuis l'environnement de test mais
+#  fonctionnent depuis le VPS : décommenter après un essai concluant).
+#
+# NB : la synthèse ne retient que les contenus à valeur économique ; des flux
+# régionaux généralistes sont donc acceptables (l'IA fait le tri).
 
-# --- Savoie ---
-https://www.savoie-mont-blanc.com/rss;Savoie
+# ===================== SAVOIE / HAUTE-SAVOIE =====================
+# (savoie-mont-blanc.com/rss n'existe plus). Pas de flux éco fiable confirmé.
+# ⏳ à valider sur le VPS :
+# https://www.ledauphine.com/savoie/rss;Savoie
+# https://www.ledauphine.com/haute-savoie/rss;Savoie
+# https://www.ecosavoiemontblanc.com/feed/;Savoie
 
-# --- Piémont ---
-https://www.i3p.it/feed;Piemonte
+# ===================== PIÉMONT =====================
+# ✅ I3P — Incubatore Politecnico di Torino (innovation / startups)
+https://www.i3p.it/news/feed/;Piemonte
+# ✅ Quotidiano Piemontese (actualité régionale, dont économie)
+https://www.quotidianopiemontese.it/feed/;Piemonte
 
-# --- Vallée d'Aoste ---
+# ===================== VALLÉE D'AOSTE =====================
+# ✅ Pépinières d'entreprises VDA
 https://www.pepinieresvda.eu/feed;Vallee-Aoste
+# ✅ Aosta Sera (actualité régionale valdôtaine)
+https://www.aostasera.it/feed/;Vallee-Aoste
 
-# --- Périmètre transfrontalier ALCOTRA France-Italie ---
+# ===================== NICE / ALPES-MARITIMES =====================
+# Pas de flux confirmé depuis l'environnement de test (sites bloqués).
+# ⏳ à valider sur le VPS :
+# https://www.tribuca.net/feed/;Nice
+# https://www.nicematin.com/economie/rss;Nice
+
+# ===================== TRANSFRONTALIER ALCOTRA France-Italie =====================
+# ✅ Programme Interreg Alcotra
 https://www.interreg-alcotra.eu/fr/rss.xml;Alcotra
