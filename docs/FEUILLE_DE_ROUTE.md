@@ -90,7 +90,8 @@ Au quotidien, c'est **`02_Veille_traitee`** qui compte : les synthèses y arrive
   `LANGUE` / `TERRITOIRE` / `SECTEURS`, dossier et listes par langue
 - [ ] Exécuter la configuration Brevo sur le VPS + renseigner les contacts
 - [ ] Créer le formulaire d'inscription Brevo (langue + territoire + intérêts)
-- [ ] Étape 1 — variante de langue FR/IT (une campagne par segment)
+- [x] Étape 1 — variante de langue FR/IT (gabarit bilingue + traduction IA + un
+  brouillon Brevo par langue) ; reste à brancher les listes FR/IT du `.env`
 - [ ] Étape 2 — réordonnancement par territoire d'ancrage
 - [ ] Étape 3 — centres d'intérêt (via page web, plus tard)
 

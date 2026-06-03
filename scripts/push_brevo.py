@@ -5,11 +5,17 @@
 - Rendu : gabarit « magazine » (utils/newsletter_variants.variant_magazine)
 - ⚠ N'ENVOIE JAMAIS : Franck relit dans Brevo puis déclenche l'envoi lui-même.
 
+Personnalisation par langue : si BREVO_LIST_ID_FR et/ou BREVO_LIST_ID_IT sont
+définis, un brouillon est créé PAR LANGUE (le contenu IT est traduit via l'IA à
+partir de la même sélection éditoriale). À défaut, repli sur BREVO_LIST_ID (FR).
+
 Configuration (.env) :
     BREVO_API_KEY        clé API Brevo
     BREVO_SENDER_NAME    nom de l'expéditeur (ex. Cultura Sabauda)
     BREVO_SENDER_EMAIL   email expéditeur VALIDÉ dans Brevo
-    BREVO_LIST_ID        id(s) de la liste de destinataires (ex. 2 ou 2,3)
+    BREVO_LIST_ID        id(s) de la liste (héritage / mono-langue FR)
+    BREVO_LIST_ID_FR     id(s) de la liste francophone (perso langue)
+    BREVO_LIST_ID_IT     id(s) de la liste italophone  (perso langue)
     BREVO_LOGO_URL       (option) URL du logo hébergé (bibliothèque média Brevo)
 
 Usage :
@@ -58,57 +64,96 @@ def find_data(week: str | None, file_arg: str | None) -> Path | None:
     return candidates[-1] if candidates else None
 
 
-def _env_list_ids() -> list[int]:
-    raw = os.getenv("BREVO_LIST_ID", "").strip()
-    return [int(x) for x in re.split(r"[,;\s]+", raw) if x.strip().isdigit()]
+def _parse_ids(raw: str) -> list[int]:
+    return [int(x) for x in re.split(r"[,;\s]+", raw or "") if x.strip().isdigit()]
 
 
-def create_from_data(data: dict, force: bool = False) -> int | None:
-    """Rend la newsletter et crée le brouillon Brevo. Renvoie l'id, ou None.
+# Libellé de langue pour les noms de campagne (le contenu, lui, est traduit).
+_LANG_TAG = {"fr": "FR", "it": "IT"}
 
-    Ne lève jamais : journalise et renvoie None (sans danger en cron).
+
+def _lang_targets() -> list[tuple[str, list[int]]]:
+    """Langues à produire et leurs listes Brevo, d'après le .env.
+
+    - BREVO_LIST_ID_FR / BREVO_LIST_ID_IT : une campagne par langue (perso).
+    - Repli : BREVO_LIST_ID (héritage) → une seule campagne FR.
+    """
+    targets: list[tuple[str, list[int]]] = []
+    fr = _parse_ids(os.getenv("BREVO_LIST_ID_FR", ""))
+    it = _parse_ids(os.getenv("BREVO_LIST_ID_IT", ""))
+    if fr:
+        targets.append(("fr", fr))
+    if it:
+        targets.append(("it", it))
+    if not targets:
+        legacy = _parse_ids(os.getenv("BREVO_LIST_ID", ""))
+        if legacy:
+            targets.append(("fr", legacy))
+    return targets
+
+
+def create_from_data(data: dict, force: bool = False) -> list[int]:
+    """Rend la newsletter et crée un BROUILLON Brevo PAR LANGUE configurée.
+
+    Renvoie la liste des ids de campagnes créées (vide si rien).
+    Ne lève jamais : journalise et continue (sans danger en cron).
     """
     api_key = os.getenv("BREVO_API_KEY")
     sender_name = os.getenv("BREVO_SENDER_NAME")
     sender_email = os.getenv("BREVO_SENDER_EMAIL")
-    list_ids = _env_list_ids()
+    targets = _lang_targets()
     missing = [k for k, v in {
         "BREVO_API_KEY": api_key, "BREVO_SENDER_NAME": sender_name,
-        "BREVO_SENDER_EMAIL": sender_email, "BREVO_LIST_ID": list_ids,
+        "BREVO_SENDER_EMAIL": sender_email,
+        "BREVO_LIST_ID(_FR/_IT)": targets,
     }.items() if not v]
     if missing:
         log.warning("Configuration Brevo incomplète (%s). Brouillon non créé.", ", ".join(missing))
-        return None
+        return []
 
     if not data.get("hero") and not data.get("items") and not force:
         log.info("Semaine sans contenu newsletter — brouillon Brevo ignoré (--force pour forcer).")
-        return None
+        return []
 
     # Logo : on privilégie l'URL hébergée en .env (les data-URI ne passent pas en email)
-    data = dict(data)
+    base = dict(data)
     if os.getenv("BREVO_LOGO_URL"):
-        data["logo_url"] = os.getenv("BREVO_LOGO_URL")
+        base["logo_url"] = os.getenv("BREVO_LOGO_URL")
     if os.getenv("BREVO_PICTO_URL"):
-        data["pictogram_url"] = os.getenv("BREVO_PICTO_URL")
+        base["pictogram_url"] = os.getenv("BREVO_PICTO_URL")
 
-    subject = data.get("subject") or f"Business Sabaudo — {data.get('week_label', '')}"
-    html = variant_magazine(data)
-    name = f"Business Sabaudo — {data.get('week_label', '')}".strip(" —")
+    created: list[int] = []
+    for lang, list_ids in targets:
+        # Une seule sélection éditoriale (FR) ; on traduit le contenu si besoin.
+        try:
+            from utils.translate import translate_email_data
+            data_lang = translate_email_data(base, lang)
+        except Exception as exc:  # traduction indisponible/échouée → on saute cette langue
+            log.error("Traduction %s échouée, brouillon %s ignoré : %s", lang, lang.upper(), exc)
+            continue
 
-    try:
-        campaign_id = create_draft_campaign(
-            api_key=api_key, name=name, subject=subject,
-            sender_name=sender_name, sender_email=sender_email,
-            list_ids=list_ids, html_content=html,
-        )
-    except BrevoError as exc:
-        log.error("Création du brouillon Brevo échouée : %s", exc)
-        return None
+        week_label = data_lang.get("week_label", "")
+        subject = data_lang.get("subject") or f"Business Sabaudo — {week_label}"
+        html = variant_magazine(data_lang)
+        name = f"Business Sabaudo {_LANG_TAG.get(lang, lang.upper())} — {week_label}".strip(" —")
 
-    log.info("Brouillon Brevo créé (id=%s) — objet : %s", campaign_id, subject)
-    log.info("À relire/envoyer ici : %s", campaign_edit_url(campaign_id))
-    log.info("⚠ Aucun envoi automatique — validation et envoi manuels par Franck.")
-    return campaign_id
+        try:
+            campaign_id = create_draft_campaign(
+                api_key=api_key, name=name, subject=subject,
+                sender_name=sender_name, sender_email=sender_email,
+                list_ids=list_ids, html_content=html,
+            )
+        except BrevoError as exc:
+            log.error("Création du brouillon Brevo (%s) échouée : %s", lang.upper(), exc)
+            continue
+
+        log.info("Brouillon Brevo %s créé (id=%s) — objet : %s", lang.upper(), campaign_id, subject)
+        log.info("À relire/envoyer ici : %s", campaign_edit_url(campaign_id))
+        created.append(campaign_id)
+
+    if created:
+        log.info("⚠ Aucun envoi automatique — validation et envoi manuels par Franck.")
+    return created
 
 
 def _do_check(api_key: str) -> int:
@@ -160,8 +205,8 @@ def main() -> int:
         log.error("Fichier de données illisible (%s) : %s", path, exc)
         return 1
 
-    campaign_id = create_from_data(data, force=args.force)
-    return 0 if campaign_id is not None else 1
+    created = create_from_data(data, force=args.force)
+    return 0 if created else 1
 
 
 if __name__ == "__main__":

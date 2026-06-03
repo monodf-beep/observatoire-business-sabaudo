@@ -31,6 +31,67 @@ _TERRITORY = {
     "Alcotra": ("#ece7f7", "#5a3aa5", "Alcotra"),
 }
 
+# Libellés des pastilles de territoire par langue (les couleurs viennent de _TERRITORY).
+_TERRITORY_LABELS = {
+    "fr": {"Savoie": "Savoie", "Piemonte": "Piémont", "Vallee-Aoste": "Vallée d'Aoste",
+           "Nice": "Nice", "Alcotra": "Alcotra"},
+    "it": {"Savoie": "Savoia", "Piemonte": "Piemonte", "Vallee-Aoste": "Valle d'Aosta",
+           "Nice": "Nizza", "Alcotra": "Alcotra"},
+}
+
+# Tous les libellés d'interface de l'email, par langue (le CONTENU éditorial, lui,
+# est traduit séparément — voir utils/translate.py).
+_LABELS = {
+    "fr": {
+        "html_lang": "fr",
+        "surtitre": "Observatoire économique",
+        "tagline_magazine": "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra",
+        "a_la_une": "À la une",
+        "signaux": "Les signaux de la semaine",
+        "territoires": "Le tour des territoires",
+        "ponts": "Ponts & connexions",
+        "ponts_intro": "L'espace sabaudo relié à ses voisins — Grenoble, Lyon, "
+                       "Genève, la Suisse, la France, l'international.",
+        "lire_suite": "Lire la suite",
+        "lire_article": "Lire l'article",
+        "voir_en_ligne": "Voir en ligne",
+        "desabonner": "Se désabonner",
+        "footer_feedback": "💬 Une source à suggérer, une coquille repérée&nbsp;? "
+                           "<strong>Répondez à cet email</strong>, on lit tout.",
+        "footer_baseline": "Observatoire économique de l'espace sabaudo — "
+                           "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra",
+        "footer_ia": "Veille assistée par IA, sélectionnée et validée par la rédaction "
+                     "de Cultura Sabauda.",
+    },
+    "it": {
+        "html_lang": "it",
+        "surtitre": "Osservatorio economico",
+        "tagline_magazine": "Savoia · Piemonte · Valle d'Aosta · Nizza · Alcotra",
+        "a_la_une": "In primo piano",
+        "signaux": "I segnali della settimana",
+        "territoires": "Il giro dei territori",
+        "ponts": "Ponti e connessioni",
+        "ponts_intro": "Lo spazio sabaudo in collegamento con i suoi vicini — Grenoble, "
+                       "Lione, Ginevra, la Svizzera, la Francia, l'internazionale.",
+        "lire_suite": "Continua a leggere",
+        "lire_article": "Leggi l'articolo",
+        "voir_en_ligne": "Visualizza online",
+        "desabonner": "Annulla l'iscrizione",
+        "footer_feedback": "💬 Una fonte da segnalare, un refuso&nbsp;? "
+                           "<strong>Rispondi a questa email</strong>, leggiamo tutto.",
+        "footer_baseline": "Osservatorio economico dello spazio sabaudo — "
+                           "Savoia · Piemonte · Valle d'Aosta · Nizza · Alcotra",
+        "footer_ia": "Monitoraggio assistito dall'IA, selezionato e validato dalla "
+                     "redazione di Cultura Sabauda.",
+    },
+}
+
+
+def labels(lang: str) -> dict:
+    """Renvoie le dictionnaire de libellés d'interface pour la langue (repli FR)."""
+    return _LABELS.get(lang, _LABELS["fr"])
+
+
 _FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
 
 
@@ -38,8 +99,9 @@ def favicon(domain: str, size: int = 64) -> str:
     return f"https://www.google.com/s2/favicons?domain={domain}&sz={size}"
 
 
-def _tag(territory: str) -> str:
-    _, dotc, label = _TERRITORY.get(territory, ("", "#64748b", territory or "—"))
+def _tag(territory: str, lang: str = "fr") -> str:
+    _, dotc, default_label = _TERRITORY.get(territory, ("", "#64748b", territory or "—"))
+    label = _TERRITORY_LABELS.get(lang, {}).get(territory, default_label)
     dot = (
         f'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;'
         f'background:{dotc};margin-right:6px;vertical-align:middle;"></span>'
@@ -63,9 +125,10 @@ def _source(item: dict, size: int = 18) -> str:
     return f'<span style="color:{MUTED};font-size:12px;font-weight:600;vertical-align:middle;">{icon}{name}</span>'
 
 
-def _cta(url: str, label: str = "Lire la suite") -> str:
+def _cta(url: str, label: str | None = None, lang: str = "fr") -> str:
     if not url:
         return ""
+    label = label or labels(lang)["lire_suite"]
     return (
         f'<a href="{escape(url)}" style="color:{ACCENT};font-size:14px;font-weight:700;'
         f'text-decoration:none;">{escape(label)} &rarr;</a>'
@@ -80,7 +143,7 @@ def _button(url: str, label: str) -> str:
     )
 
 
-def _header(week_label: str, tagline: str, logo_url: str | None = None) -> str:
+def _header(week_label: str, tagline: str, logo_url: str | None = None, lang: str = "fr") -> str:
     """Masthead éditorial blanc : surtitre + logo éditeur (petit) + titre + date."""
     logo_cell = ""
     if logo_url:
@@ -92,7 +155,7 @@ def _header(week_label: str, tagline: str, logo_url: str | None = None) -> str:
         '<tr><td style="padding:28px 36px 0;background:#fff;">'
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
         f'<td valign="middle" style="font-size:11px;font-weight:800;letter-spacing:1.8px;'
-        f'text-transform:uppercase;color:{ACCENT};">Observatoire économique</td>'
+        f'text-transform:uppercase;color:{ACCENT};">{escape(labels(lang)["surtitre"])}</td>'
         f"{logo_cell}"
         "</tr></table></td></tr>"
         '<tr><td style="padding:14px 36px 0;background:#fff;">'
@@ -119,7 +182,8 @@ def _eyebrow(text: str) -> str:
     )
 
 
-def _footer(logo_url: str | None = None) -> str:
+def _footer(logo_url: str | None = None, lang: str = "fr") -> str:
+    L = labels(lang)
     logo = ""
     if logo_url:
         logo = (
@@ -130,22 +194,21 @@ def _footer(logo_url: str | None = None) -> str:
         f'<tr><td style="background:#f7f9fc;padding:26px 36px;border-top:1px solid {BORDER};">'
         f"{logo}"
         f'<div style="color:{INK};font-size:13px;line-height:1.6;margin-bottom:12px;">'
-        "💬 Une source à suggérer, une coquille repérée&nbsp;? "
-        "<strong>Répondez à cet email</strong>, on lit tout."
+        f'{L["footer_feedback"]}'
         "</div>"
         f'<div style="color:{MUTED};font-size:12px;line-height:1.6;">'
-        "Observatoire économique de l'espace sabaudo — "
-        "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra<br>"
-        "<em>Veille assistée par IA, sélectionnée et validée par la rédaction de Cultura Sabauda.</em><br>"
+        f'{escape(L["footer_baseline"])}<br>'
+        f'<em>{escape(L["footer_ia"])}</em><br>'
         f'<a href="https://culturasabauda.eu" style="color:{MUTED};">culturasabauda.eu</a> · '
-        '<a href="{{ unsubscribe }}" style="color:#6b7280;">Se désabonner</a>'
+        f'<a href="{{{{ unsubscribe }}}}" style="color:#6b7280;">{escape(L["desabonner"])}</a>'
         "</div></td></tr>"
     )
 
 
-def _shell(inner: str, *, preheader: str) -> str:
+def _shell(inner: str, *, preheader: str, lang: str = "fr") -> str:
+    L = labels(lang)
     return (
-        '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">'
+        f'<!DOCTYPE html><html lang="{L["html_lang"]}"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
         "<title>Business Sabaudo</title></head>"
         f'<body style="margin:0;padding:0;background:{BG};font-family:{_FONT};">'
@@ -155,7 +218,7 @@ def _shell(inner: str, *, preheader: str) -> str:
         '<table role="presentation" width="600" cellpadding="0" cellspacing="0" '
         'style="width:600px;max-width:100%;background:#fff;border-radius:14px;overflow:hidden;">'
         '<tr><td style="padding:7px 32px;background:#fff;text-align:right;font-size:11px;color:#9aa3af;">'
-        '<a href="{{ mirror }}" style="color:#9aa3af;text-decoration:none;">Voir en ligne</a></td></tr>'
+        f'<a href="{{{{ mirror }}}}" style="color:#9aa3af;text-decoration:none;">{escape(L["voir_en_ligne"])}</a></td></tr>'
         f"{inner}"
         "</table></td></tr></table></body></html>"
     )
@@ -165,6 +228,8 @@ def _shell(inner: str, *, preheader: str) -> str:
 # Variante 1 — MAGAZINE (héros + signaux + cartes)                            #
 # --------------------------------------------------------------------------- #
 def variant_magazine(data: dict) -> str:
+    lang = data.get("lang", "fr")
+    L = labels(lang)
     hero = data["hero"]
     sig_list = data["signaux"]
     signaux = ""
@@ -178,7 +243,7 @@ def variant_magazine(data: dict) -> str:
         signaux += (
             "<tr>"
             f'<td width="36" valign="top" style="padding:12px 0;{border}">{badge}</td>'
-            f'<td valign="top" style="padding:12px 0;{border}">{_tag(s["territory"])}'
+            f'<td valign="top" style="padding:12px 0;{border}">{_tag(s["territory"], lang)}'
             f'<div style="font-size:15px;color:{INK};font-weight:700;line-height:1.4;margin-top:5px;">'
             f'{escape(s["title"])}</div></td></tr>'
         )
@@ -199,11 +264,11 @@ def variant_magazine(data: dict) -> str:
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
             f'style="{wrap}">'
             f"{img}"
-            f'<tr><td style="padding:0 0 8px;">{_tag(it["territory"])}&nbsp;&nbsp;{_source(it)}</td></tr>'
+            f'<tr><td style="padding:0 0 8px;">{_tag(it["territory"], lang)}&nbsp;&nbsp;{_source(it)}</td></tr>'
             f'<tr><td style="padding:0 0 6px;font-size:19px;font-weight:700;color:{INK};line-height:1.3;">'
             f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{escape(it["title"])}</a></td></tr>'
             f'<tr><td style="font-size:15px;color:#374151;line-height:1.6;">{escape(it["summary"])}</td></tr>'
-            f'<tr><td style="padding:10px 0 0;">{_cta(it["url"])}</td></tr>'
+            f'<tr><td style="padding:10px 0 0;">{_cta(it["url"], lang=lang)}</td></tr>'
             "</table>"
         )
     # PONTS & CONNEXIONS — la dimension transfrontalière (commune à tous les lecteurs).
@@ -214,45 +279,44 @@ def variant_magazine(data: dict) -> str:
         ponts_rows += (
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
             f'style="border-bottom:1px solid {BORDER};margin:0 0 14px;padding:0 0 14px;"><tr>'
-            f'<td valign="top">{_tag(p["territory"])}&nbsp;&nbsp;{_source(p)}'
+            f'<td valign="top">{_tag(p["territory"], lang)}&nbsp;&nbsp;{_source(p)}'
             f'<div style="font-size:16px;font-weight:700;color:{INK};line-height:1.3;margin:6px 0 4px;">'
             f'<a href="{escape(p["url"])}" style="color:{INK};text-decoration:none;">{escape(p["title"])}</a></div>'
             f'<div style="font-size:14px;color:#4b5563;line-height:1.6;">{escape(p["summary"])}</div>'
-            + (f'<div style="margin-top:6px;">{_cta(p["url"])}</div>' if p.get("url") else "")
+            + (f'<div style="margin-top:6px;">{_cta(p["url"], lang=lang)}</div>' if p.get("url") else "")
             + "</td></tr></table>"
         )
     ponts_section = (
-        f'<tr><td style="padding:4px 36px 34px;">{_eyebrow("Ponts & connexions")}'
+        f'<tr><td style="padding:4px 36px 34px;">{_eyebrow(L["ponts"])}'
         f'<div style="font-size:13px;color:{MUTED};line-height:1.5;margin:-4px 0 16px;">'
-        "L'espace sabaudo relié à ses voisins — Grenoble, Lyon, Genève, la Suisse, "
-        "la France, l'international.</div>"
+        f'{escape(L["ponts_intro"])}</div>'
         f"{ponts_rows}</td></tr>"
     ) if ponts else ""
     inner = (
-        _header(data["week_label"], "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra", data.get("logo_url"))
+        _header(data["week_label"], L["tagline_magazine"], data.get("logo_url"), lang)
         # HÉROS / À LA UNE (Attention)
-        + f'<tr><td style="padding:26px 36px 0;">{_eyebrow("À la une")}</td></tr>'
+        + f'<tr><td style="padding:26px 36px 0;">{_eyebrow(L["a_la_une"])}</td></tr>'
         + (
             f'<tr><td style="padding:0 36px;"><img src="{escape(hero["image"])}" width="528" alt="" '
             'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
             if hero.get("image") else ""
         )
-        + f'<tr><td style="padding:14px 36px 6px;">{_tag(hero["territory"])}&nbsp;&nbsp;{_source(hero)}'
+        + f'<tr><td style="padding:14px 36px 6px;">{_tag(hero["territory"], lang)}&nbsp;&nbsp;{_source(hero)}'
           f'<div style="font-size:25px;font-weight:800;color:{INK};line-height:1.25;margin:11px 0 8px;">{escape(hero["title"])}</div>'
           f'<div style="font-size:15px;color:#374151;line-height:1.6;">{escape(hero["summary"])}</div>'
-          + (f'<div style="margin-top:16px;">{_button(hero["url"], "Lire l’article")}</div>' if hero.get("url") else "")
+          + (f'<div style="margin-top:16px;">{_button(hero["url"], L["lire_article"])}</div>' if hero.get("url") else "")
           + "</td></tr>"
         # SIGNAUX (Intérêt)
-        + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow("Les signaux de la semaine")}'
+        + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow(L["signaux"])}'
           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{signaux}</table></td></tr>'
         # CARTES (Désir + Action)
-        + f'<tr><td style="padding:30px 36px 34px;">{_eyebrow("Le tour des territoires")}'
+        + f'<tr><td style="padding:30px 36px 34px;">{_eyebrow(L["territoires"])}'
           f'{cards}</td></tr>'
         # PONTS & CONNEXIONS (dimension transfrontalière)
         + ponts_section
-        + _footer(data.get("pictogram_url") or data.get("logo_url"))
+        + _footer(data.get("pictogram_url") or data.get("logo_url"), lang)
     )
-    return _shell(inner, preheader=data["preheader"])
+    return _shell(inner, preheader=data["preheader"], lang=lang)
 
 
 # --------------------------------------------------------------------------- #

@@ -97,8 +97,8 @@ def main() -> int:
         sys.path.insert(0, str(ROOT / "scripts"))
         from push_brevo import create_from_data
 
-        cid = create_from_data(data, force=True)
-        print(f"Brouillon Brevo : {'créé id=' + str(cid) if cid else 'non créé (voir logs)'}")
+        ids = create_from_data(data, force=True)
+        print(f"Brouillon(s) Brevo : {'créé(s) id=' + ','.join(map(str, ids)) if ids else 'non créé (voir logs)'}")
     return 0
 
 

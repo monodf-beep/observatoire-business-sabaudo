@@ -114,9 +114,11 @@ ajouter, dans l'ordre :
    dossier/listes par langue — *outillé : `scripts/brevo_setup.py`, voir
    `docs/SETUP_BREVO_PERSONNALISATION.md`. Reste à exécuter sur le VPS et à
    renseigner les contacts.*
-3. ⬜ **Logique de variantes** : une fonction qui prend le JSON et le décline
-   (langue, puis ordre territorial) → N brouillons Brevo.
-4. ⬜ **Tag secteur** sur chaque brève (prépare l'axe « intérêts », via la page web).
+3. ✅ **Logique de variantes (langue)** : gabarit bilingue (`newsletter_variants`),
+   traduction automatique du contenu (`utils/translate.py`) et **un brouillon Brevo
+   par langue** (`push_brevo.py`, via `BREVO_LIST_ID_FR` / `BREVO_LIST_ID_IT`).
+4. ⬜ **Réordonnancement par territoire** (Étape 2), puis **tag secteur** /
+   page web pour les centres d'intérêt (Étape 3).
 
 ---
 
@@ -127,7 +129,9 @@ ajouter, dans l'ordre :
 - **Prérequis Brevo (outillé)** : attributs `LANGUE` / `TERRITOIRE` / `SECTEURS`
   + listes par langue — `scripts/brevo_setup.py` (guide :
   `docs/SETUP_BREVO_PERSONNALISATION.md`).
-- **Étape 1 — langue FR/IT** : deux versions via l'attribut `LANGUE` (modèle A).
+- **Étape 1 — langue FR/IT (FAITE, code)** : deux versions via l'attribut `LANGUE`
+  (modèle A). Gabarit bilingue + traduction IA + un brouillon Brevo par langue.
+  *Reste : créer les listes FR/IT dans Brevo et renseigner `BREVO_LIST_ID_FR/_IT`.*
 - **Étape 2 — territoire d'ancrage** : réordonner par `TERRITOIRE` (modèle A),
   sans jamais masquer les autres territoires.
 - **Étape 3 — centres d'intérêt** : via la page web « hub » (modèle C), quand le
