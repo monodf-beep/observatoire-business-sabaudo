@@ -14,11 +14,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 _PRESS_FILE = Path(__file__).resolve().parent.parent / "config" / "press_domains.txt"
+_PARTNER_FILE = Path(__file__).resolve().parent.parent / "config" / "partner_media.txt"
 
 
-def load_press_domains(path: Path | None = None) -> set[str]:
-    """Charge l'ensemble des domaines de presse (radar uniquement)."""
-    path = path or _PRESS_FILE
+def _load_domain_file(path: Path) -> set[str]:
     if not path.exists():
         return set()
     domains: set[str] = set()
@@ -29,10 +28,29 @@ def load_press_domains(path: Path | None = None) -> set[str]:
     return domains
 
 
-def is_press(domain: str, press: set[str]) -> bool:
-    """Vrai si le domaine (ou son domaine parent) figure dans la liste de presse."""
+def load_press_domains(path: Path | None = None) -> set[str]:
+    """Charge l'ensemble des domaines de presse (radar uniquement)."""
+    return _load_domain_file(path or _PRESS_FILE)
+
+
+def load_partner_media(path: Path | None = None) -> set[str]:
+    """Charge les médias partenaires (crédités et liés malgré leur nature éditoriale)."""
+    return _load_domain_file(path or _PARTNER_FILE)
+
+
+def _domain_matches(domain: str, domains: set[str]) -> bool:
     domain = (domain or "").lower()
-    return any(domain == p or domain.endswith("." + p) for p in press)
+    return any(domain == d or domain.endswith("." + d) for d in domains)
+
+
+def is_press(domain: str, press: set[str]) -> bool:
+    """Vrai si le domaine figure dans la liste de presse."""
+    return _domain_matches(domain, press)
+
+
+def is_partner(domain: str, partners: set[str]) -> bool:
+    """Vrai si le domaine est un média partenaire crédité/lié (prioritaire sur is_press)."""
+    return _domain_matches(domain, partners)
 
 
 _IMAGES_FILE = Path(__file__).resolve().parent.parent / "config" / "territory_images.txt"

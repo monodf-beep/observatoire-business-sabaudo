@@ -222,14 +222,16 @@ def split_markdown_json(text: str) -> tuple[str, dict | None]:
         return markdown, None
 
 
-def _enrich(entry: dict, registry: dict[int, dict], press: set[str]) -> dict | None:
+def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
+            partners: set[str] | None = None) -> dict | None:
     """Complète une entrée {id,titre,resume,acteur} avec lien/source/image d'origine.
 
-    Si la source est un média de presse (config/press_domains.txt), on n'expose
-    NI lien, NI logo, NI image : on attribue à l'acteur primaire (pas de pub au
-    journal). Sinon (source institutionnelle), on crédite et on lie normalement.
+    Presse (press_domains.txt) → radar uniquement : NI lien, NI logo, NI image.
+    Médias partenaires (partner_media.txt) → crédités et liés malgré leur nature
+    éditoriale (ex. nosalpes.eu). Prioritaire sur is_press.
+    Institutionnels → crédités et liés normalement.
     """
-    from utils.sources import domain_of, is_press, source_label
+    from utils.sources import domain_of, is_partner, is_press, source_label
 
     rec = registry.get(int(entry.get("id", -1))) if str(entry.get("id", "")).strip().lstrip("-").isdigit() else None
     if rec is None:
@@ -240,7 +242,7 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str]) -> dict | N
         "summary": entry.get("resume", ""),
         "territory": rec.get("territoire", "Indetermine"),
     }
-    if is_press(domain, press):
+    if is_press(domain, press) and not is_partner(domain, partners or set()):
         # Radar : on garde l'info, on retire tout ce qui crédite/promeut le journal.
         base.update({"url": "", "image": "", "domain": "", "source": (entry.get("acteur") or "").strip()})
     else:
@@ -256,13 +258,14 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str]) -> dict | N
 def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
                      logo_url: str, picto_url: str = "") -> dict | None:
     """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
-    from utils.sources import load_press_domains
+    from utils.sources import load_partner_media, load_press_domains
     press = load_press_domains()
+    partners = load_partner_media()
 
     une = parsed.get("une") or {}
-    hero = _enrich(une, registry, press)
-    items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry, press))]
-    ponts = [d for e in parsed.get("ponts", []) if (d := _enrich(e, registry, press))]
+    hero = _enrich(une, registry, press, partners)
+    items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry, press, partners))]
+    ponts = [d for e in parsed.get("ponts", []) if (d := _enrich(e, registry, press, partners))]
     signaux = []
     for s in parsed.get("signaux", []):
         rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None

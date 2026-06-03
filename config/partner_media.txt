@@ -1,0 +1,13 @@
+# Médias partenaires — crédités et liés dans la newsletter malgré leur nature éditoriale.
+#
+# Contrairement à la presse (press_domains.txt), ces sources reçoivent le traitement
+# institutionnel : logo + lien « Lire l'article » conservés.
+# Ajouter ici les médias de l'espace sabaudo avec lesquels Cultura Sabauda entretient
+# une relation éditoriale de confiance.
+#
+# Format : un domaine par ligne (sous-domaines couverts automatiquement).
+# Pour que le lien soit disponible, le flux RSS du média doit être ajouté directement
+# dans config/rss_feeds.txt (articles via Google News ont le domaine news.google.com,
+# pas le domaine d'origine — ils resteraient classés presse).
+
+nosalpes.eu
