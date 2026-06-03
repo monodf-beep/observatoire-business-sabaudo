@@ -83,6 +83,16 @@ Au quotidien, c'est **`02_Veille_traitee`** qui compte : les synthèses y arrive
 - [x] Déploiement sur le VPS + planification automatique
 - [ ] Alimentation des sources réelles (newsletters + flux à surveiller)
 
+### 🎯 Sprint 2 — Newsletter personnalisée (en cours)
+- [x] Cadrage de la personnalisation (`docs/PERSONNALISATION.md`)
+- [x] Rubrique éditoriale « Ponts & connexions » (dimension transfrontalière)
+- [x] Outil de configuration Brevo (`scripts/brevo_setup.py` + guide) : attributs
+  `LANGUE` / `TERRITOIRE` / `SECTEURS`, dossier et listes par langue
+- [ ] Exécuter la configuration Brevo sur le VPS + renseigner les contacts
+- [ ] Étape 1 — variante de langue FR/IT (une campagne par segment)
+- [ ] Étape 2 — réordonnancement par territoire d'ancrage
+- [ ] Étape 3 — centres d'intérêt (via page web, plus tard)
+
 ### 🔮 Pistes pour la suite (à décider ensemble, optionnel)
 - **Lecture plus agréable** : synthèses en Google Doc plutôt qu'en fichier texte.
 - **Envoi automatique** de la newsletter Brevo après validation.

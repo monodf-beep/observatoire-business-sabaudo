@@ -110,10 +110,13 @@ ajouter, dans l'ordre :
 
 1. ✅ **Rubrique « Ponts & connexions »** (schéma JSON + prompt + gabarit) — *fait
    à l'Étape 0, éditorial pur.*
-2. ⬜ **Tag secteur** sur chaque brève (prépare l'axe « intérêts »).
-3. ⬜ **Attributs contacts** dans Brevo (`LANGUE`, `TERRITOIRE`) + segments.
-4. ⬜ **Logique de variantes** : une fonction qui prend le JSON et le décline
+2. ✅ **Attributs contacts** dans Brevo (`LANGUE`, `TERRITOIRE`, `SECTEURS`) +
+   dossier/listes par langue — *outillé : `scripts/brevo_setup.py`, voir
+   `docs/SETUP_BREVO_PERSONNALISATION.md`. Reste à exécuter sur le VPS et à
+   renseigner les contacts.*
+3. ⬜ **Logique de variantes** : une fonction qui prend le JSON et le décline
    (langue, puis ordre territorial) → N brouillons Brevo.
+4. ⬜ **Tag secteur** sur chaque brève (prépare l'axe « intérêts », via la page web).
 
 ---
 
@@ -121,6 +124,9 @@ ajouter, dans l'ordre :
 
 - **Étape 0 — éditorial (faite)** : rubrique « Ponts & connexions ». Règle le
   besoin transfrontalier sans aucun ciblage.
+- **Prérequis Brevo (outillé)** : attributs `LANGUE` / `TERRITOIRE` / `SECTEURS`
+  + listes par langue — `scripts/brevo_setup.py` (guide :
+  `docs/SETUP_BREVO_PERSONNALISATION.md`).
 - **Étape 1 — langue FR/IT** : deux versions via l'attribut `LANGUE` (modèle A).
 - **Étape 2 — territoire d'ancrage** : réordonner par `TERRITOIRE` (modèle A),
   sans jamais masquer les autres territoires.

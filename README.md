@@ -77,6 +77,8 @@ python scripts/synthesize.py               # synthèse de la semaine ISO courant
 python scripts/synthesize.py --upload --brevo           # + upload Drive + brouillon Brevo
 python scripts/push_brevo.py --check       # liste les expéditeurs et listes Brevo
 python scripts/push_brevo.py --week 2026-W24            # brouillon Brevo d'une semaine
+python scripts/brevo_setup.py --check      # état des attributs/listes de personnalisation
+python scripts/brevo_setup.py              # crée attributs LANGUE/TERRITOIRE/SECTEURS + listes (idempotent)
 python utils/drive_upload.py fichier.md    # upload manuel vers Drive
 ```
 

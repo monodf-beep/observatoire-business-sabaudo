@@ -80,6 +80,53 @@ def list_contact_lists(api_key: str, timeout: int = 30) -> list[dict]:
     return _request("GET", f"/contacts/lists?{query}", api_key, None, timeout).get("lists", [])
 
 
+def list_attributes(api_key: str, timeout: int = 30) -> list[dict]:
+    """Liste les attributs de contact du compte (LANGUE, TERRITOIRE…)."""
+    return _request("GET", "/contacts/attributes", api_key, None, timeout).get("attributes", [])
+
+
+def create_attribute(
+    api_key: str,
+    name: str,
+    *,
+    attr_type: str = "text",
+    category: str = "normal",
+    timeout: int = 30,
+) -> None:
+    """Crée un attribut de contact (idempotence à gérer par l'appelant).
+
+    `category` = 'normal' pour un champ de contact classique ; `attr_type` = 'text',
+    'date', 'float', 'boolean'… Brevo répond 400 si l'attribut existe déjà.
+    """
+    path = f"/contacts/attributes/{category}/{urllib.parse.quote(name)}"
+    _request("POST", path, api_key, {"type": attr_type}, timeout)
+
+
+def list_folders(api_key: str, timeout: int = 30) -> list[dict]:
+    """Liste les dossiers de listes de contacts."""
+    query = urllib.parse.urlencode({"limit": 50})
+    return _request("GET", f"/contacts/folders?{query}", api_key, None, timeout).get("folders", [])
+
+
+def create_folder(api_key: str, name: str, timeout: int = 30) -> int:
+    """Crée un dossier de listes et renvoie son id."""
+    result = _request("POST", "/contacts/folders", api_key, {"name": name}, timeout)
+    folder_id = result.get("id")
+    if not folder_id:
+        raise BrevoError(f"Réponse inattendue de Brevo (pas d'id de dossier) : {result}")
+    return int(folder_id)
+
+
+def create_list(api_key: str, name: str, folder_id: int, timeout: int = 30) -> int:
+    """Crée une liste de contacts dans un dossier et renvoie son id."""
+    payload = {"name": name, "folderId": folder_id}
+    result = _request("POST", "/contacts/lists", api_key, payload, timeout)
+    list_id = result.get("id")
+    if not list_id:
+        raise BrevoError(f"Réponse inattendue de Brevo (pas d'id de liste) : {result}")
+    return int(list_id)
+
+
 def campaign_edit_url(campaign_id: int) -> str:
     """URL d'édition du brouillon dans l'interface Brevo."""
     return f"https://app.brevo.com/camp/template/{campaign_id}/message-setup"
