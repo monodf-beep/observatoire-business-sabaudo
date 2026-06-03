@@ -201,7 +201,8 @@ def _enrich(entry: dict, registry: dict[int, dict]) -> dict | None:
     }
 
 
-def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str, logo_url: str) -> dict | None:
+def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
+                     logo_url: str, picto_url: str = "") -> dict | None:
     """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
     une = parsed.get("une") or {}
     hero = _enrich(une, registry)
@@ -223,6 +224,7 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str, l
     return {
         "week_label": week_label,
         "logo_url": logo_url,
+        "pictogram_url": picto_url,
         "preheader": parsed.get("preheader", ""),
         "subject": (parsed.get("objet") or f"Business Sabaudo — {week_label}")[:120],
         "hero": hero,
@@ -351,7 +353,8 @@ def main() -> int:
     data = None
     if parsed:
         logo_url = os.getenv("BREVO_LOGO_URL", "")
-        data = build_email_data(parsed, registry, week_label_human(target_week), logo_url)
+        picto_url = os.getenv("BREVO_PICTO_URL", "")
+        data = build_email_data(parsed, registry, week_label_human(target_week), logo_url, picto_url)
     if data:
         data_path = OUTPUT_DIR / f"{target_week}.json"
         data_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")

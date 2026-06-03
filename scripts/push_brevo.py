@@ -88,6 +88,8 @@ def create_from_data(data: dict, force: bool = False) -> int | None:
     data = dict(data)
     if os.getenv("BREVO_LOGO_URL"):
         data["logo_url"] = os.getenv("BREVO_LOGO_URL")
+    if os.getenv("BREVO_PICTO_URL"):
+        data["pictogram_url"] = os.getenv("BREVO_PICTO_URL")
 
     subject = data.get("subject") or f"Business Sabaudo — {data.get('week_label', '')}"
     html = variant_magazine(data)

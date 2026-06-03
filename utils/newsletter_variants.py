@@ -124,7 +124,7 @@ def _footer(logo_url: str | None = None) -> str:
     if logo_url:
         logo = (
             f'<div style="margin-bottom:16px;"><img src="{logo_url}" alt="Cultura Sabauda" '
-            'height="30" style="height:30px;border:0;display:block;"></div>'
+            'height="46" style="height:46px;border:0;display:block;"></div>'
         )
     return (
         f'<tr><td style="background:#f7f9fc;padding:26px 36px;border-top:1px solid {BORDER};">'
@@ -226,7 +226,7 @@ def variant_magazine(data: dict) -> str:
         # CARTES (Désir + Action)
         + f'<tr><td style="padding:30px 36px 6px;">{_eyebrow("Le tour des territoires")}'
           f'{cards}</td></tr>'
-        + _footer(data.get("logo_url"))
+        + _footer(data.get("pictogram_url") or data.get("logo_url"))
     )
     return _shell(inner, preheader=data["preheader"])
 
@@ -255,7 +255,7 @@ def variant_digest(data: dict) -> str:
         + f'<tr><td style="padding:24px 36px 8px;font-size:15px;color:{INK};line-height:1.6;">{escape(data["intro"])}</td></tr>'
         + f'<tr><td style="padding:8px 36px 4px;">{_eyebrow("Au sommaire")}{rows}</td></tr>'
         + f'<tr><td align="center" style="padding:8px 36px 30px;">{_button(data["cta_url"], "Voir toute la veille")}</td></tr>'
-        + _footer(data.get("logo_url"))
+        + _footer(data.get("pictogram_url") or data.get("logo_url"))
     )
     return _shell(inner, preheader=data["preheader"])
 
@@ -291,6 +291,6 @@ def variant_editorial(data: dict) -> str:
         + f'<tr><td style="padding:26px 36px 2px;">{_eyebrow("Le tour des territoires")}'
           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{blocks}</table></td></tr>'
         + f'<tr><td style="padding:20px 36px 28px;font-size:14px;color:{INK};line-height:1.6;">{escape(data["signature"]).replace(chr(10), "<br>")}</td></tr>'
-        + _footer(data.get("logo_url"))
+        + _footer(data.get("pictogram_url") or data.get("logo_url"))
     )
     return _shell(inner, preheader=data["preheader"])

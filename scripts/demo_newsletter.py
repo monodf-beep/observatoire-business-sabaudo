@@ -56,6 +56,7 @@ def demo_data() -> dict:
     return {
         "week_label": "Édition de démonstration",
         "logo_url": os.getenv("BREVO_LOGO_URL", ""),
+        "pictogram_url": os.getenv("BREVO_PICTO_URL", ""),
         "preheader": "Turin accélère sur la deeptech, la Côte d'Azur rebondit, un appel Alcotra arrive.",
         "subject": "Business Sabaudo — édition de démonstration",
         "hero": hero,
