@@ -9,11 +9,10 @@
 # Héberge tes images (Brevo > Bibliothèque de contenu) et colle ici leurs URLs.
 # 'default' sert de repli si un territoire n'a aucune image.
 #
-# >>> À COMPLÉTER avec les URLs des visuels (bannières de marque ou photos libres de droits).
-# Exemples (à remplacer) :
-# Savoie;https://img.mailinblue.com/.../savoie.png
-# Piemonte;https://img.mailinblue.com/.../piemonte.png
-# Vallee-Aoste;https://img.mailinblue.com/.../vda.png
-# Nice;https://img.mailinblue.com/.../nice.png
-# Alcotra;https://img.mailinblue.com/.../alcotra.png
-# default;https://img.mailinblue.com/.../sabaudo.png
+# Bannières de marque « Observatoire économique » hébergées sur Brevo (1200×600).
+Savoie;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec783405f1c822ac64fc.png
+Piemonte;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec788ff3307ae7c9f3b2.png
+Vallee-Aoste;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec78d63faa2a8aba3560.png
+Nice;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec78d63faa2a8aba355f.png
+Alcotra;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec783405f1c822ac64fd.png
+default;https://img.mailinblue.com/10646318/images/content_library/original/6a1fec7850ae0c94d653a7e6.png
