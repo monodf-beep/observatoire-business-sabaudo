@@ -1,41 +1,50 @@
 # Flux RSS à collecter — collecte quotidienne
 #
 # Format (un par ligne) :  url;territoire
-#   - url       : URL du flux RSS/Atom
 #   - territoire : Savoie | Piemonte | Vallee-Aoste | Nice | Alcotra
 #
-# Les lignes vides et celles commençant par # sont ignorées.
-# ✅ = flux vérifié (renvoie du XML valide)   ⏳ = candidat à valider sur le VPS
-# (certains sites de presse sont bloqués depuis l'environnement de test mais
-#  fonctionnent depuis le VPS : décommenter après un essai concluant).
+# Deux types de sources :
+#  • INSTITUTIONNELLES (incubateurs, programmes…) : créditées et liées dans la
+#    newsletter (logo + lien + image).
+#  • PRESSE / Google News (voir config/press_domains.txt) : utilisées comme RADAR
+#    (détection) ; jamais créditées/liées — l'info est attribuée à l'acteur primaire.
 #
-# NB : la synthèse ne retient que les contenus à valeur économique ; des flux
-# régionaux généralistes sont donc acceptables (l'IA fait le tri).
+# Google News = recherche thématique « économie » par territoire (couverture large
+# et fiable). Locale FR pour Savoie/Nice, IT pour Piémont/Vallée d'Aoste.
 
 # ===================== SAVOIE / HAUTE-SAVOIE =====================
-# ✅ Le Dauphiné Libéré — éditions Savoie et Haute-Savoie (validés sur le VPS)
+# Radar éco (Google News)
+https://news.google.com/rss/search?q=%C3%A9conomie+Savoie+entreprise+OR+investissement&hl=fr&gl=FR&ceid=FR:fr;Savoie
+# Radar presse régionale (contenu complet)
 https://www.ledauphine.com/savoie/rss;Savoie
 https://www.ledauphine.com/haute-savoie/rss;Savoie
-# (savoie-mont-blanc.com : disparu ; ecosavoiemontblanc.com : serveur injoignable — écartés)
 
 # ===================== PIÉMONT =====================
-# ✅ I3P — Incubatore Politecnico di Torino (innovation / startups)
+# Institutionnel : incubateur du Politecnico (crédité + lié)
 https://www.i3p.it/news/feed/;Piemonte
-# ✅ Quotidiano Piemontese (actualité régionale, dont économie)
+# Radar éco (Google News, locale IT)
+https://news.google.com/rss/search?q=economia+Piemonte+impresa+OR+startup&hl=it&gl=IT&ceid=IT:it;Piemonte
+# Radar presse régionale
 https://www.quotidianopiemontese.it/feed/;Piemonte
 
 # ===================== VALLÉE D'AOSTE =====================
-# ✅ Pépinières d'entreprises VDA
+# Institutionnel : pépinières d'entreprises (crédité + lié)
 https://www.pepinieresvda.eu/feed;Vallee-Aoste
-# ✅ Aosta Sera (actualité régionale valdôtaine)
+# Radar éco (Google News, locale IT)
+https://news.google.com/rss/search?q=economia+%22Valle+d%27Aosta%22&hl=it&gl=IT&ceid=IT:it;Vallee-Aoste
+# Radar presse régionale
 https://www.aostasera.it/feed/;Vallee-Aoste
 
-# ===================== NICE / ALPES-MARITIMES =====================
-# ✅ Tribune Bulletin Côte d'Azur — économie / business azuréen (validé sur le VPS)
-https://www.tribuca.net/feed/;Nice
-# ✅ Nice-Matin — rubrique Économie (validé sur le VPS)
+# ===================== NICE (arrondissement de Nice) =====================
+# Périmètre : Nice, Menton + Université Côte d'Azur ; arrondissement de Grasse
+# (Cannes, Antibes, Grasse) exclu — sauf l'université, gardée explicitement.
+# Radar éco (Google News)
+https://news.google.com/rss/search?q=%C3%A9conomie+Nice+OR+Menton+OR+%22Universit%C3%A9+C%C3%B4te+d%27Azur%22+-Cannes+-Grasse&hl=fr&gl=FR&ceid=FR:fr;Nice
+# Radar presse : Nice-Matin rubrique Économie (contenu complet)
 https://www.nicematin.com/economie/rss;Nice
 
 # ===================== TRANSFRONTALIER ALCOTRA France-Italie =====================
-# ✅ Programme Interreg Alcotra
+# Institutionnel : programme Interreg Alcotra (crédité + lié)
 https://www.interreg-alcotra.eu/fr/rss.xml;Alcotra
+# Radar éco (Google News)
+https://news.google.com/rss/search?q=Alcotra+cooperazione+transfrontaliera+Alpi&hl=it&gl=IT&ceid=IT:it;Alcotra

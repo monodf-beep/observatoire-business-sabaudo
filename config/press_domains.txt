@@ -1,0 +1,17 @@
+# Domaines de PRESSE / médias — utilisés comme RADAR (détection) uniquement.
+#
+# Pour une info issue de ces sources, la newsletter n'affiche NI logo, NI lien,
+# NI image : on ne fait pas de publicité aux journaux (souvent concurrents).
+# L'information est reformulée et attribuée à l'ACTEUR primaire (l'entreprise ou
+# l'institution concernée), pas au média qui l'a relayée.
+#
+# Un domaine par ligne (le sous-domaine est couvert : "ledauphine.com" matche
+# "www.ledauphine.com"). Lignes vides et # ignorées.
+
+news.google.com
+ledauphine.com
+nicematin.com
+tribuca.net
+quotidianopiemontese.it
+aostasera.it
+torinoggi.it

@@ -138,21 +138,27 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "  {\n"
         '    "objet": "objet email, 60 caractères max, porteur de valeur",\n'
         '    "preheader": "phrase de prévisualisation qui complète l\'objet",\n'
-        '    "une": {"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases"},\n'
+        '    "une": {"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases", "acteur": "source primaire"},\n'
         '    "signaux": [{"id": <id>, "titre": "titre court"}],\n'
-        '    "articles": [{"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases"}],\n'
+        '    "articles": [{"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases", "acteur": "source primaire"}],\n'
         '    "signature": "Bonne lecture,\\nLa rédaction — Cultura Sabauda"\n'
         "  }\n"
         "  ```\n"
         "  - Remplace chaque <id> par un identifiant RÉEL [#id] de la liste ci-dessous\n"
         "    (un entier ≥ 1 réellement présent). N'invente JAMAIS d'id, n'utilise pas 0.\n"
+        "  - 'acteur' = l'ENTITÉ PRIMAIRE de l'info (l'entreprise, l'institution, l'organisme\n"
+        "    concerné : ex. « FC Annecy », « Casino de Saint-Vincent », « CCI Nice »). JAMAIS\n"
+        "    le journal/média qui l'a relayée — on ne cite pas la presse comme source.\n"
         "  - 'une' = l'actualité la plus marquante (le héros).\n"
         "  - 'signaux' = 3 à 5 signaux forts (titres courts).\n"
         "  - 'articles' = 4 à 6 brèves éditorialisées (hors 'une'), une par sujet fort.\n"
         "  - Ne retiens que les contenus à VALEUR ÉCONOMIQUE/ÉDITORIALE. Ignore les emails\n"
         "    de service (réponses automatiques, confirmations, fils internes) et les sujets\n"
         "    non économiques (faits divers, sport, météo). Si rien n'a de valeur,\n"
-        "    renvoie des listes vides et 'une': null.\n\n"
+        "    renvoie des listes vides et 'une': null.\n"
+        "  - Périmètre Nice : privilégie l'arrondissement de Nice (Nice, Menton et leur\n"
+        "    bassin) + l'Université Côte d'Azur. L'arrondissement de Grasse (Cannes,\n"
+        "    Antibes, Grasse) est secondaire — ne le retiens que si l'enjeu est majeur.\n\n"
         "PARTIE 2 — APRÈS le bloc JSON, une synthèse Markdown COURTE (archive interne) :\n"
         "  1. SIGNAUX FORTS (5 max) : titre + 1-2 phrases + territoire + source.\n"
         "  2. PAR TERRITOIRE : 1-2 lignes par territoire (Savoie, Piémont, Vallée d'Aoste,\n"
@@ -185,30 +191,46 @@ def split_markdown_json(text: str) -> tuple[str, dict | None]:
         return markdown, None
 
 
-def _enrich(entry: dict, registry: dict[int, dict]) -> dict | None:
-    """Complète une entrée {id,titre,resume} avec lien/source/image d'origine."""
-    from utils.sources import domain_of, source_label
+def _enrich(entry: dict, registry: dict[int, dict], press: set[str]) -> dict | None:
+    """Complète une entrée {id,titre,resume,acteur} avec lien/source/image d'origine.
+
+    Si la source est un média de presse (config/press_domains.txt), on n'expose
+    NI lien, NI logo, NI image : on attribue à l'acteur primaire (pas de pub au
+    journal). Sinon (source institutionnelle), on crédite et on lie normalement.
+    """
+    from utils.sources import domain_of, is_press, source_label
 
     rec = registry.get(int(entry.get("id", -1))) if str(entry.get("id", "")).strip().lstrip("-").isdigit() else None
     if rec is None:
         return None
-    return {
+    domain = domain_of(rec)
+    base = {
         "title": entry.get("titre") or rec.get("title", ""),
         "summary": entry.get("resume", ""),
-        "url": rec.get("link", ""),
-        "image": rec.get("image", ""),
         "territory": rec.get("territoire", "Indetermine"),
-        "source": source_label(rec),
-        "domain": domain_of(rec),
     }
+    if is_press(domain, press):
+        # Radar : on garde l'info, on retire tout ce qui crédite/promeut le journal.
+        base.update({"url": "", "image": "", "domain": "", "source": (entry.get("acteur") or "").strip()})
+    else:
+        base.update({
+            "url": rec.get("link", ""),
+            "image": rec.get("image", ""),
+            "domain": domain,
+            "source": entry.get("acteur") or source_label(rec),
+        })
+    return base
 
 
 def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
                      logo_url: str, picto_url: str = "") -> dict | None:
     """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
+    from utils.sources import load_press_domains
+    press = load_press_domains()
+
     une = parsed.get("une") or {}
-    hero = _enrich(une, registry)
-    items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry))]
+    hero = _enrich(une, registry, press)
+    items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry, press))]
     signaux = []
     for s in parsed.get("signaux", []):
         rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None
