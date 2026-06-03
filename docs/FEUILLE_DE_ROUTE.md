@@ -92,7 +92,8 @@ Au quotidien, c'est **`02_Veille_traitee`** qui compte : les synthèses y arrive
 - [ ] Créer le formulaire d'inscription Brevo (langue + territoire + intérêts)
 - [x] Étape 1 — variante de langue FR/IT (gabarit bilingue + traduction IA + un
   brouillon Brevo par langue) ; reste à brancher les listes FR/IT du `.env`
-- [ ] Étape 2 — réordonnancement par territoire d'ancrage
+- [x] Étape 2 — réordonnancement par territoire d'ancrage (« Chez vous » en tête) ;
+  reste à créer les listes de territoire et renseigner `BREVO_LIST_ID_<LANG>_<TERR>`
 - [ ] Étape 3 — centres d'intérêt (via page web, plus tard)
 
 ### 🔮 Pistes pour la suite (à décider ensemble, optionnel)

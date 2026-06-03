@@ -86,12 +86,18 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description="Maquette de newsletter (gabarit magazine).")
     parser.add_argument("--out", default="/tmp/demo_business_sabaudo.html", help="Fichier HTML de sortie.")
+    parser.add_argument("--lang", default="fr", choices=["fr", "it"], help="Langue d'interface (défaut fr).")
+    parser.add_argument("--territory", default="", help="Territoire d'ancrage (« Chez vous » en tête) : "
+                        "Savoie, Piemonte, Vallee-Aoste, Nice. Vide = édition générale.")
     parser.add_argument("--brevo", action="store_true", help="Créer le BROUILLON de démonstration dans Brevo.")
     args = parser.parse_args()
 
     data = demo_data()
+    data["lang"] = args.lang
+    if args.territory:
+        data["anchor"] = args.territory
     Path(args.out).write_text(variant_magazine(data), encoding="utf-8")
-    print(f"Maquette écrite : {args.out}")
+    print(f"Maquette écrite : {args.out} (lang={args.lang}, territoire={args.territory or '—'})")
 
     if args.brevo:
         sys.path.insert(0, str(ROOT / "scripts"))

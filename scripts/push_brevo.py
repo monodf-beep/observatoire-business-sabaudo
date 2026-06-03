@@ -16,6 +16,9 @@ Configuration (.env) :
     BREVO_LIST_ID        id(s) de la liste (héritage / mono-langue FR)
     BREVO_LIST_ID_FR     id(s) de la liste francophone (perso langue)
     BREVO_LIST_ID_IT     id(s) de la liste italophone  (perso langue)
+    BREVO_LIST_ID_<LANG>_<TERR>  (option) liste par territoire d'ancrage :
+                         <TERR> ∈ SAVOIE, PIEMONTE, VALLEE_AOSTE, NICE → édition
+                         « Chez vous » en tête (les autres territoires restent).
     BREVO_LOGO_URL       (option) URL du logo hébergé (bibliothèque média Brevo)
 
 Usage :
@@ -71,25 +74,42 @@ def _parse_ids(raw: str) -> list[int]:
 # Libellé de langue pour les noms de campagne (le contenu, lui, est traduit).
 _LANG_TAG = {"fr": "FR", "it": "IT"}
 
+# Territoires d'ancrage : (clé interne, suffixe de variable .env, libellé court).
+_TERRITORIES = [
+    ("Savoie", "SAVOIE", "Savoie"),
+    ("Piemonte", "PIEMONTE", "Piémont"),
+    ("Vallee-Aoste", "VALLEE_AOSTE", "Vallée d'Aoste"),
+    ("Nice", "NICE", "Nice"),
+]
 
-def _lang_targets() -> list[tuple[str, list[int]]]:
-    """Langues à produire et leurs listes Brevo, d'après le .env.
 
-    - BREVO_LIST_ID_FR / BREVO_LIST_ID_IT : une campagne par langue (perso).
-    - Repli : BREVO_LIST_ID (héritage) → une seule campagne FR.
+def _editions() -> dict[str, list[tuple[str | None, list[int], str | None]]]:
+    """Éditions à produire, groupées par langue (pour ne traduire qu'une fois/langue).
+
+    Pour chaque langue (fr/it) :
+      - une édition PAR territoire si BREVO_LIST_ID_<LANG>_<TERR> est défini
+        (anchor = territoire → rubrique « Chez vous » en tête) ;
+      - une édition GÉNÉRALE (anchor=None) vers BREVO_LIST_ID_<LANG> si défini.
+    Repli : BREVO_LIST_ID (héritage) → une édition générale FR.
+    Renvoie { lang: [(anchor|None, list_ids, libellé|None), …] }.
     """
-    targets: list[tuple[str, list[int]]] = []
-    fr = _parse_ids(os.getenv("BREVO_LIST_ID_FR", ""))
-    it = _parse_ids(os.getenv("BREVO_LIST_ID_IT", ""))
-    if fr:
-        targets.append(("fr", fr))
-    if it:
-        targets.append(("it", it))
-    if not targets:
+    result: dict[str, list[tuple[str | None, list[int], str | None]]] = {}
+    for lang in ("fr", "it"):
+        eds: list[tuple[str | None, list[int], str | None]] = []
+        for terr_key, env_suffix, label in _TERRITORIES:
+            ids = _parse_ids(os.getenv(f"BREVO_LIST_ID_{lang.upper()}_{env_suffix}", ""))
+            if ids:
+                eds.append((terr_key, ids, label))
+        base = _parse_ids(os.getenv(f"BREVO_LIST_ID_{lang.upper()}", ""))
+        if base:
+            eds.append((None, base, None))
+        if eds:
+            result[lang] = eds
+    if not result:
         legacy = _parse_ids(os.getenv("BREVO_LIST_ID", ""))
         if legacy:
-            targets.append(("fr", legacy))
-    return targets
+            result["fr"] = [(None, legacy, None)]
+    return result
 
 
 def create_from_data(data: dict, force: bool = False) -> list[int]:
@@ -101,11 +121,11 @@ def create_from_data(data: dict, force: bool = False) -> list[int]:
     api_key = os.getenv("BREVO_API_KEY")
     sender_name = os.getenv("BREVO_SENDER_NAME")
     sender_email = os.getenv("BREVO_SENDER_EMAIL")
-    targets = _lang_targets()
+    editions = _editions()
     missing = [k for k, v in {
         "BREVO_API_KEY": api_key, "BREVO_SENDER_NAME": sender_name,
         "BREVO_SENDER_EMAIL": sender_email,
-        "BREVO_LIST_ID(_FR/_IT)": targets,
+        "BREVO_LIST_ID(_FR/_IT[/_TERR])": editions,
     }.items() if not v]
     if missing:
         log.warning("Configuration Brevo incomplète (%s). Brouillon non créé.", ", ".join(missing))
@@ -123,33 +143,38 @@ def create_from_data(data: dict, force: bool = False) -> list[int]:
         base["pictogram_url"] = os.getenv("BREVO_PICTO_URL")
 
     created: list[int] = []
-    for lang, list_ids in targets:
-        # Une seule sélection éditoriale (FR) ; on traduit le contenu si besoin.
+    for lang, lang_editions in editions.items():
+        # Une seule sélection éditoriale (FR) ; on traduit le contenu UNE fois par langue.
         try:
             from utils.translate import translate_email_data
             data_lang = translate_email_data(base, lang)
         except Exception as exc:  # traduction indisponible/échouée → on saute cette langue
-            log.error("Traduction %s échouée, brouillon %s ignoré : %s", lang, lang.upper(), exc)
+            log.error("Traduction %s échouée, brouillons %s ignorés : %s", lang, lang.upper(), exc)
             continue
 
         week_label = data_lang.get("week_label", "")
         subject = data_lang.get("subject") or f"Business Sabaudo — {week_label}"
-        html = variant_magazine(data_lang)
-        name = f"Business Sabaudo {_LANG_TAG.get(lang, lang.upper())} — {week_label}".strip(" —")
+        for anchor, list_ids, label in lang_editions:
+            # Même contenu traduit ; on ne change QUE l'ordre (territoire d'ancrage).
+            data_v = {**data_lang, "anchor": anchor}
+            html = variant_magazine(data_v)
+            tag = _LANG_TAG.get(lang, lang.upper())
+            name = " ".join(filter(None, ["Business Sabaudo", tag, label]))
+            name = f"{name} — {week_label}".strip(" —")
 
-        try:
-            campaign_id = create_draft_campaign(
-                api_key=api_key, name=name, subject=subject,
-                sender_name=sender_name, sender_email=sender_email,
-                list_ids=list_ids, html_content=html,
-            )
-        except BrevoError as exc:
-            log.error("Création du brouillon Brevo (%s) échouée : %s", lang.upper(), exc)
-            continue
+            try:
+                campaign_id = create_draft_campaign(
+                    api_key=api_key, name=name, subject=subject,
+                    sender_name=sender_name, sender_email=sender_email,
+                    list_ids=list_ids, html_content=html,
+                )
+            except BrevoError as exc:
+                log.error("Création du brouillon Brevo (%s) échouée : %s", name, exc)
+                continue
 
-        log.info("Brouillon Brevo %s créé (id=%s) — objet : %s", lang.upper(), campaign_id, subject)
-        log.info("À relire/envoyer ici : %s", campaign_edit_url(campaign_id))
-        created.append(campaign_id)
+            log.info("Brouillon Brevo créé (id=%s) — %s", campaign_id, name)
+            log.info("À relire/envoyer ici : %s", campaign_edit_url(campaign_id))
+            created.append(campaign_id)
 
     if created:
         log.info("⚠ Aucun envoi automatique — validation et envoi manuels par Franck.")

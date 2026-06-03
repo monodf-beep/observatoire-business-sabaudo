@@ -49,6 +49,8 @@ _LABELS = {
         "a_la_une": "À la une",
         "signaux": "Les signaux de la semaine",
         "territoires": "Le tour des territoires",
+        "chez_vous": "Chez vous",
+        "autres_territoires": "Dans l'espace sabaudo",
         "ponts": "Ponts & connexions",
         "ponts_intro": "L'espace sabaudo relié à ses voisins — Grenoble, Lyon, "
                        "Genève, la Suisse, la France, l'international.",
@@ -70,6 +72,8 @@ _LABELS = {
         "a_la_une": "In primo piano",
         "signaux": "I segnali della settimana",
         "territoires": "Il giro dei territori",
+        "chez_vous": "Da voi",
+        "autres_territoires": "Nello spazio sabaudo",
         "ponts": "Ponti e connessioni",
         "ponts_intro": "Lo spazio sabaudo in collegamento con i suoi vicini — Grenoble, "
                        "Lione, Ginevra, la Svizzera, la Francia, l'internazionale.",
@@ -90,6 +94,11 @@ _LABELS = {
 def labels(lang: str) -> dict:
     """Renvoie le dictionnaire de libellés d'interface pour la langue (repli FR)."""
     return _LABELS.get(lang, _LABELS["fr"])
+
+
+def _territory_label(territory: str, lang: str = "fr") -> str:
+    _, _, default = _TERRITORY.get(territory, ("", "", territory or ""))
+    return _TERRITORY_LABELS.get(lang, {}).get(territory, default)
 
 
 _FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
@@ -248,29 +257,53 @@ def variant_magazine(data: dict) -> str:
             f'{escape(s["title"])}</div></td></tr>'
         )
     items = data["items"]
-    cards = ""
-    for idx, it in enumerate(items):
-        wrap = (
-            "margin:0;padding:0;" if idx == len(items) - 1
-            else f"border-bottom:1px solid {BORDER};margin:0 0 24px;padding:0 0 22px;"
-        )
-        img = ""
-        if it.get("image"):
-            img = (
-                f'<tr><td style="padding:0 0 12px;"><img src="{escape(it["image"])}" width="528" alt="" '
-                'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
+
+    def _cards_html(card_items: list[dict]) -> str:
+        out = ""
+        for idx, it in enumerate(card_items):
+            wrap = (
+                "margin:0;padding:0;" if idx == len(card_items) - 1
+                else f"border-bottom:1px solid {BORDER};margin:0 0 24px;padding:0 0 22px;"
             )
-        cards += (
-            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
-            f'style="{wrap}">'
-            f"{img}"
-            f'<tr><td style="padding:0 0 8px;">{_tag(it["territory"], lang)}&nbsp;&nbsp;{_source(it)}</td></tr>'
-            f'<tr><td style="padding:0 0 6px;font-size:19px;font-weight:700;color:{INK};line-height:1.3;">'
-            f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{escape(it["title"])}</a></td></tr>'
-            f'<tr><td style="font-size:15px;color:#374151;line-height:1.6;">{escape(it["summary"])}</td></tr>'
-            f'<tr><td style="padding:10px 0 0;">{_cta(it["url"], lang=lang)}</td></tr>'
-            "</table>"
+            img = ""
+            if it.get("image"):
+                img = (
+                    f'<tr><td style="padding:0 0 12px;"><img src="{escape(it["image"])}" width="528" alt="" '
+                    'style="width:100%;height:auto;display:block;border-radius:10px;border:0;"></td></tr>'
+                )
+            out += (
+                '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+                f'style="{wrap}">'
+                f"{img}"
+                f'<tr><td style="padding:0 0 8px;">{_tag(it["territory"], lang)}&nbsp;&nbsp;{_source(it)}</td></tr>'
+                f'<tr><td style="padding:0 0 6px;font-size:19px;font-weight:700;color:{INK};line-height:1.3;">'
+                f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{escape(it["title"])}</a></td></tr>'
+                f'<tr><td style="font-size:15px;color:#374151;line-height:1.6;">{escape(it["summary"])}</td></tr>'
+                f'<tr><td style="padding:10px 0 0;">{_cta(it["url"], lang=lang)}</td></tr>'
+                "</table>"
+            )
+        return out
+
+    # PERSONNALISATION PAR TERRITOIRE : si un territoire d'ancrage est fourni
+    # (data['anchor']), ses brèves remontent sous « Chez vous », les autres restent
+    # sous « Dans l'espace sabaudo ». Sans ancrage : un seul « Tour des territoires ».
+    anchor = data.get("anchor")
+    home = [it for it in items if anchor and it.get("territory") == anchor]
+    others = [it for it in items if not (anchor and it.get("territory") == anchor)]
+
+    def _section(eyebrow_text: str, cards_html: str, pad: str) -> str:
+        return f'<tr><td style="padding:{pad};">{_eyebrow(eyebrow_text)}{cards_html}</td></tr>'
+
+    if home:
+        territoires_html = _section(
+            f'{L["chez_vous"]} — {_territory_label(anchor, lang)}',
+            _cards_html(home),
+            "30px 36px 4px" if others else "30px 36px 34px",
         )
+        if others:
+            territoires_html += _section(L["autres_territoires"], _cards_html(others), "24px 36px 34px")
+    else:
+        territoires_html = _section(L["territoires"], _cards_html(others), "30px 36px 34px")
     # PONTS & CONNEXIONS — la dimension transfrontalière (commune à tous les lecteurs).
     # Liste compacte sans image : l'espace sabaudo relié à ses voisins.
     ponts = data.get("ponts") or []
@@ -309,9 +342,8 @@ def variant_magazine(data: dict) -> str:
         # SIGNAUX (Intérêt)
         + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow(L["signaux"])}'
           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{signaux}</table></td></tr>'
-        # CARTES (Désir + Action)
-        + f'<tr><td style="padding:30px 36px 34px;">{_eyebrow(L["territoires"])}'
-          f'{cards}</td></tr>'
+        # CARTES (Désir + Action) — réordonnées par territoire d'ancrage si fourni
+        + territoires_html
         # PONTS & CONNEXIONS (dimension transfrontalière)
         + ponts_section
         + _footer(data.get("pictogram_url") or data.get("logo_url"), lang)

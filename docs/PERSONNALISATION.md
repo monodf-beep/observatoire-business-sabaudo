@@ -117,8 +117,10 @@ ajouter, dans l'ordre :
 3. ✅ **Logique de variantes (langue)** : gabarit bilingue (`newsletter_variants`),
    traduction automatique du contenu (`utils/translate.py`) et **un brouillon Brevo
    par langue** (`push_brevo.py`, via `BREVO_LIST_ID_FR` / `BREVO_LIST_ID_IT`).
-4. ⬜ **Réordonnancement par territoire** (Étape 2), puis **tag secteur** /
-   page web pour les centres d'intérêt (Étape 3).
+4. ✅ **Réordonnancement par territoire** (Étape 2) : rubrique « Chez vous » en
+   tête + « Dans l'espace sabaudo » pour les autres, sans rien masquer. Édition
+   produite si `BREVO_LIST_ID_<LANG>_<TERRITOIRE>` est défini.
+5. ⬜ **Tag secteur** / page web pour les centres d'intérêt (Étape 3).
 
 ---
 
@@ -132,8 +134,10 @@ ajouter, dans l'ordre :
 - **Étape 1 — langue FR/IT (FAITE, code)** : deux versions via l'attribut `LANGUE`
   (modèle A). Gabarit bilingue + traduction IA + un brouillon Brevo par langue.
   *Reste : créer les listes FR/IT dans Brevo et renseigner `BREVO_LIST_ID_FR/_IT`.*
-- **Étape 2 — territoire d'ancrage** : réordonner par `TERRITOIRE` (modèle A),
-  sans jamais masquer les autres territoires.
+- **Étape 2 — territoire d'ancrage (FAITE, code)** : « Chez vous » en tête, les
+  autres territoires conservés. Édition produite par territoire via
+  `BREVO_LIST_ID_<LANG>_<TERRITOIRE>`. *Reste : créer les listes/segments de
+  territoire dans Brevo et renseigner ces variables si on active cet axe.*
 - **Étape 3 — centres d'intérêt** : via la page web « hub » (modèle C), quand le
   tableau de bord existera.
 
