@@ -1,0 +1,22 @@
+# Photos par ACTEUR — vraies images des entreprises/institutions à la une.
+#
+# Quand un article vient de la PRESSE, son image est retirée (droits + on ne
+# promeut pas le journal) : la newsletter pose alors la bannière générique du
+# territoire. Ce fichier permet de FAIRE MIEUX pour les acteurs qu'on connaît —
+# leur vraie photo s'affiche à la place de la bannière, dès qu'ils sont cités.
+#
+# Format : mot-clé;url    (une ligne par photo)
+#   - mot-clé : cherché (insensible à la casse) dans le nom de l'acteur OU le titre
+#     de l'article. Ex. « contoz » correspond à « Scierie Contoz », « Société Contoz »…
+#   - url : image hébergée de façon stable. RECOMMANDÉ : Brevo > Bibliothèque de
+#     contenu (URL img.mailinblue.com), comme pour les bannières. Évite de pointer
+#     vers le site d'origine (lien fragile, parfois bloqué en email).
+#   - La 1re correspondance gagne : mets les mots-clés les plus spécifiques en haut.
+#
+# ⚠ DROITS : n'inscris ici que des images dont l'usage est autorisé (photo fournie
+# par l'acteur, libre de droits, ou accord obtenu). Beaucoup de photos d'entreprise
+# sont l'œuvre d'un photographe (ex. la photo Contoz est créditée « NaturoFILM ») :
+# demande l'autorisation avant de l'utiliser.
+#
+# Exemple (à activer une fois la photo hébergée sur Brevo et les droits OK) :
+# contoz;https://img.mailinblue.com/10646318/images/content_library/original/XXXXXXXX.jpg

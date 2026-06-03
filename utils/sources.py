@@ -54,6 +54,7 @@ def is_partner(domain: str, partners: set[str]) -> bool:
 
 
 _IMAGES_FILE = Path(__file__).resolve().parent.parent / "config" / "territory_images.txt"
+_ACTOR_IMAGES_FILE = Path(__file__).resolve().parent.parent / "config" / "actor_images.txt"
 
 
 def load_territory_images(path: Path | None = None) -> dict[str, list[str]]:
@@ -72,6 +73,37 @@ def load_territory_images(path: Path | None = None) -> dict[str, list[str]]:
     return images
 
 
+def load_actor_images(path: Path | None = None) -> list[tuple[str, str]]:
+    """Charge les photos par ACTEUR : [(mot-clé en minuscules, url), …].
+
+    Format du fichier : `mot-clé;url`. Le mot-clé est cherché (insensible à la
+    casse) dans le nom de l'acteur ou le titre d'un article : s'il correspond, la
+    vraie photo de l'acteur remplace la bannière générique de territoire.
+    Ordre conservé → la 1re correspondance gagne (mettre les plus spécifiques d'abord).
+    """
+    path = path or _ACTOR_IMAGES_FILE
+    pairs: list[tuple[str, str]] = []
+    if not path.exists():
+        return pairs
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or ";" not in line:
+            continue
+        keyword, url = (p.strip() for p in line.split(";", 1))
+        if keyword and url:
+            pairs.append((keyword.lower(), url))
+    return pairs
+
+
+def pick_actor_image(item: dict, actor_images: list[tuple[str, str]]) -> str:
+    """Photo d'acteur si un mot-clé enregistré apparaît dans 'source' ou 'title'."""
+    haystack = f"{item.get('source', '')} {item.get('title', '')}".lower()
+    for keyword, url in actor_images:
+        if keyword in haystack:
+            return url
+    return ""
+
+
 def pick_image(territory: str, key: str, images: dict[str, list[str]]) -> str:
     """Choisit une image de substitution (déterministe par 'key', pour varier)."""
     import hashlib
@@ -83,28 +115,39 @@ def pick_image(territory: str, key: str, images: dict[str, list[str]]) -> str:
     return pool[idx]
 
 
-def apply_fallback_images(data: dict, images: dict[str, list[str]] | None = None) -> dict:
+def apply_fallback_images(data: dict, images: dict[str, list[str]] | None = None,
+                          actor_images: list[tuple[str, str]] | None = None) -> dict:
     """Pose les images de substitution sur le héros et les cartes d'une newsletter.
 
-    Le HÉROS reçoit toujours une image s'il n'en a pas (impact AIDA en ouverture).
-    Pour les CARTES, une substitution tous les 3 articles sans image — rythme visuel
-    sans saturation. Idempotent (n'écrase jamais une image native) et appliqué au
-    rendu, donc il s'adapte automatiquement à config/territory_images.txt sans
-    relancer la synthèse IA. Modifie et renvoie `data`.
+    Priorité : image native > PHOTO D'ACTEUR enregistrée (config/actor_images.txt) >
+    bannière de TERRITOIRE générique (config/territory_images.txt).
+    Le HÉROS reçoit toujours une image s'il n'en a pas (impact AIDA en ouverture) ;
+    une photo d'acteur s'applique aussi aux cartes dès qu'elle correspond. Les
+    bannières génériques, elles, ne tombent qu'un article sur 3 (rythme sans
+    saturation). Idempotent (n'écrase jamais une image native) et appliqué au rendu,
+    donc il suit config/*.txt sans relancer la synthèse IA. Modifie et renvoie `data`.
     """
     if images is None:
         images = load_territory_images()
-    if not images:
+    if actor_images is None:
+        actor_images = load_actor_images()
+    if not images and not actor_images:
         return data
     hero = data.get("hero")
     if hero and not hero.get("image"):
-        hero["image"] = pick_image(hero.get("territory", ""), hero.get("title", ""), images)
+        hero["image"] = (pick_actor_image(hero, actor_images)
+                         or pick_image(hero.get("territory", ""), hero.get("title", ""), images))
     gap = 0
     for it in data.get("items", []):
-        if not it.get("image"):
-            if gap == 0:
-                it["image"] = pick_image(it.get("territory", ""), it.get("title", ""), images)
-            gap = (gap + 1) % 3
+        if it.get("image"):
+            continue
+        actor = pick_actor_image(it, actor_images)
+        if actor:
+            it["image"] = actor  # une vraie photo d'acteur passe toujours
+            continue
+        if gap == 0:
+            it["image"] = pick_image(it.get("territory", ""), it.get("title", ""), images)
+        gap = (gap + 1) % 3
     return data
 
 
