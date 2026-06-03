@@ -13,11 +13,10 @@
 # régionaux généralistes sont donc acceptables (l'IA fait le tri).
 
 # ===================== SAVOIE / HAUTE-SAVOIE =====================
-# (savoie-mont-blanc.com/rss n'existe plus). Pas de flux éco fiable confirmé.
-# ⏳ à valider sur le VPS :
-# https://www.ledauphine.com/savoie/rss;Savoie
-# https://www.ledauphine.com/haute-savoie/rss;Savoie
-# https://www.ecosavoiemontblanc.com/feed/;Savoie
+# ✅ Le Dauphiné Libéré — éditions Savoie et Haute-Savoie (validés sur le VPS)
+https://www.ledauphine.com/savoie/rss;Savoie
+https://www.ledauphine.com/haute-savoie/rss;Savoie
+# (savoie-mont-blanc.com : disparu ; ecosavoiemontblanc.com : serveur injoignable — écartés)
 
 # ===================== PIÉMONT =====================
 # ✅ I3P — Incubatore Politecnico di Torino (innovation / startups)
@@ -32,10 +31,10 @@ https://www.pepinieresvda.eu/feed;Vallee-Aoste
 https://www.aostasera.it/feed/;Vallee-Aoste
 
 # ===================== NICE / ALPES-MARITIMES =====================
-# Pas de flux confirmé depuis l'environnement de test (sites bloqués).
-# ⏳ à valider sur le VPS :
-# https://www.tribuca.net/feed/;Nice
-# https://www.nicematin.com/economie/rss;Nice
+# ✅ Tribune Bulletin Côte d'Azur — économie / business azuréen (validé sur le VPS)
+https://www.tribuca.net/feed/;Nice
+# ✅ Nice-Matin — rubrique Économie (validé sur le VPS)
+https://www.nicematin.com/economie/rss;Nice
 
 # ===================== TRANSFRONTALIER ALCOTRA France-Italie =====================
 # ✅ Programme Interreg Alcotra
