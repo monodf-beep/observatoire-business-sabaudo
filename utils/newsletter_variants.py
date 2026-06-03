@@ -296,26 +296,30 @@ def variant_magazine(data: dict) -> str:
     items = data["items"]
     anchor = data.get("anchor")
 
-    # ANCRAGE DE LA UNE : pour une édition territoriale, la « une » doit être LOCALE.
-    # Si la une n'est pas du territoire d'ancrage mais qu'une brève locale existe,
-    # on promeut la 1re brève locale en une — en préférant celle qui a une image
-    # (AIDA : Attention → impact visuel immédiat). L'ancienne une rejoint les cartes.
+    # Une VRAIE photo = image présente ET non bannière de substitution générique.
+    def _real_img(it: dict) -> bool:
+        return bool(it and it.get("image")) and not it.get("image_fallback")
+
+    # ANCRAGE DE LA UNE : pour une édition territoriale, on PRÉFÈRE une une locale —
+    # mais sans jamais sacrifier la règle d'ouverture « vraie photo ». On ne promeut
+    # une brève locale en une que si elle a une vraie photo ; sinon on garde la une
+    # globale (déjà dotée d'une vraie photo). L'ancienne une rejoint les cartes.
     if anchor and (not hero or hero.get("territory") != anchor):
         local = [it for it in items if it.get("territory") == anchor]
-        if local:
-            local_with_img = [it for it in local if it.get("image")]
-            new_hero = (local_with_img or local)[0]
+        local_real = [it for it in local if _real_img(it)]
+        new_hero = local_real[0] if local_real else (local[0] if (local and not hero) else None)
+        if new_hero is not None:
             rest = [it for it in items if it is not new_hero]
             if hero:
                 rest = [hero] + rest
             hero, items = new_hero, rest
 
-    # AIDA — sans ancrage territorial : si le héros n'a pas d'image mais qu'une
-    # carte en a une, on les échange pour maximiser l'impact visuel en ouverture.
-    if not anchor and hero and not hero.get("image"):
-        items_with_img = [it for it in items if it.get("image")]
-        if items_with_img:
-            promoted = items_with_img[0]
+    # AIDA — sécurité : si la une n'a pas de vraie photo mais qu'une carte en a une,
+    # on les échange pour ouvrir sur un visuel réel.
+    if hero and not _real_img(hero):
+        items_real = [it for it in items if _real_img(it)]
+        if items_real:
+            promoted = items_real[0]
             items = [hero] + [it for it in items if it is not promoted]
             hero = promoted
 

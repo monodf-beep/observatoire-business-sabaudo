@@ -60,12 +60,14 @@ def _ask_official_site(actor: str, territory: str, title: str, *, api_key: str, 
         client = anthropic.Anthropic(api_key=api_key)
         msg = client.messages.create(
             model=model,
-            max_tokens=1024,
+            max_tokens=2048,
             tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}],
             messages=[{"role": "user", "content": prompt}],
         )
     except Exception as exc:  # SDK trop ancien, outil indisponible, erreur réseau…
-        log.info("Recherche web indisponible pour « %s » : %s", actor, exc)
+        log.warning("Recherche web indisponible (photo) pour « %s » : %s — "
+                    "vérifier anthropic>=0.49.0 et l'accès à l'outil web_search.",
+                    actor, exc)
         return ""
     text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
     match = re.search(r"\{[^{}]*\"site\"[^{}]*\}", text, re.S)

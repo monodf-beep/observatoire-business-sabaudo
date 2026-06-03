@@ -1,8 +1,11 @@
-# Images de SUBSTITUTION par territoire.
+# Bannières de SUBSTITUTION par territoire — pour les CARTES uniquement.
 #
-# Utilisées quand un article n'a pas d'image réutilisable (cas presse : on ne
-# reprend pas l'image du journal) ou quand le flux ne fournit aucun visuel.
-# Les sources INSTITUTIONNELLES gardent, elles, leur propre image.
+# Utilisées sur les cartes sans visuel (1 carte sur 3, pour le rythme), quand un
+# article n'a pas d'image réutilisable (cas presse) ou que le flux n'en fournit pas.
+# IMPORTANT : ces bannières ne sont JAMAIS mises en tête de newsletter — la « une »
+# commence toujours par une VRAIE photo (image native, photo épinglée, ou photo de
+# l'acteur trouvée par recherche web). Les sources INSTITUTIONNELLES gardent leur
+# propre image.
 #
 # Format : territoire;url    (territoire : Savoie | Piemonte | Vallee-Aoste | Nice | Alcotra)
 # Mets-en PLUSIEURS par territoire pour varier (le choix est déterministe par article).

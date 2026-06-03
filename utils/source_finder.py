@@ -81,12 +81,14 @@ def _ask_link(title: str, actor: str, territory: str, *, api_key: str, model: st
         client = anthropic.Anthropic(api_key=api_key)
         msg = client.messages.create(
             model=model,
-            max_tokens=1024,
+            max_tokens=2048,
             tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}],
             messages=[{"role": "user", "content": prompt}],
         )
     except Exception as exc:
-        log.info("Recherche web indisponible pour « %s » : %s", title, exc)
+        log.warning("Recherche web indisponible (lien) pour « %s » : %s — "
+                    "vérifier anthropic>=0.49.0 et l'accès à l'outil web_search.",
+                    title, exc)
         return None
     text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
     match = re.search(r"\{[^{}]*\"url\"[^{}]*\}", text, re.S)

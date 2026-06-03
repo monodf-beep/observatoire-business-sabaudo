@@ -117,15 +117,19 @@ def pick_image(territory: str, key: str, images: dict[str, list[str]]) -> str:
 
 def apply_fallback_images(data: dict, images: dict[str, list[str]] | None = None,
                           actor_images: list[tuple[str, str]] | None = None) -> dict:
-    """Pose les images de substitution sur le héros et les cartes d'une newsletter.
+    """Pose les images de substitution sur les CARTES (pas sur la une).
 
-    Priorité : image native > PHOTO D'ACTEUR enregistrée (config/actor_images.txt) >
-    bannière de TERRITOIRE générique (config/territory_images.txt).
-    Le HÉROS reçoit toujours une image s'il n'en a pas (impact AIDA en ouverture) ;
-    une photo d'acteur s'applique aussi aux cartes dès qu'elle correspond. Les
-    bannières génériques, elles, ne tombent qu'un article sur 3 (rythme sans
-    saturation). Idempotent (n'écrase jamais une image native) et appliqué au rendu,
-    donc il suit config/*.txt sans relancer la synthèse IA. Modifie et renvoie `data`.
+    RÈGLE D'OUVERTURE : la une commence toujours par une VRAIE photo — sa sélection
+    et sa photo sont décidées en amont (scripts.synthesize._select_hero_with_photo :
+    image native, override manuel, ou recherche web). On ne lui colle donc JAMAIS de
+    bannière de territoire générique ici (au pire elle reste sans image, jamais une
+    bannière). Seul un override MANUEL réel (config/actor_images.txt) peut encore
+    compléter une une dépourvue d'image.
+
+    Pour les CARTES : priorité image native > photo d'acteur (override manuel) >
+    bannière de territoire générique, cette dernière 1 carte sur 3 seulement (rythme
+    sans saturation) et marquée `image_fallback` pour ne jamais être promue en une.
+    Idempotent (n'écrase pas une image existante). Modifie et renvoie `data`.
     """
     if images is None:
         images = load_territory_images()
@@ -135,8 +139,9 @@ def apply_fallback_images(data: dict, images: dict[str, list[str]] | None = None
         return data
     hero = data.get("hero")
     if hero and not hero.get("image"):
-        hero["image"] = (pick_actor_image(hero, actor_images)
-                         or pick_image(hero.get("territory", ""), hero.get("title", ""), images))
+        override = pick_actor_image(hero, actor_images)
+        if override:  # un visuel épinglé manuellement reste une vraie photo
+            hero["image"] = override
     gap = 0
     for it in data.get("items", []):
         if it.get("image"):
@@ -146,7 +151,10 @@ def apply_fallback_images(data: dict, images: dict[str, list[str]] | None = None
             it["image"] = actor  # une vraie photo d'acteur passe toujours
             continue
         if gap == 0:
-            it["image"] = pick_image(it.get("territory", ""), it.get("title", ""), images)
+            banner = pick_image(it.get("territory", ""), it.get("title", ""), images)
+            if banner:
+                it["image"] = banner
+                it["image_fallback"] = True  # bannière générique : jamais promue en une
         gap = (gap + 1) % 3
     return data
 

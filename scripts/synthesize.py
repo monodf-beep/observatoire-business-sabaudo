@@ -255,36 +255,76 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
     return base
 
 
-def _autofind_hero_photo(hero: dict) -> None:
-    """Cherche AUTOMATIQUEMENT une vraie photo de l'acteur de la une (recherche web).
+def _real_photo_for(it: dict, *, actor_images, api_key: str, model: str, allow_web: bool) -> str:
+    """Vraie photo pour un article : image native > override manuel > recherche web.
 
-    N'agit que si la une n'a pas d'image native ni d'override manuel
-    (config/actor_images.txt). Désactivable via AUTO_PHOTO=0. Silencieux en cas
-    d'échec : la bannière de territoire prendra le relais.
+    Ne renvoie JAMAIS une banniere de territoire generique. "" si rien de reel.
     """
-    if os.getenv("AUTO_PHOTO", "1").strip().lower() in ("0", "false", "no", "off", ""):
-        return
-    if not hero or hero.get("image"):
-        return
-    from utils.sources import load_actor_images, pick_actor_image
-    if pick_actor_image(hero, load_actor_images()):
-        return  # un override manuel existe : apply_fallback_images s'en chargera
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        return
-    model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
-    try:
+    from utils.sources import pick_actor_image
+    if it.get("image"):                       # image native (source institutionnelle)
+        return it["image"]
+    override = pick_actor_image(it, actor_images)
+    if override:                              # photo epinglee manuellement
+        return override
+    if allow_web and api_key:
         from utils.photo_finder import find_actor_photo
-        url = find_actor_photo(
-            hero.get("source", ""), hero.get("territory", ""), hero.get("title", ""),
-            api_key=api_key, model=model,
-        )
-    except Exception as exc:  # robustesse : jamais bloquant en cron
-        log.warning("Recherche photo automatique échouée : %s", exc)
-        return
-    if url:
-        hero["image"] = url
-        log.info("Photo automatique posée sur la une : %s", url)
+        return find_actor_photo(it.get("source", ""), it.get("territory", ""),
+                                it.get("title", ""), api_key=api_key, model=model)
+    return ""
+
+
+def _has_manual_override(it: dict, actor_images) -> bool:
+    from utils.sources import pick_actor_image
+    return bool(pick_actor_image(it, actor_images))
+
+
+def _select_hero_with_photo(hero, items):
+    """Garantit que la une commence par un article avec une VRAIE photo.
+
+    Parcourt les candidats par importance (la une choisie par l'IA, puis les cartes)
+    et retient le PREMIER qui a une vraie photo (native, override manuel, ou photo de
+    l'acteur trouvee par recherche web). Ce candidat devient la une ; l'ancienne une
+    redevient une carte. Si aucun n'a de vraie photo (rare), la une initiale est
+    gardee sans banniere. Desactivable via AUTO_PHOTO=0.
+    """
+    candidates = [c for c in [hero, *items] if c]
+    if not candidates:
+        return hero, items
+    from utils.sources import load_actor_images
+    actor_images = load_actor_images()
+    allow_web = os.getenv("AUTO_PHOTO", "1").strip().lower() not in ("0", "false", "no", "off", "")
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
+    budget = int(os.getenv("AUTO_PHOTO_MAX", "5") or 5)
+
+    chosen, chosen_photo = None, ""
+    for cand in candidates:
+        has_real = bool(cand.get("image")) or _has_manual_override(cand, actor_images)
+        web_ok = allow_web and bool(api_key) and budget > 0
+        if not has_real and not web_ok:
+            continue
+        if not has_real:
+            budget -= 1
+        try:
+            photo = _real_photo_for(cand, actor_images=actor_images, api_key=api_key,
+                                    model=model, allow_web=web_ok)
+        except Exception as exc:  # robustesse : jamais bloquant en cron
+            log.warning("Recherche photo echouee pour un article : %s", exc)
+            continue
+        if photo:
+            chosen, chosen_photo = cand, photo
+            break
+
+    if chosen is None:
+        log.warning("Aucune vraie photo trouvee pour la une — ouverture sans visuel "
+                    "(verifier la recherche web : anthropic>=0.49.0 et AUTO_PHOTO).")
+        return hero, items
+    chosen["image"] = chosen_photo
+    if chosen is hero:
+        return hero, items
+    new_items = [hero] + [it for it in items if it is not chosen]
+    log.info("Une promue pour respecter la regle vraie photo : %s", chosen.get("title", ""))
+    return chosen, new_items
 
 
 def _autofind_sources(items: list[dict], press: set[str]) -> None:
@@ -356,9 +396,10 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     # on cherche un lien légitime — Nos Alpes (partenaire) puis source primaire.
     _autofind_sources([hero, *items, *ponts], press)
 
-    # PHOTO RÉELLE pour la une : recherche web automatique de l'image de l'acteur,
-    # avant de retomber sur la bannière de territoire générique (apply_fallback_images).
-    _autofind_hero_photo(hero)
+    # RÈGLE D'OUVERTURE : la une DOIT être un article avec une vraie photo. On
+    # sélectionne (et photographie) le 1er candidat qui en a une — quitte à promouvoir
+    # une carte à la place de la une initiale. Jamais de bannière générique en tête.
+    hero, items = _select_hero_with_photo(hero, items)
 
     return apply_fallback_images({
         "week_label": week_label,
