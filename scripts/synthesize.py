@@ -266,15 +266,19 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     if hero is None and items:  # repli : le 1er article devient la une
         hero = items.pop(0)
 
-    # Images de substitution par territoire quand l'image d'origine manque
-    # (presse sans image réutilisable, ou flux sans visuel).
+    # Images de substitution : le héros en bénéficie toujours si nécessaire ;
+    # pour les articles, une substitution tous les 3 articles sans image —
+    # rythme visuel sans saturation (4 articles vides → 2 substitutions max).
     from utils.sources import load_territory_images, pick_image
     terr_images = load_territory_images()
     if hero and not hero.get("image"):
         hero["image"] = pick_image(hero["territory"], hero["title"], terr_images)
+    _gap = 0
     for it in items:
         if not it.get("image"):
-            it["image"] = pick_image(it["territory"], it["title"], terr_images)
+            if _gap == 0:
+                it["image"] = pick_image(it["territory"], it["title"], terr_images)
+            _gap = (_gap + 1) % 3
 
     return {
         "week_label": week_label,
