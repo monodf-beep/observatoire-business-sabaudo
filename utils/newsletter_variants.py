@@ -86,7 +86,7 @@ def _header(week_label: str, tagline: str, logo_url: str | None = None) -> str:
     if logo_url:
         logo_cell = (
             f'<td align="right" valign="middle"><img src="{logo_url}" alt="Une publication Cultura Sabauda" '
-            'height="20" style="height:20px;border:0;display:inline-block;"></td>'
+            'height="34" style="height:34px;border:0;display:inline-block;"></td>'
         )
     return (
         '<tr><td style="padding:28px 36px 0;background:#fff;">'
@@ -124,7 +124,7 @@ def _footer(logo_url: str | None = None) -> str:
     if logo_url:
         logo = (
             f'<div style="margin-bottom:16px;"><img src="{logo_url}" alt="Cultura Sabauda" '
-            'height="30" style="height:30px;border:0;display:block;"></div>'
+            'height="44" style="height:44px;border:0;display:block;"></div>'
         )
     return (
         f'<tr><td style="background:#f7f9fc;padding:26px 36px;border-top:1px solid {BORDER};">'

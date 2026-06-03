@@ -142,16 +142,20 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "  {\n"
         '    "objet": "objet email, 60 caractères max, porteur de valeur",\n'
         '    "preheader": "phrase de prévisualisation qui complète l\'objet",\n'
-        '    "une": {"id": 0, "titre": "titre éditorialisé", "resume": "2-3 phrases"},\n'
-        '    "signaux": [{"id": 0, "titre": "titre court"}],\n'
-        '    "articles": [{"id": 0, "titre": "titre éditorialisé", "resume": "2-3 phrases"}],\n'
+        '    "une": {"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases"},\n'
+        '    "signaux": [{"id": <id>, "titre": "titre court"}],\n'
+        '    "articles": [{"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases"}],\n'
         '    "signature": "Bonne lecture,\\nLa rédaction — Cultura Sabauda"\n'
         "  }\n"
         "  ```\n"
+        "  - Remplace chaque <id> par un identifiant RÉEL [#id] de la liste ci-dessous\n"
+        "    (un entier ≥ 1 réellement présent). N'invente JAMAIS d'id, n'utilise pas 0.\n"
         "  - 'une' = l'actualité la plus marquante (le héros).\n"
         "  - 'signaux' = 3 à 5 signaux forts (titres courts).\n"
         "  - 'articles' = 4 à 6 brèves éditorialisées (hors 'une'), une par sujet fort.\n"
-        "  - Chaque 'id' DOIT exister dans les contenus fournis. Réutilise des id différents.\n\n"
+        "  - Ne retiens que les contenus à VALEUR ÉCONOMIQUE/ÉDITORIALE. Ignore les emails\n"
+        "    de service (réponses automatiques, confirmations, fils internes). Si rien n'a\n"
+        "    de valeur, renvoie des listes vides et 'une': null.\n\n"
         "Tonalité : sérieux, B2B, sans buzzword. Chaque brève répond à « et alors ? »\n"
         "(l'implication concrète). Langue : français (termes italiens conservés si pertinents).\n"
         "Reste strictement factuel : pas de source = pas de brève.\n"
@@ -208,7 +212,11 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str, l
         if rec is not None and s.get("titre"):
             signaux.append({"title": s["titre"], "territory": rec.get("territoire", "Indetermine")})
     if hero is None and not items:
-        log.warning("Aucun élément newsletter exploitable (ids introuvables).")
+        requested = [une.get("id")] + [a.get("id") for a in parsed.get("articles", [])]
+        log.warning(
+            "Newsletter vide : aucun id exploitable. Demandés=%s | disponibles=1..%d.",
+            requested, len(registry),
+        )
         return None
     if hero is None and items:  # repli : le 1er article devient la une
         hero = items.pop(0)
@@ -306,6 +314,11 @@ def main() -> int:
         action="store_true",
         help="Créer un BROUILLON de campagne Brevo à partir de la newsletter générée.",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Créer le brouillon Brevo même si la sélection est courte (transmis à push_brevo).",
+    )
     args = parser.parse_args()
 
     log.info("=== Démarrage synthèse hebdomadaire ===")
@@ -361,7 +374,7 @@ def main() -> int:
         sys.path.insert(0, str(ROOT / "scripts"))
         from push_brevo import create_from_data
 
-        create_from_data(data)
+        create_from_data(data, force=args.force)
     elif args.brevo:
         log.warning("--brevo demandé mais aucune donnée structurée : brouillon non créé.")
 
