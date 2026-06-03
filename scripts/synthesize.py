@@ -255,6 +255,38 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
     return base
 
 
+def _autofind_hero_photo(hero: dict) -> None:
+    """Cherche AUTOMATIQUEMENT une vraie photo de l'acteur de la une (recherche web).
+
+    N'agit que si la une n'a pas d'image native ni d'override manuel
+    (config/actor_images.txt). Désactivable via AUTO_PHOTO=0. Silencieux en cas
+    d'échec : la bannière de territoire prendra le relais.
+    """
+    if os.getenv("AUTO_PHOTO", "1").strip().lower() in ("0", "false", "no", "off", ""):
+        return
+    if not hero or hero.get("image"):
+        return
+    from utils.sources import load_actor_images, pick_actor_image
+    if pick_actor_image(hero, load_actor_images()):
+        return  # un override manuel existe : apply_fallback_images s'en chargera
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        return
+    model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
+    try:
+        from utils.photo_finder import find_actor_photo
+        url = find_actor_photo(
+            hero.get("source", ""), hero.get("territory", ""), hero.get("title", ""),
+            api_key=api_key, model=model,
+        )
+    except Exception as exc:  # robustesse : jamais bloquant en cron
+        log.warning("Recherche photo automatique échouée : %s", exc)
+        return
+    if url:
+        hero["image"] = url
+        log.info("Photo automatique posée sur la une : %s", url)
+
+
 def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
                      logo_url: str, picto_url: str = "") -> dict | None:
     """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
@@ -280,6 +312,10 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         return None
     if hero is None and items:  # repli : le 1er article devient la une
         hero = items.pop(0)
+
+    # PHOTO RÉELLE pour la une : recherche web automatique de l'image de l'acteur,
+    # avant de retomber sur la bannière de territoire générique (apply_fallback_images).
+    _autofind_hero_photo(hero)
 
     return apply_fallback_images({
         "week_label": week_label,
