@@ -42,8 +42,6 @@ _BLOCKED_HOST_PARTS = (
 
 def _ask_official_site(actor: str, territory: str, title: str, *, api_key: str, model: str) -> str:
     """Demande à Claude (recherche web activée) l'URL du site officiel de l'acteur."""
-    import anthropic
-
     prompt = (
         "Tu aides un observatoire économique régional à illustrer un article.\n"
         f"Acteur (sujet de l'article) : « {actor} »\n"
@@ -57,19 +55,13 @@ def _ask_official_site(actor: str, territory: str, title: str, *, api_key: str, 
         "ou {\"site\": null} si tu ne peux pas l'identifier avec confiance."
     )
     try:
-        client = anthropic.Anthropic(api_key=api_key)
-        msg = client.messages.create(
-            model=model,
-            max_tokens=2048,
-            tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}],
-            messages=[{"role": "user", "content": prompt}],
-        )
+        from utils.web_search import web_search_text
+        text = web_search_text(prompt, api_key=api_key, model=model, max_uses=3)
     except Exception as exc:  # SDK trop ancien, outil indisponible, erreur réseau…
         log.warning("Recherche web indisponible (photo) pour « %s » : %s — "
                     "vérifier anthropic>=0.49.0 et l'accès à l'outil web_search.",
                     actor, exc)
         return ""
-    text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
     match = re.search(r"\{[^{}]*\"site\"[^{}]*\}", text, re.S)
     if not match:
         return ""

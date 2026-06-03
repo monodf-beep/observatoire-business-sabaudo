@@ -55,8 +55,6 @@ def _url_reachable(url: str) -> bool:
 
 def _ask_link(title: str, actor: str, territory: str, *, api_key: str, model: str) -> dict | None:
     """Demande à Claude (recherche web) le meilleur lien selon la hiérarchie éditoriale."""
-    import anthropic
-
     prompt = (
         "Tu sources un article pour un observatoire économique de l'espace sabaudo.\n"
         f"Sujet : « {title} »\n"
@@ -78,19 +76,13 @@ def _ask_link(title: str, actor: str, territory: str, *, api_key: str, model: st
         '{"url": "https://…", "kind": "partner"|"primary"}  ou  {"url": null}'
     )
     try:
-        client = anthropic.Anthropic(api_key=api_key)
-        msg = client.messages.create(
-            model=model,
-            max_tokens=2048,
-            tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}],
-            messages=[{"role": "user", "content": prompt}],
-        )
+        from utils.web_search import web_search_text
+        text = web_search_text(prompt, api_key=api_key, model=model, max_uses=4)
     except Exception as exc:
         log.warning("Recherche web indisponible (lien) pour « %s » : %s — "
                     "vérifier anthropic>=0.49.0 et l'accès à l'outil web_search.",
                     title, exc)
         return None
-    text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
     match = re.search(r"\{[^{}]*\"url\"[^{}]*\}", text, re.S)
     if not match:
         return None

@@ -279,13 +279,15 @@ def _has_manual_override(it: dict, actor_images) -> bool:
 
 
 def _select_hero_with_photo(hero, items):
-    """Garantit que la une commence par un article avec une VRAIE photo.
+    """Garantit que la une commence par un article avec une VRAIE photo, en SOBRIÉTÉ.
 
-    Parcourt les candidats par importance (la une choisie par l'IA, puis les cartes)
-    et retient le PREMIER qui a une vraie photo (native, override manuel, ou photo de
-    l'acteur trouvee par recherche web). Ce candidat devient la une ; l'ancienne une
-    redevient une carte. Si aucun n'a de vraie photo (rare), la une initiale est
-    gardee sans banniere. Desactivable via AUTO_PHOTO=0.
+    Ordre conçu pour minimiser les appels web (cause des 429) :
+      1. la une de l'IA a-t-elle déjà une photo GRATUITE (image native d'une source
+         institutionnelle/partenaire, ou override manuel) ? → 0 appel ;
+      2. sinon UN SEUL web search sur la une (article le plus important) ;
+      3. sinon on promeut la 1re carte ayant une photo gratuite → 0 appel ;
+      4. sinon, en dernier recours, quelques web searches sur les premières cartes.
+    Si rien n'aboutit (rare), la une reste sans bannière. Désactivable via AUTO_PHOTO=0.
     """
     candidates = [c for c in [hero, *items] if c]
     if not candidates:
@@ -295,36 +297,55 @@ def _select_hero_with_photo(hero, items):
     allow_web = os.getenv("AUTO_PHOTO", "1").strip().lower() not in ("0", "false", "no", "off", "")
     api_key = os.getenv("ANTHROPIC_API_KEY")
     model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
-    budget = int(os.getenv("AUTO_PHOTO_MAX", "5") or 5)
 
-    chosen, chosen_photo = None, ""
-    for cand in candidates:
-        has_real = bool(cand.get("image")) or _has_manual_override(cand, actor_images)
-        web_ok = allow_web and bool(api_key) and budget > 0
-        if not has_real and not web_ok:
-            continue
-        if not has_real:
-            budget -= 1
+    def free_photo(it: dict) -> str:  # image native ou override manuel : aucun appel
+        return _real_photo_for(it, actor_images=actor_images, api_key="", model="", allow_web=False)
+
+    def web_photo(it: dict) -> str:
         try:
-            photo = _real_photo_for(cand, actor_images=actor_images, api_key=api_key,
-                                    model=model, allow_web=web_ok)
+            return _real_photo_for(it, actor_images=actor_images, api_key=api_key,
+                                   model=model, allow_web=True)
         except Exception as exc:  # robustesse : jamais bloquant en cron
-            log.warning("Recherche photo echouee pour un article : %s", exc)
-            continue
-        if photo:
-            chosen, chosen_photo = cand, photo
-            break
+            log.warning("Recherche photo échouée pour « %s » : %s", it.get("title", ""), exc)
+            return ""
 
-    if chosen is None:
-        log.warning("Aucune vraie photo trouvee pour la une — ouverture sans visuel "
-                    "(verifier la recherche web : anthropic>=0.49.0 et AUTO_PHOTO).")
-        return hero, items
-    chosen["image"] = chosen_photo
-    if chosen is hero:
-        return hero, items
-    new_items = [hero] + [it for it in items if it is not chosen]
-    log.info("Une promue pour respecter la regle vraie photo : %s", chosen.get("title", ""))
-    return chosen, new_items
+    def _promote(cand: dict, why: str):
+        log.info("Une illustrée %s : %s", why, cand.get("title", ""))
+        if cand is hero:
+            return hero, items
+        rest = ([hero] if hero else []) + [it for it in items if it is not cand]
+        return cand, rest
+
+    # 1) La une de l'IA a déjà une vraie photo gratuite ?
+    if hero:
+        p = free_photo(hero)
+        if p:
+            hero["image"] = p
+            return hero, items
+    # 2) Un seul web search sur la une (préserve l'article le plus important).
+    if hero and allow_web and api_key:
+        p = web_photo(hero)
+        if p:
+            hero["image"] = p
+            return hero, items
+    # 3) Une carte a-t-elle une photo gratuite ? (0 appel)
+    for cand in items:
+        p = free_photo(cand)
+        if p:
+            cand["image"] = p
+            return _promote(cand, "(photo native)")
+    # 4) Dernier recours : quelques web searches sur les premières cartes.
+    if allow_web and api_key:
+        budget = int(os.getenv("AUTO_PHOTO_MAX", "3") or 3)
+        for cand in items[:budget]:
+            p = web_photo(cand)
+            if p:
+                cand["image"] = p
+                return _promote(cand, "(photo web)")
+
+    log.warning("Aucune vraie photo trouvée pour la une — ouverture sans visuel "
+                "(vérifier la recherche web : anthropic>=0.49.0 et AUTO_PHOTO).")
+    return hero, items
 
 
 def _autofind_sources(items: list[dict], press: set[str]) -> None:
@@ -343,7 +364,7 @@ def _autofind_sources(items: list[dict], press: set[str]) -> None:
     if not targets:
         return
     model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
-    budget = int(os.getenv("AUTO_SOURCE_MAX", "8") or 8)
+    budget = int(os.getenv("AUTO_SOURCE_MAX", "4") or 4)
     try:
         from utils.source_finder import find_canonical_link
     except Exception as exc:  # pragma: no cover
