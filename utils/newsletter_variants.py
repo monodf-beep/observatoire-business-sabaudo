@@ -31,6 +31,16 @@ _TERRITORY = {
     "Alcotra": ("#ece7f7", "#5a3aa5", "Alcotra"),
 }
 
+# Ordre de proximité géographique : pour chaque territoire d'ancrage, ordre dans
+# lequel les autres territoires apparaissent sous « Dans l'espace sabaudo ».
+# Logique : voisins alpins proches d'abord, Nice en dernier pour les lecteurs alpins.
+_TERRITORY_PROXIMITY: dict[str, list[str]] = {
+    "Savoie":       ["Vallee-Aoste", "Piemonte", "Nice"],
+    "Vallee-Aoste": ["Piemonte", "Savoie", "Nice"],
+    "Piemonte":     ["Vallee-Aoste", "Savoie", "Nice"],
+    "Nice":         ["Piemonte", "Savoie", "Vallee-Aoste"],
+}
+
 # Libellés des pastilles de territoire par langue (les couleurs viennent de _TERRITORY).
 _TERRITORY_LABELS = {
     "fr": {"Savoie": "Savoie", "Piemonte": "Piémont", "Vallee-Aoste": "Vallée d'Aoste",
@@ -302,6 +312,13 @@ def variant_magazine(data: dict) -> str:
     # n'est local) : un seul « Tour des territoires ». La une est déjà ancrée ci-dessus.
     home = [it for it in items if anchor and it.get("territory") == anchor]
     others = [it for it in items if not (anchor and it.get("territory") == anchor)]
+    # Tri de proximité géographique : voisins alpins proches d'abord, Nice en
+    # dernier pour les lecteurs alpins. Les items sans territoire connu restent
+    # en fin (panneaux pan-sabaudo, Alcotra, etc. — rang = len de la liste).
+    if anchor and anchor in _TERRITORY_PROXIMITY:
+        _prox = _TERRITORY_PROXIMITY[anchor]
+        others.sort(key=lambda it: _prox.index(it["territory"])
+                    if it.get("territory") in _prox else len(_prox))
     # Édition « ancrée » dès que la une OU une carte relève du territoire.
     anchored = bool(anchor) and (bool(home) or (hero and hero.get("territory") == anchor))
 
