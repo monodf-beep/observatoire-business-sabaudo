@@ -35,7 +35,7 @@ def _retry_after(exc, default: float) -> float:
 
 
 def web_search_text(prompt: str, *, api_key: str, model: str,
-                    max_uses: int = 3, max_tokens: int = 1536, max_retries: int = 6) -> str:
+                    max_uses: int = 3, max_tokens: int = 1536, max_retries: int = 9) -> str:
     """Lance une requête avec recherche web et renvoie le TEXTE produit par le modèle.
 
     Throttle + retry sur 429. Lève pour toute autre erreur (à diagnostiquer).

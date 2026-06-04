@@ -17,6 +17,7 @@ import json
 import os
 import re
 import sys
+import time
 from collections import defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -142,7 +143,7 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         '    "signaux": [{"id": <id>, "titre": "titre court"}],\n'
         '    "articles": [{"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases", "acteur": "source primaire"}],\n'
         '    "ponts": [{"id": <id>, "titre": "titre orienté lien", "resume": "le lien transfrontalier", "acteur": "source primaire"}],\n'
-        '    "signature": "Bonne lecture,\\nLa rédaction — Cultura Sabauda"\n'
+        '    "signature": "Bonne lecture,\\nLa rédaction, Cultura Sabauda"\n'
         "  }\n"
         "  ```\n"
         "  - Remplace chaque <id> par un identifiant RÉEL [#id] de la liste ci-dessous\n"
@@ -165,6 +166,12 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "    TOUT l'espace sabaudo, pas seulement le territoire le plus actif de la semaine.\n"
         "    N'invente rien pour un territoire dépourvu de contenu : un territoire sans\n"
         "    élément exploitable reste légitimement absent.\n"
+        "  - SOURCES INSTITUTIONNELLES À PRIVILÉGIER : les contenus émanant directement\n"
+        "    d'incubateurs, d'agences de développement, de chambres de commerce ou de\n"
+        "    programmes (ex. Piemonte Innova, I3P, CCI, pépinières VDA, Interreg Alcotra)\n"
+        "    sont des signaux de PREMIÈRE main, à forte valeur : retiens-les en priorité\n"
+        "    quand ils portent une actualité économique concrète (appel à projets,\n"
+        "    lancement, financement, implantation, partenariat).\n"
         "  - 'ponts' = 0 à 3 « ponts & connexions » : des actualités de l'espace sabaudo\n"
         "    qui ont un LIEN CONCRET avec l'extérieur (Grenoble, Lyon, Genève, la Suisse, le\n"
         "    reste de la France, le marché italien, l'international). Ex. : une entreprise\n"
@@ -196,6 +203,8 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "tels quels (Politecnico, Confindustria…) mais N'ITALIANISE PAS les mots courants :\n"
         "écris « Casino » (pas « Casinò »), « le mois de mai » (pas « mai » seul), « la Vallée\n"
         "d'Aoste ». Soigne grammaire, accords et tournures.\n"
+        "PONCTUATION : n'utilise JAMAIS de tiret cadratin (—) ni demi-cadratin (–), "
+        "dans aucun titre ni résumé. Emploie des virgules, des deux-points ou des points.\n"
         "Reste strictement factuel : pas de source = pas de brève.\n"
     )
     return (
@@ -348,6 +357,37 @@ def _select_hero_with_photo(hero, items):
     return hero, items
 
 
+_DASH_RE = re.compile(r"\s*[—–]\s*")
+
+
+def _no_dash(text):
+    """Remplace tout tiret cadratin/demi-cadratin par une virgule (perçu comme un
+    « tell » d'IA). Préserve les retours à la ligne (ex. signature)."""
+    if not isinstance(text, str) or ("—" not in text and "–" not in text):
+        return text
+    out = []
+    for line in text.split("\n"):
+        line = _DASH_RE.sub(", ", line)
+        line = re.sub(r"\s*,\s*,", ",", line)   # pas de double virgule
+        line = re.sub(r"^\s*,\s*", "", line)     # pas de virgule en tête
+        out.append(line)
+    return "\n".join(out)
+
+
+def _strip_dashes(data: dict) -> None:
+    """Nettoie les tirets cadratins de tous les textes visibles de la newsletter."""
+    for key in ("subject", "preheader", "signature"):
+        if data.get(key):
+            data[key] = _no_dash(data[key])
+    blocks = [data.get("hero"), *data.get("items", []), *data.get("ponts", []), *data.get("signaux", [])]
+    for it in blocks:
+        if not it:
+            continue
+        for key in ("title", "summary"):
+            if it.get(key):
+                it[key] = _no_dash(it[key])
+
+
 def _autofind_sources(items: list[dict], press: set[str]) -> None:
     """Complète le lien « Lire l'article » des items SANS lien (issus de la presse).
 
@@ -433,8 +473,19 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     if hero is None and items:  # repli : le 1er article devient la une
         hero = items.pop(0)
 
+    # COOLDOWN : la grosse synthèse vient de consommer beaucoup de tokens ; on laisse
+    # la fenêtre de débit (tokens/min) se vider avant la rafale de recherches web,
+    # sinon les 1ers appels partent en 429. Un cron hebdo peut attendre 30 s.
+    _web_enabled = (os.getenv("AUTO_SOURCE", "1").strip().lower() not in ("0", "false", "no", "off", "")
+                    or os.getenv("AUTO_PHOTO", "1").strip().lower() not in ("0", "false", "no", "off", ""))
+    if os.getenv("ANTHROPIC_API_KEY") and _web_enabled:
+        cooldown = float(os.getenv("WEB_SEARCH_COOLDOWN", "30") or 30)
+        if cooldown > 0:
+            log.info("Pause %.0fs avant les recherches web (laisse le débit se rétablir)…", cooldown)
+            time.sleep(cooldown)
+
     # LIEN « Lire l'article » : pour les sujets issus de la presse (lien retiré),
-    # on cherche un lien légitime — Nos Alpes (partenaire) puis source primaire.
+    # on cherche un lien légitime : Nos Alpes (partenaire) puis source primaire.
     _autofind_sources([hero, *items, *ponts], press)
 
     # RÈGLE D'OUVERTURE : la une DOIT être un article avec une vraie photo. On
@@ -446,19 +497,21 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     # que chaque édition pointe vers la bonne langue (Nos Alpes notamment).
     _localize_links([hero, *items, *ponts])
 
-    return apply_fallback_images({
+    data = apply_fallback_images({
         "week_label": week_label,
         "logo_url": logo_url,
         "pictogram_url": picto_url,
         "preheader": parsed.get("preheader", ""),
-        "subject": (parsed.get("objet") or f"Business Sabaudo — {week_label}")[:120],
+        "subject": (parsed.get("objet") or f"Business Sabaudo · {week_label}")[:120],
         "hero": hero,
         "signaux": signaux,
         "items": items,
         "ponts": ponts,
-        "signature": parsed.get("signature", "La rédaction — Cultura Sabauda"),
+        "signature": parsed.get("signature", "La rédaction, Cultura Sabauda"),
         "cta_url": "https://culturasabauda.eu",
     })
+    _strip_dashes(data)  # aucun tiret cadratin (—) dans le rendu final
+    return data
 
 
 def week_label_human(week_id: str) -> str:

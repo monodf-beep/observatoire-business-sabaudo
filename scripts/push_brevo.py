@@ -189,14 +189,14 @@ def create_from_data(data: dict, force: bool = False) -> list[int]:
         _apply_lang_links(data_lang, lang)
 
         week_label = data_lang.get("week_label", "")
-        subject = data_lang.get("subject") or f"Business Sabaudo — {week_label}"
+        subject = data_lang.get("subject") or f"Business Sabaudo · {week_label}"
         for anchor, kind, ids, label in lang_editions:
             # Même contenu traduit ; on ne change QUE l'ordre (territoire d'ancrage).
             data_v = {**data_lang, "anchor": anchor}
             html = variant_magazine(data_v)
             tag = _LANG_TAG.get(lang, lang.upper())
             name = " ".join(filter(None, ["Business Sabaudo", tag, label]))
-            name = f"{name} — {week_label}".strip(" —")
+            name = f"{name} · {week_label}".strip(" ·")
 
             recipients = {"segment_ids": ids} if kind == "segment" else {"list_ids": ids}
             try:

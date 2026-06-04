@@ -62,7 +62,7 @@ _LABELS = {
         "chez_vous": "Chez vous",
         "autres_territoires": "Dans l'espace sabaudo",
         "ponts": "Ponts & connexions",
-        "ponts_intro": "L'espace sabaudo relié à ses voisins — Grenoble, Lyon, "
+        "ponts_intro": "L'espace sabaudo relié à ses voisins : Grenoble, Lyon, "
                        "Genève, la Suisse, la France, l'international.",
         "lire_suite": "Lire la suite",
         "lire_article": "Lire l'article",
@@ -70,7 +70,7 @@ _LABELS = {
         "desabonner": "Se désabonner",
         "footer_feedback": "💬 Une source à suggérer, une coquille repérée&nbsp;? "
                            "<strong>Répondez à cet email</strong>, on lit tout.",
-        "footer_baseline": "Observatoire économique de l'espace sabaudo — "
+        "footer_baseline": "Observatoire économique de l'espace sabaudo · "
                            "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra",
         "footer_ia": "Veille assistée par IA, sélectionnée et validée par la rédaction "
                      "de Cultura Sabauda.",
@@ -85,7 +85,7 @@ _LABELS = {
         "chez_vous": "Da voi",
         "autres_territoires": "Nello spazio sabaudo",
         "ponts": "Ponti e connessioni",
-        "ponts_intro": "Lo spazio sabaudo in collegamento con i suoi vicini — Grenoble, "
+        "ponts_intro": "Lo spazio sabaudo in collegamento con i suoi vicini : Grenoble, "
                        "Lione, Ginevra, la Svizzera, la Francia, l'internazionale.",
         "lire_suite": "Continua a leggere",
         "lire_article": "Leggi l'articolo",
@@ -93,7 +93,7 @@ _LABELS = {
         "desabonner": "Annulla l'iscrizione",
         "footer_feedback": "💬 Una fonte da segnalare, un refuso&nbsp;? "
                            "<strong>Rispondi a questa email</strong>, leggiamo tutto.",
-        "footer_baseline": "Osservatorio economico dello spazio sabaudo — "
+        "footer_baseline": "Osservatorio economico dello spazio sabaudo · "
                            "Savoia · Piemonte · Valle d'Aosta · Nizza · Alcotra",
         "footer_ia": "Monitoraggio assistito dall'IA, selezionato e validato dalla "
                      "redazione di Cultura Sabauda.",
@@ -119,7 +119,7 @@ def favicon(domain: str, size: int = 64) -> str:
 
 
 def _tag(territory: str, lang: str = "fr") -> str:
-    _, dotc, default_label = _TERRITORY.get(territory, ("", "#64748b", territory or "—"))
+    _, dotc, default_label = _TERRITORY.get(territory, ("", "#64748b", territory or ""))
     label = _TERRITORY_LABELS.get(lang, {}).get(territory, default_label)
     dot = (
         f'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;'
@@ -369,7 +369,7 @@ def variant_magazine(data: dict) -> str:
 
     if home:
         territoires_html = _section(
-            f'{L["chez_vous"]} — {_territory_label(anchor, lang)}',
+            f'{L["chez_vous"]} · {_territory_label(anchor, lang)}',
             _cards_html(home),
             "30px 36px 4px" if others else "30px 36px 34px",
         )

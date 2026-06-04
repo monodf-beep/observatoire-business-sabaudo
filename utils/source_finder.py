@@ -120,8 +120,10 @@ def _ask_link(title: str, actor: str, territory: str, *, api_key: str, model: st
         "bilingue FR/IT : choisis la bonne langue). Si tu tombes d'abord sur une "
         f"version anglaise (/en/…), cherche et renvoie plutôt la version en {lang_pref} "
         "si elle existe.\n"
-        "Le lien doit pointer vers la PAGE PRÉCISE (l'article ou le communiqué), pas "
-        "une page d'accueil générique.\n"
+        "Le lien doit pointer vers la PAGE PRÉCISE de l'article ou du communiqué "
+        "(explore la rubrique actualités/presse du site officiel pour la trouver), "
+        "JAMAIS une page d'accueil ni une page de rubrique (ex. /actualites, /news, /presse). "
+        "L'URL doit identifier un article précis (slug détaillé ou identifiant).\n"
         "Réponds UNIQUEMENT par un objet JSON, sans autre texte :\n"
         '{"url": "https://…", "kind": "partner"|"primary"}  ou  {"url": null}'
     )
