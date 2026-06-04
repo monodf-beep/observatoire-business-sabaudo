@@ -127,21 +127,22 @@ def apply_fallback_images(data: dict, images: dict[str, list[str]] | None = None
     compléter une une dépourvue d'image.
 
     Pour les CARTES : priorité image native > photo d'acteur (override manuel) >
-    bannière de territoire générique, cette dernière 1 carte sur 3 seulement (rythme
-    sans saturation) et marquée `image_fallback` pour ne jamais être promue en une.
+    PHOTO DE L'ARTICLE lui-même (og:image de sa page, si la carte a un lien) >
+    bannière de territoire générique. Les vraies photos (article inclus) passent
+    toujours ; seule la bannière générique est limitée à 1 carte sur 3 (rythme sans
+    saturation) et marquée `image_fallback` pour ne jamais être promue en une.
     Idempotent (n'écrase pas une image existante). Modifie et renvoie `data`.
     """
     if images is None:
         images = load_territory_images()
     if actor_images is None:
         actor_images = load_actor_images()
-    if not images and not actor_images:
-        return data
     hero = data.get("hero")
     if hero and not hero.get("image"):
         override = pick_actor_image(hero, actor_images)
         if override:  # un visuel épinglé manuellement reste une vraie photo
             hero["image"] = override
+    from utils.photo_finder import article_image
     gap = 0
     for it in data.get("items", []):
         if it.get("image"):
@@ -150,6 +151,11 @@ def apply_fallback_images(data: dict, images: dict[str, list[str]] | None = None
         if actor:
             it["image"] = actor  # une vraie photo d'acteur passe toujours
             continue
+        if it.get("url"):
+            og = article_image(it["url"])  # vraie photo de l'article (og:image), comme la une
+            if og:
+                it["image"] = og
+                continue
         if gap == 0:
             banner = pick_image(it.get("territory", ""), it.get("title", ""), images)
             if banner:
