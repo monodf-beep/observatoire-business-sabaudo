@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 import re
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
 from utils.logger import get_logger
@@ -51,6 +51,42 @@ def _url_reachable(url: str) -> bool:
             return 200 <= getattr(resp, "status", resp.getcode()) < 400
     except Exception:
         return False
+
+
+# Chemins « page d'accueil / rubrique » à refuser : on veut l'article précis.
+_GENERIC_PATHS = {
+    "", "fr", "en", "it", "home", "index", "index.html", "accueil",
+    "actualites", "actualités", "actualite", "news", "actu", "presse", "blog",
+}
+
+
+def _is_homepage(url: str) -> bool:
+    return urlparse(url).path.strip("/").lower() in _GENERIC_PATHS
+
+
+def language_variants(url: str) -> dict[str, str]:
+    """Variantes linguistiques d'une page via ses balises hreflang : {lang: url}.
+
+    Permet d'afficher le lien Nos Alpes (ou tout site multilingue) dans la langue de
+    l'édition. Renvoie {} si la page n'expose aucune alternative. Déterministe, sans IA.
+    """
+    if not url:
+        return {}
+    try:
+        req = Request(url, headers={"User-Agent": _UA})
+        with urlopen(req, timeout=15) as resp:
+            html = resp.read(250_000).decode("utf-8", "ignore")
+    except Exception:
+        return {}
+    variants: dict[str, str] = {}
+    for tag in re.findall(r"<link\b[^>]*\brel=[\"']alternate[\"'][^>]*>", html, re.I):
+        hl = re.search(r"hreflang=[\"']([^\"']+)[\"']", tag, re.I)
+        href = re.search(r"href=[\"']([^\"']+)[\"']", tag, re.I)
+        if not hl or not href:
+            continue
+        lang = hl.group(1).lower().split("-")[0]  # 'fr-FR' -> 'fr'
+        variants.setdefault(lang, urljoin(url, href.group(1)))
+    return variants
 
 
 # Langue à privilégier pour le lien, selon le territoire (la version locale prime
@@ -130,6 +166,10 @@ def find_canonical_link(title: str, actor: str, territory: str, *,
         return None
     if not is_partner_link and is_press(domain, press):
         log.info("Lien écarté (presse concurrente) pour « %s » : %s", title, domain)
+        return None
+    if _is_homepage(url):
+        log.info("Lien écarté (page d'accueil/rubrique, pas un article) pour « %s » : %s",
+                 title, url)
         return None
     if not _url_reachable(url):
         log.info("Lien injoignable pour « %s » : %s", title, url)

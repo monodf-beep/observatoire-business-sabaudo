@@ -130,6 +130,14 @@ def _editions() -> dict[str, list[Edition]]:
     return result
 
 
+def _apply_lang_links(data: dict, lang: str) -> None:
+    """Réécrit le lien de chaque article dans la langue de l'édition (url_by_lang)."""
+    for item in [data.get("hero"), *data.get("items", []), *data.get("ponts", [])]:
+        by_lang = item and item.get("url_by_lang")
+        if by_lang and by_lang.get(lang):
+            item["url"] = by_lang[lang]
+
+
 def create_from_data(data: dict, force: bool = False) -> list[int]:
     """Rend la newsletter et crée un BROUILLON Brevo PAR LANGUE configurée.
 
@@ -175,6 +183,10 @@ def create_from_data(data: dict, force: bool = False) -> list[int]:
         except Exception as exc:  # traduction indisponible/échouée → on saute cette langue
             log.error("Traduction %s échouée, brouillons %s ignorés : %s", lang, lang.upper(), exc)
             continue
+
+        # LIENS DANS LA LANGUE DE L'ÉDITION : on choisit la variante FR/IT mémorisée
+        # par synthesize (hreflang) — ex. lien Nos Alpes FR pour l'édition FR, IT pour l'IT.
+        _apply_lang_links(data_lang, lang)
 
         week_label = data_lang.get("week_label", "")
         subject = data_lang.get("subject") or f"Business Sabaudo — {week_label}"

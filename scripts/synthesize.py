@@ -387,6 +387,26 @@ def _autofind_sources(items: list[dict], press: set[str]) -> None:
             it["domain"] = found["domain"]
 
 
+def _localize_links(items: list[dict]) -> None:
+    """Mémorise, pour chaque lien, ses variantes par langue (via hreflang).
+
+    Stocke `url_by_lang = {"fr": …, "it": …}` sur l'item ; push_brevo choisira la
+    bonne version selon l'édition (ex. lien Nos Alpes FR pour l'édition FR, IT pour
+    l'IT). Déterministe (lecture des balises hreflang), sans appel IA. Si la page
+    n'expose pas d'alternative, les deux langues pointent vers le lien d'origine.
+    """
+    from utils.source_finder import language_variants
+    for it in items:
+        url = it and it.get("url")
+        if not url:
+            continue
+        try:
+            variants = language_variants(url)
+        except Exception:
+            variants = {}
+        it["url_by_lang"] = {"fr": variants.get("fr", url), "it": variants.get("it", url)}
+
+
 def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
                      logo_url: str, picto_url: str = "") -> dict | None:
     """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
@@ -421,6 +441,10 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     # sélectionne (et photographie) le 1er candidat qui en a une — quitte à promouvoir
     # une carte à la place de la une initiale. Jamais de bannière générique en tête.
     hero, items = _select_hero_with_photo(hero, items)
+
+    # LIENS PAR LANGUE : on mémorise la version FR/IT de chaque lien (hreflang) pour
+    # que chaque édition pointe vers la bonne langue (Nos Alpes notamment).
+    _localize_links([hero, *items, *ponts])
 
     return apply_fallback_images({
         "week_label": week_label,
