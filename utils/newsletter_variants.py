@@ -206,9 +206,12 @@ def _footer(logo_url: str | None = None, lang: str = "fr") -> str:
     logo = ""
     if logo_url:
         logo = (
-            f'<div style="margin-bottom:16px;"><img src="{logo_url}" alt="Cultura Sabauda" '
-            'height="36" width="auto" style="height:36px;width:auto;max-width:180px;'
-            'border:0;display:block;"></div>'
+            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" '
+            'style="margin-bottom:16px;"><tr>'
+            '<td width="120" style="width:120px;">'
+            f'<img src="{logo_url}" width="120" alt="Cultura Sabauda" '
+            'style="width:120px;height:auto;border:0;display:block;">'
+            '</td></tr></table>'
         )
     return (
         f'<tr><td class="ep" style="background:#f7f9fc;padding:26px 36px;border-top:1px solid {BORDER};">'
