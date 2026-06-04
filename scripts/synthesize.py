@@ -627,7 +627,23 @@ def write_markdown(target_week: str, content: str, total_items: int) -> Path:
     return out
 
 
+def _log_version() -> None:
+    """Affiche le commit git courant — permet de vérifier immédiatement quelle version tourne."""
+    try:
+        import subprocess
+        commit = subprocess.check_output(
+            ["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"],
+            stderr=subprocess.DEVNULL, text=True).strip()
+        branch = subprocess.check_output(
+            ["git", "-C", str(ROOT), "rev-parse", "--abbrev-ref", "HEAD"],
+            stderr=subprocess.DEVNULL, text=True).strip()
+        log.info("▶ synthesize — commit %s (branche : %s)", commit, branch)
+    except Exception:
+        pass
+
+
 def main() -> int:
+    _log_version()
     load_dotenv(ROOT / ".env")
     parser = argparse.ArgumentParser(description="Synthèse hebdomadaire de veille.")
     parser.add_argument(
