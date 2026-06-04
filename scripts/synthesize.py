@@ -367,13 +367,21 @@ _DASH_RE = re.compile(r"\s*[—–]\s*")
 
 
 def _no_dash(text):
-    """Remplace tout tiret cadratin/demi-cadratin par une virgule (perçu comme un
-    « tell » d'IA). Préserve les retours à la ligne (ex. signature)."""
+    """Neutralise les tirets cadratins/demi-cadratins (perçus comme un « tell » d'IA).
+
+    Deux cas distincts pour ne pas dénaturer le sens :
+      • tiret SERRÉ entre deux mots (ex. « Oulx–Modane », « Piémont–Savoie ») :
+        c'est un trait d'union typographique (liaison/portée) → on met un vrai
+        trait d'union « - » (surtout pas une virgule qui casserait le sens) ;
+      • tiret ESPACÉ (ex. « … ressources internationales — centre … ») : c'est
+        l'incise parenthétique caractéristique des textes d'IA → virgule.
+    Préserve les retours à la ligne (ex. signature)."""
     if not isinstance(text, str) or ("—" not in text and "–" not in text):
         return text
     out = []
     for line in text.split("\n"):
-        line = _DASH_RE.sub(", ", line)
+        line = re.sub(r"(?<=\w)[—–](?=\w)", "-", line)  # compound serré → trait d'union
+        line = _DASH_RE.sub(", ", line)                 # incise espacée → virgule
         line = re.sub(r"\s*,\s*,", ",", line)   # pas de double virgule
         line = re.sub(r"^\s*,\s*", "", line)     # pas de virgule en tête
         out.append(line)
@@ -406,11 +414,23 @@ def _log_health(data: dict) -> None:
                                                  *data.get("ponts", [])] if a and a.get("territory")})
     hero_ok = bool(hero and hero.get("image") and not hero.get("image_fallback"))
     missing = [a.get("title", "")[:50] for a in arts if not a.get("url")]
+    # Territoires de cœur attendus dans CHAQUE édition pan-sabaude (Alcotra est
+    # transversal, pas un territoire d'ancrage). On compare en tolérant les
+    # variantes d'écriture (accents/espaces) renvoyées par la collecte.
+    _CORE = {"Savoie": ("savoie",), "Piémont": ("piemont", "piémont"),
+             "Vallée d'Aoste": ("vallee", "vallée", "aoste", "aosta"),
+             "Nice": ("nice", "nizza", "côte d'azur", "cote d'azur")}
+    seen = " ".join(terrs).lower()
+    absent = [label for label, keys in _CORE.items() if not any(k in seen for k in keys)]
     log.info("──────── BILAN NEWSLETTER ────────")
     log.info("Une avec vraie photo : %s", "OUI" if hero_ok else "NON (ouverture sans photo)")
     log.info("Articles avec lien   : %d/%d", with_link, len(arts))
     log.info("Articles avec photo  : %d/%d", with_photo, len(arts))
     log.info("Territoires couverts : %s", ", ".join(terrs) or "aucun")
+    if absent:
+        log.warning("⚠ TERRITOIRE(S) DE CŒUR ABSENT(S) : %s — vérifier la collecte de "
+                    "la semaine ou la sélection (l'observatoire couvre TOUT l'espace "
+                    "sabaudo).", ", ".join(absent))
     if missing:
         log.info("Sans lien (à vérifier) : %s", " | ".join(missing))
     log.info("──────────────────────────────────")
