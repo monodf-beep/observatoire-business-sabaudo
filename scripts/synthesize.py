@@ -597,6 +597,93 @@ def week_label_human(week_id: str) -> str:
         return f"Semaine {week_id}"
 
 
+def _patch_missing_territories(parsed: dict, registry: dict[int, dict], model: str) -> dict:
+    """Correcteur POST-SYNTHÈSE : injecte une brève pour chaque territoire de cœur absent.
+
+    Si l'IA a ignoré un territoire malgré une consigne explicite, on fait un appel
+    ciblé et bon marché (pas de web search, petit contexte) pour en extraire le meilleur
+    article. C'est déterministe : si le territoire a N articles collectés, UN d'entre eux
+    sera dans la newsletter — peu importe les choix éditoriaux stochastiques du modèle.
+    """
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        return parsed
+
+    # Territoires déjà représentés dans la sélection
+    represented: set[str] = set()
+    all_used_ids: set[int] = set()
+    for section in ("une", "articles", "signaux", "ponts"):
+        block = parsed.get(section)
+        entries = [block] if isinstance(block, dict) else (block or [])
+        for entry in entries:
+            rid = entry.get("id")
+            if rid:
+                all_used_ids.add(int(rid))
+            rec = registry.get(int(rid)) if rid else None
+            if rec:
+                represented.add(rec.get("territoire", ""))
+
+    # Territoires de cœur à vérifier (mêmes seuils que le BILAN)
+    by_terr: dict[str, list[tuple[int, dict]]] = defaultdict(list)
+    for rid, rec in registry.items():
+        if rid not in all_used_ids:
+            by_terr[rec.get("territoire", "")].append((rid, rec))
+
+    _IGNORE_TERR = {"Indetermine", "Indéterminé", ""}
+    missing = [
+        t for t, items in by_terr.items()
+        if t not in _IGNORE_TERR and len(items) >= 3
+        and not any(r in t or t in r for r in represented)
+    ]
+    if not missing:
+        return parsed
+
+    import anthropic
+    client = anthropic.Anthropic(api_key=api_key)
+
+    for territory in missing:
+        candidates = by_terr[territory][:10]  # top 10 non utilisés
+        corpus_lines = []
+        for rid, rec in candidates:
+            origin = rec.get("feed_title") or rec.get("from") or ""
+            body = (rec.get("body") or "").strip()[:600]
+            corpus_lines.append(f"[#{rid}] {rec.get('title', '')} ({origin})")
+            if body:
+                corpus_lines.append(f"  Extrait : {body[:300]}")
+        corpus_str = "\n".join(corpus_lines)
+        prompt = (
+            f"La newsletter Business Sabaudo (espace sabaudo) n'a aucun article sur "
+            f"le territoire **{territory}** alors que {len(by_terr[territory])} éléments "
+            f"ont été collectés. C'est une erreur : l'observatoire couvre TOUT l'espace "
+            f"sabaudo.\n\n"
+            f"Parmi les éléments disponibles (non encore utilisés) :\n{corpus_str}\n\n"
+            f"Choisis l'élément le plus pertinent économiquement et rédige UNIQUEMENT un "
+            f"objet JSON (rien d'autre, pas de markdown) :\n"
+            '{"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases B2B, '
+            'angle territorial, sans tiret cadratin", "acteur": "entité primaire"}'
+        )
+        try:
+            msg = client.messages.create(
+                model=model, max_tokens=512,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
+            m = re.search(r"\{[^{}]+\}", text, re.S)
+            if not m:
+                log.warning("Patch territoire %s : réponse non parsable.", territory)
+                continue
+            entry = json.loads(m.group(0))
+            if not entry.get("id") or not entry.get("titre"):
+                continue
+            parsed.setdefault("articles", []).append(entry)
+            log.info("Patch territoire %s : brève ajoutée (id=%s, « %s »).",
+                     territory, entry["id"], entry["titre"][:60])
+        except Exception as exc:
+            log.warning("Patch territoire %s échoué : %s", territory, exc)
+
+    return parsed
+
+
 def call_anthropic(prompt: str, model: str) -> str | None:
     try:
         import anthropic
@@ -716,6 +803,12 @@ def main() -> int:
     markdown, parsed = split_markdown_json(content)
     out = write_markdown(target_week, markdown, total_items)
     log.info("Synthèse écrite : %s", out)
+
+    # CORRECTEUR TERRITORIAL : injecte une brève pour tout territoire de cœur absent
+    # (appel ciblé et bon marché, sans web search — déterministe là où le LLM était
+    # stochastique). Doit s'exécuter AVANT build_email_data et les recherches web.
+    if parsed:
+        parsed = _patch_missing_territories(parsed, registry, model)
 
     data = None
     if parsed:
