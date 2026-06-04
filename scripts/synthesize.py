@@ -127,6 +127,28 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
                 lines.append(f"- Contenu : {body}")
     corpus = "\n".join(lines)
 
+    # Répartition réelle du corpus, injectée comme CHECKLIST déterministe : un
+    # territoire abondamment collecté ne peut plus être « oublié » par le modèle
+    # (cf. Piémont, 47 éléments, absent d'une édition). On exige au moins un sujet
+    # par territoire disposant d'un volume significatif (≥ 3 éléments).
+    _IGNORE_TERR = {"Indetermine", "Indéterminé", ""}
+    counts = {t: len(v) for t, v in by_terr.items() if t not in _IGNORE_TERR}
+    significant = sorted((t for t, n in counts.items() if n >= 3),
+                         key=lambda t: counts[t], reverse=True)
+    repartition = ", ".join(f"{t} ({counts[t]})" for t in
+                            sorted(counts, key=lambda t: counts[t], reverse=True))
+    coverage_block = (
+        "=== RÉPARTITION DU CORPUS CETTE SEMAINE (checklist de couverture) ===\n"
+        f"{repartition}\n"
+        "RÈGLE NON NÉGOCIABLE : chaque territoire listé ci-dessus avec 3 éléments ou\n"
+        f"plus ({', '.join(significant)}) DOIT être représenté par AU MOINS UN sujet\n"
+        "dans ta sélection ('une' + 'signaux' + 'articles'). Avant de rendre le JSON,\n"
+        "VÉRIFIE territoire par territoire que chacun de ces territoires y figure ;\n"
+        "si l'un manque, remplace ton article le plus faible par un sujet de ce\n"
+        "territoire. Un territoire abondamment collecté qui n'apparaît nulle part est\n"
+        "une ERREUR, pas un choix éditorial.\n"
+    )
+
     instructions = (
         "Tu es l'assistant éditorial de Cultura Sabauda, média économique de l'espace\n"
         "sabaudo (Savoie, Piémont, Vallée d'Aoste, Nice, périmètre Alcotra).\n\n"
@@ -209,6 +231,7 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
     )
     return (
         f"{instructions}\n"
+        f"{coverage_block}\n"
         f"=== CONTENUS COLLECTÉS — semaine {target_week} ===\n"
         f"{corpus}\n"
     )

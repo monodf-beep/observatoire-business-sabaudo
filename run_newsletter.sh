@@ -30,4 +30,12 @@ COMMIT=$(git rev-parse --short HEAD)
 echo "▶ Lancement sur commit $COMMIT (branche : $BRANCH)"
 echo ""
 
-python -m scripts.synthesize "${ARGS[@]}"
+# Interpréteur : venv du projet si présent, sinon python3 (jamais « python »,
+# absent sur Ubuntu 24.04).
+if [[ -x ".venv/bin/python" ]]; then
+  PY=".venv/bin/python"
+else
+  PY="python3"
+fi
+
+"$PY" -m scripts.synthesize "${ARGS[@]}"
