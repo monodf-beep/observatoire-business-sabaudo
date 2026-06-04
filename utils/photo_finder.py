@@ -118,6 +118,18 @@ def _validate_image(url: str) -> bool:
     )
 
 
+def article_image(url: str) -> str:
+    """Photo de l'article lui-même : og:image VALIDÉE de sa page. '' sinon.
+
+    Déterministe (simple requête HTTP, aucune IA) : c'est l'image que l'acteur a
+    publiée avec CE contenu. À privilégier sur une recherche web (plus pertinent,
+    et n'entame pas le quota de tokens)."""
+    if not url:
+        return ""
+    img = _extract_og_image(url)
+    return img if img and _validate_image(img) else ""
+
+
 def find_actor_photo(actor: str, territory: str, title: str, *, api_key: str, model: str) -> str:
     """Renvoie l'URL d'une photo représentative de l'acteur, ou "" si rien de fiable."""
     actor = (actor or "").strip()

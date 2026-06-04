@@ -265,16 +265,22 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
 
 
 def _real_photo_for(it: dict, *, actor_images, api_key: str, model: str, allow_web: bool) -> str:
-    """Vraie photo pour un article : image native > override manuel > recherche web.
+    """Vraie photo pour un article. Ordre : image native > override manuel > photo de
+    l'ARTICLE lui-même (og:image de la page-source, déterministe) > recherche web.
 
-    Ne renvoie JAMAIS une banniere de territoire generique. "" si rien de reel.
+    Ne renvoie JAMAIS une bannière de territoire générique. "" si rien de réel.
     """
+    from utils.photo_finder import article_image
     from utils.sources import pick_actor_image
     if it.get("image"):                       # image native (source institutionnelle)
         return it["image"]
     override = pick_actor_image(it, actor_images)
-    if override:                              # photo epinglee manuellement
+    if override:                              # photo épinglée manuellement
         return override
+    if it.get("url"):                         # photo publiée AVEC cet article (HTTP, pas d'IA)
+        og = article_image(it["url"])
+        if og:
+            return og
     if allow_web and api_key:
         from utils.photo_finder import find_actor_photo
         return find_actor_photo(it.get("source", ""), it.get("territory", ""),
@@ -386,6 +392,28 @@ def _strip_dashes(data: dict) -> None:
         for key in ("title", "summary"):
             if it.get(key):
                 it[key] = _no_dash(it[key])
+
+
+def _log_health(data: dict) -> None:
+    """Bilan lisible de la newsletter générée : liens, photos, territoires, trous."""
+    hero = data.get("hero")
+    items = data.get("items", [])
+    arts = [a for a in [hero, *items] if a]
+    n = len(arts) or 1
+    with_link = sum(1 for a in arts if a.get("url"))
+    with_photo = sum(1 for a in arts if a.get("image") and not a.get("image_fallback"))
+    terrs = sorted({a.get("territory") for a in [hero, *items, *data.get("signaux", []),
+                                                 *data.get("ponts", [])] if a and a.get("territory")})
+    hero_ok = bool(hero and hero.get("image") and not hero.get("image_fallback"))
+    missing = [a.get("title", "")[:50] for a in arts if not a.get("url")]
+    log.info("──────── BILAN NEWSLETTER ────────")
+    log.info("Une avec vraie photo : %s", "OUI" if hero_ok else "NON (ouverture sans photo)")
+    log.info("Articles avec lien   : %d/%d", with_link, len(arts))
+    log.info("Articles avec photo  : %d/%d", with_photo, len(arts))
+    log.info("Territoires couverts : %s", ", ".join(terrs) or "aucun")
+    if missing:
+        log.info("Sans lien (à vérifier) : %s", " | ".join(missing))
+    log.info("──────────────────────────────────")
 
 
 def _autofind_sources(items: list[dict], press: set[str]) -> None:
@@ -511,6 +539,7 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         "cta_url": "https://culturasabauda.eu",
     })
     _strip_dashes(data)  # aucun tiret cadratin (—) dans le rendu final
+    _log_health(data)
     return data
 
 
