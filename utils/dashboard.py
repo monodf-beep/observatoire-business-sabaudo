@@ -1,0 +1,233 @@
+"""Tableau de bord visuel « Business Sabaudo » (page HTML autonome).
+
+À partir des données de synthèse hebdomadaires (les JSON produits par
+scripts/synthesize.py), produit une page HTML unique, sans dépendance externe
+(CSS + SVG en ligne), qui donne une vue d'ensemble :
+
+- indicateurs clés (semaines couvertes, signaux, territoires actifs) ;
+- volume de brèves par semaine (histogramme) ;
+- répartition des signaux par territoire ;
+- la une et les signaux de la dernière semaine.
+
+Aucune librairie graphique : tout est rendu en HTML/CSS/SVG pour rester portable
+(ouvrable hors-ligne, déposable tel quel sur le Drive ou un hébergement statique).
+"""
+from __future__ import annotations
+
+from html import escape
+
+# Charte Cultura Sabauda (alignée sur la newsletter).
+BRAND = "#3f5f96"
+ACCENT = "#df664f"
+INK = "#16202c"
+MUTED = "#6b7280"
+BORDER = "#e5e7eb"
+BG = "#eef1f5"
+CARD = "#ffffff"
+
+# Couleur de pastille par territoire (réutilisée pour les barres).
+_TERRITORY = {
+    "Savoie": ("#1a56b0", "Savoie"),
+    "Piemonte": ("#b3261e", "Piémont"),
+    "Vallee-Aoste": ("#1e7d34", "Vallée d'Aoste"),
+    "Nice": ("#b25e00", "Nice"),
+    "Alcotra": ("#5a3aa5", "Alcotra"),
+}
+_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+
+
+def _terr_color(territory: str) -> str:
+    return _TERRITORY.get(territory, ("#64748b", territory))[0]
+
+
+def _terr_label(territory: str) -> str:
+    return _TERRITORY.get(territory, ("#64748b", territory or "—"))[1]
+
+
+def _territory_counts(data: dict) -> dict[str, int]:
+    """Compte les éléments (une + brèves + signaux) par territoire pour une semaine."""
+    counts: dict[str, int] = {}
+    entries = []
+    if data.get("hero"):
+        entries.append(data["hero"].get("territory"))
+    for it in data.get("items", []):
+        entries.append(it.get("territory"))
+    for s in data.get("signaux", []):
+        entries.append(s.get("territory"))
+    for terr in entries:
+        if terr:
+            counts[terr] = counts.get(terr, 0) + 1
+    return counts
+
+
+def _kpi(value: str, label: str) -> str:
+    return (
+        '<div style="flex:1;min-width:140px;background:%s;border:1px solid %s;'
+        'border-radius:12px;padding:18px 20px;">' % (CARD, BORDER)
+        + f'<div style="font-size:30px;font-weight:800;color:{BRAND};line-height:1;">{value}</div>'
+        + f'<div style="font-size:12px;font-weight:700;letter-spacing:.4px;'
+          f'text-transform:uppercase;color:{MUTED};margin-top:7px;">{escape(label)}</div></div>'
+    )
+
+
+def _eyebrow(text: str) -> str:
+    return (
+        '<div style="margin:0 0 14px;">'
+        f'<span style="display:inline-block;width:26px;height:3px;background:{ACCENT};'
+        'vertical-align:middle;margin-right:9px;border-radius:2px;"></span>'
+        f'<span style="font-size:12px;font-weight:800;letter-spacing:1.5px;'
+        f'text-transform:uppercase;color:{BRAND};vertical-align:middle;">{escape(text)}</span></div>'
+    )
+
+
+def _bars_weekly(weeks: list[tuple[str, dict]]) -> str:
+    """Histogramme du volume de brèves par semaine (barres verticales CSS)."""
+    vols = [(wid, 1 + len(d.get("items", []))) for wid, d in weeks]  # une + brèves
+    top = max((v for _, v in vols), default=1)
+    cols = ""
+    for wid, v in vols:
+        h = max(6, round(100 * v / top))
+        short = wid.split("-W")[-1].lstrip("0") or wid
+        cols += (
+            '<td valign="bottom" style="text-align:center;padding:0 4px;vertical-align:bottom;">'
+            f'<div style="font-size:11px;color:{MUTED};margin-bottom:4px;">{v}</div>'
+            f'<div style="width:26px;height:{h}px;background:{BRAND};border-radius:4px 4px 0 0;'
+            'margin:0 auto;"></div>'
+            f'<div style="font-size:10px;color:{MUTED};margin-top:5px;">S{escape(short)}</div></td>'
+        )
+    return (
+        '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">'
+        f"<tr>{cols}</tr></table>"
+    )
+
+
+def _bars_territory(totals: dict[str, int]) -> str:
+    """Barres horizontales : total de signaux/brèves par territoire."""
+    if not totals:
+        return f'<div style="color:{MUTED};font-size:14px;">Aucune donnée.</div>'
+    top = max(totals.values())
+    order = sorted(totals, key=lambda t: totals[t], reverse=True)
+    rows = ""
+    for terr in order:
+        v = totals[terr]
+        w = max(3, round(100 * v / top))
+        color = _terr_color(terr)
+        rows += (
+            '<tr>'
+            f'<td style="width:120px;font-size:13px;color:{INK};font-weight:600;padding:5px 10px 5px 0;'
+            'white-space:nowrap;">'
+            f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;'
+            f'background:{color};margin-right:7px;"></span>{escape(_terr_label(terr))}</td>'
+            f'<td style="padding:5px 0;"><span style="display:inline-block;height:14px;width:{w}%;'
+            f'background:{color};border-radius:7px;vertical-align:middle;"></span>'
+            f'<span style="font-size:12px;color:{MUTED};font-weight:700;margin-left:8px;">{v}</span></td>'
+            '</tr>'
+        )
+    return f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{rows}</table>'
+
+
+def _tag(territory: str) -> str:
+    color = _terr_color(territory)
+    return (
+        '<span style="display:inline-block;background:#eef2f7;color:#42526b;font-size:11px;'
+        'font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 10px;'
+        'border-radius:20px;">'
+        f'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;'
+        f'background:{color};margin-right:6px;"></span>{escape(_terr_label(territory))}</span>'
+    )
+
+
+def _latest_block(week_id: str, data: dict) -> str:
+    hero = data.get("hero") or {}
+    sig = data.get("signaux", [])
+    hero_html = ""
+    if hero:
+        link = hero.get("url", "")
+        title = escape(hero.get("title", ""))
+        title_html = f'<a href="{escape(link)}" style="color:{INK};text-decoration:none;">{title}</a>' if link else title
+        hero_html = (
+            f'<div style="margin-bottom:6px;">{_tag(hero.get("territory", ""))}</div>'
+            f'<div style="font-size:20px;font-weight:800;color:{INK};line-height:1.3;margin-bottom:6px;">{title_html}</div>'
+            f'<div style="font-size:14px;color:#374151;line-height:1.6;">{escape(hero.get("summary", ""))}</div>'
+        )
+    sig_html = ""
+    for s in sig:
+        sig_html += (
+            f'<tr><td style="padding:8px 0;border-bottom:1px solid {BORDER};">'
+            f'{_tag(s.get("territory", ""))}'
+            f'<span style="font-size:14px;color:{INK};font-weight:600;margin-left:8px;">{escape(s.get("title", ""))}</span>'
+            "</td></tr>"
+        )
+    return (
+        f'<div style="background:{CARD};border:1px solid {BORDER};border-radius:12px;padding:22px;">'
+        f'{_eyebrow("À la une — " + escape(data.get("week_label", week_id)))}'
+        f"{hero_html}"
+        + (f'<div style="margin-top:18px;">{_eyebrow("Signaux de la semaine")}'
+           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{sig_html}</table></div>'
+           if sig_html else "")
+        + "</div>"
+    )
+
+
+def render_dashboard(weeks: list[tuple[str, dict]], *, generated_at: str = "") -> str:
+    """Assemble le tableau de bord. `weeks` = liste (week_id, data) triée croissant."""
+    weeks = sorted(weeks, key=lambda wd: wd[0])
+    # Agrégats
+    totals: dict[str, int] = {}
+    total_signaux = 0
+    for _, d in weeks:
+        for terr, n in _territory_counts(d).items():
+            totals[terr] = totals.get(terr, 0) + n
+        total_signaux += len(d.get("signaux", []))
+    nb_weeks = len(weeks)
+    nb_terr = len(totals)
+    total_breves = sum(1 + len(d.get("items", [])) for _, d in weeks)
+
+    kpis = (
+        _kpi(str(nb_weeks), "semaines couvertes")
+        + _kpi(str(total_breves), "brèves publiées")
+        + _kpi(str(total_signaux), "signaux forts")
+        + _kpi(str(nb_terr), "territoires actifs")
+    )
+    latest = _latest_block(*weeks[-1]) if weeks else (
+        f'<div style="color:{MUTED};">Aucune synthèse disponible pour le moment.</div>'
+    )
+    footer_when = f" · généré le {escape(generated_at)}" if generated_at else ""
+
+    return f"""<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Sabaudo — Tableau de bord</title></head>
+<body style="margin:0;padding:0;background:{BG};font-family:{_FONT};color:{INK};">
+<div style="max-width:920px;margin:0 auto;padding:28px 18px 48px;">
+
+  <div style="margin-bottom:8px;">
+    <span style="font-size:11px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:{ACCENT};">Observatoire économique</span>
+  </div>
+  <div style="font-size:34px;font-weight:800;letter-spacing:-.5px;color:{BRAND};line-height:1;">
+    Business Sabaudo<span style="color:{ACCENT};">.</span></div>
+  <div style="font-size:13px;color:{MUTED};margin:9px 0 24px;">
+    Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra — tableau de bord de la veille{footer_when}</div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px;">{kpis}</div>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:26px;">
+    <div style="flex:1;min-width:280px;background:{CARD};border:1px solid {BORDER};border-radius:12px;padding:22px;">
+      {_eyebrow("Volume de brèves par semaine")}
+      {_bars_weekly(weeks)}
+    </div>
+    <div style="flex:1;min-width:280px;background:{CARD};border:1px solid {BORDER};border-radius:12px;padding:22px;">
+      {_eyebrow("Répartition par territoire")}
+      {_bars_territory(totals)}
+    </div>
+  </div>
+
+  {latest}
+
+  <div style="color:{MUTED};font-size:12px;line-height:1.6;margin-top:30px;text-align:center;">
+    <strong style="color:{BRAND};">Cultura Sabauda</strong> — Veille assistée par IA, sélectionnée et validée par la rédaction.<br>
+    <a href="https://culturasabauda.eu" style="color:{MUTED};">culturasabauda.eu</a>
+  </div>
+
+</div></body></html>
+"""

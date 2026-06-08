@@ -83,17 +83,22 @@ Au quotidien, c'est **`02_Veille_traitee`** qui compte : les synthèses y arrive
 - [x] Déploiement sur le VPS + planification automatique
 - [ ] Alimentation des sources réelles (newsletters + flux à surveiller)
 
-### 🔮 Pistes pour la suite (à décider ensemble, optionnel)
-- **Liens « site officiel »** : annuaire curé `config/official_links.txt` à étoffer
+### 🚧 Sprint 2 — en cours
+- [x] **Liens « site officiel »** : annuaire curé `config/official_links.txt`
   (acteur → domaine officiel). Pour une brève issue de la presse, le système
   retrouve l'**article/communiqué précis** sur ce domaine (recherche web, URL
   réelle citée — jamais la home, jamais devinée). Opt-in `OFFICIAL_LINK_SEARCH=1`.
-  Mécanisme en place ; reste à enrichir la liste des domaines au fil de l'eau.
-- **Lecture plus agréable** : synthèses en Google Doc plutôt qu'en fichier texte.
-- **Envoi automatique** de la newsletter Brevo après validation.
-- **Tableau de bord visuel** « Business Sabaudo » (page web : tendances, carte du
-  territoire, évolution des signaux).
-- **Statistiques** : nombre de signaux par territoire, dynamiques dans le temps.
+- [x] **Synthèses en Google Doc** : la synthèse hebdo est déposée dans le Drive en
+  **Google Doc mis en forme** (titres, listes, liens), en plus de l'archive
+  Markdown. Migration des synthèses existantes : `scripts/migrate_gdocs.py`.
+- [x] **Tableau de bord visuel** « Business Sabaudo » (`scripts/build_dashboard.py`)
+  : page HTML autonome — indicateurs clés, volume hebdo, répartition par
+  territoire, la une de la semaine. Régénéré chaque vendredi, déposé sur le Drive.
+- [ ] **Envoi automatique** de la newsletter Brevo après validation.
+- [ ] **Photos topiques** (Pexels) avec repli sur les bannières de marque.
+
+### 🔮 Pistes pour plus tard
+- **Statistiques avancées** : dynamiques des signaux dans le temps, carte du territoire.
 - **Élargissement des sources** : presse économique, données publiques, réseaux.
 
 ---
