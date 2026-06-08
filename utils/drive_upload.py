@@ -136,6 +136,88 @@ def upload_file(
     return None
 
 
+def _plain_html_document(fragment_html: str, title: str) -> str:
+    """Page HTML minimale (sans style email) pour une conversion propre en Doc."""
+    from html import escape
+
+    return (
+        "<!DOCTYPE html>\n<html lang=\"fr\"><head><meta charset=\"utf-8\">"
+        f"<title>{escape(title)}</title></head><body>\n{fragment_html}\n</body></html>"
+    )
+
+
+def upload_markdown_as_gdoc(
+    local_md: str | Path,
+    folder_id: str | None = None,
+    subfolder: str | None = None,
+    name: str | None = None,
+) -> str | None:
+    """Téléverse un fichier Markdown comme **Google Doc natif** (mise en forme).
+
+    Drive convertit le HTML envoyé en document Google. Le titre du Doc est `name`
+    (défaut : nom de fichier sans extension). Dédoublonnage : si un Doc du même
+    titre existe déjà dans le dossier, son contenu est remplacé (pas de doublon).
+    Retourne l'ID Drive, ou None en cas d'échec.
+    """
+    from googleapiclient.errors import HttpError
+    from googleapiclient.http import MediaInMemoryUpload
+
+    from utils.markdown_html import md_to_html_fragment
+
+    local_md = Path(local_md)
+    if not local_md.exists():
+        log.error("Fichier introuvable : %s", local_md)
+        return None
+
+    folder_id = folder_id or os.getenv("DRIVE_FOLDER_ID")
+    if not folder_id:
+        log.error("DRIVE_FOLDER_ID non défini (ni argument, ni variable d'environnement).")
+        return None
+
+    doc_name = name or local_md.stem
+    GDOC_MIME = "application/vnd.google-apps.document"
+    try:
+        fragment = md_to_html_fragment(local_md.read_text(encoding="utf-8"))
+        html = _plain_html_document(fragment, doc_name)
+        media = MediaInMemoryUpload(html.encode("utf-8"), mimetype="text/html", resumable=True)
+
+        service = _get_service()
+        if subfolder:
+            folder_id = _find_or_create_subfolder(service, folder_id, subfolder)
+
+        safe_name = doc_name.replace("'", "\\'")
+        query = (
+            f"name = '{safe_name}' and '{folder_id}' in parents and "
+            f"mimeType = '{GDOC_MIME}' and trashed = false"
+        )
+        existing = (
+            service.files()
+            .list(q=query, spaces="drive", fields="files(id)", pageSize=1)
+            .execute()
+            .get("files", [])
+        )
+        if existing:
+            file_id = existing[0]["id"]
+            service.files().update(fileId=file_id, media_body=media).execute()
+            log.info("Google Doc mis à jour : %s (id=%s)", doc_name, file_id)
+            return file_id
+
+        metadata = {"name": doc_name, "parents": [folder_id], "mimeType": GDOC_MIME}
+        created = (
+            service.files()
+            .create(body=metadata, media_body=media, fields="id")
+            .execute()
+        )
+        file_id = created.get("id")
+        log.info("Google Doc créé : %s (id=%s)", doc_name, file_id)
+        return file_id
+    except HttpError as exc:
+        log.error("Erreur API Drive (Doc %s) : %s", doc_name, exc)
+    except Exception as exc:  # pragma: no cover
+        log.error("Échec de la création du Google Doc %s : %s", doc_name, exc)
+    return None
+
+
 def main() -> int:
     load_dotenv(ROOT / ".env")
     if len(sys.argv) < 2:

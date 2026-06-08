@@ -436,14 +436,22 @@ def main() -> int:
     log.info("⚠ Validation de Franck requise avant toute publication.")
 
     if args.upload:
-        from utils.drive_upload import upload_file
+        from utils.drive_upload import upload_file, upload_markdown_as_gdoc
 
         subfolder = os.getenv("DRIVE_VEILLE_TRAITEE_SUBFOLDER", "02_Veille_traitee")
+        # Archive Markdown (matière brute, réutilisable par le tableau de bord)
         file_id = upload_file(out, subfolder=subfolder)
         if file_id:
-            log.info("Synthèse téléversée sur Drive (id=%s).", file_id)
+            log.info("Archive Markdown téléversée sur Drive (id=%s).", file_id)
         else:
             log.warning("Upload Drive échoué — le fichier local reste disponible.")
+        # Version lisible : Google Doc natif mis en forme (titres, listes, liens)
+        doc_name = f"Business Sabaudo — {week_label_human(target_week)}"
+        doc_id = upload_markdown_as_gdoc(out, subfolder=subfolder, name=doc_name)
+        if doc_id:
+            log.info("Synthèse déposée en Google Doc : « %s » (id=%s).", doc_name, doc_id)
+        else:
+            log.warning("Création du Google Doc échouée — l'archive Markdown reste disponible.")
 
     if args.brevo and data:
         sys.path.insert(0, str(ROOT / "scripts"))
