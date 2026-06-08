@@ -200,19 +200,25 @@ def split_markdown_json(text: str) -> tuple[str, dict | None]:
         return markdown, None
 
 
-def _enrich(entry: dict, registry: dict[int, dict], press: set[str]) -> dict | None:
+def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
+            official: dict[str, str] | None = None) -> dict | None:
     """Complète une entrée {id,titre,resume,acteur} avec lien/source/image d'origine.
 
     Si la source est un média de presse (config/press_domains.txt), on n'expose
     NI lien, NI logo, NI image : on attribue à l'acteur primaire (pas de pub au
-    journal). Sinon (source institutionnelle), on crédite et on lie normalement.
+    journal). On tente alors un lien vers le SITE OFFICIEL de l'acteur s'il figure
+    dans l'annuaire curé (config/official_links.txt) → bouton « Sur le site officiel ».
+    Sinon (source institutionnelle), on crédite et on lie normalement.
     """
-    from utils.sources import domain_of, is_press, source_label
+    from urllib.parse import urlparse
+
+    from utils.sources import domain_of, is_press, resolve_official, source_label
 
     rec = registry.get(int(entry.get("id", -1))) if str(entry.get("id", "")).strip().lstrip("-").isdigit() else None
     if rec is None:
         return None
     domain = domain_of(rec)
+    actor = (entry.get("acteur") or "").strip()
     base = {
         "title": entry.get("titre") or rec.get("title", ""),
         "summary": entry.get("resume", ""),
@@ -220,7 +226,14 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str]) -> dict | N
     }
     if is_press(domain, press):
         # Radar : on garde l'info, on retire tout ce qui crédite/promeut le journal.
-        base.update({"url": "", "image": "", "domain": "", "source": (entry.get("acteur") or "").strip()})
+        base.update({"url": "", "image": "", "domain": "", "source": actor})
+        # « Lire plus » vers le site officiel de l'acteur, si on en connaît un (curé).
+        official_url = resolve_official(actor, base["title"], official or {})
+        if official_url:
+            off_domain = urlparse(official_url).netloc.lower()
+            if off_domain.startswith("www."):
+                off_domain = off_domain[4:]
+            base.update({"url": official_url, "domain": off_domain, "cta_label": "Sur le site officiel"})
     else:
         base.update({
             "url": rec.get("link", ""),
@@ -234,12 +247,13 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str]) -> dict | N
 def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
                      logo_url: str, picto_url: str = "") -> dict | None:
     """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
-    from utils.sources import load_press_domains
+    from utils.sources import load_official_links, load_press_domains
     press = load_press_domains()
+    official = load_official_links()
 
     une = parsed.get("une") or {}
-    hero = _enrich(une, registry, press)
-    items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry, press))]
+    hero = _enrich(une, registry, press, official)
+    items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry, press, official))]
     signaux = []
     for s in parsed.get("signaux", []):
         rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None

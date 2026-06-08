@@ -1,0 +1,25 @@
+# Annuaire des LIENS OFFICIELS par acteur (mode radar → « lire plus »)
+# ---------------------------------------------------------------------------
+# Quand une info vient de la PRESSE (config/press_domains.txt), on retire le lien
+# du journal (pas de pub aux concurrents). Mais si l'ACTEUR primaire a un site
+# officiel, on peut y renvoyer le lecteur via un bouton « Sur le site officiel ».
+#
+# Ce fichier est CURÉ À LA MAIN : aucune URL n'est devinée par l'IA. Tu déclares
+# ici les sites officiels que TU connais et valides. Tant qu'un acteur n'est pas
+# listé, sa brève reste sans lien (comportement radar actuel, inchangé).
+#
+# Format (une entrée par ligne) :
+#   motclé ; https://site-officiel.tld
+#
+# - « motclé » est cherché (sans accents, insensible à la casse) dans le nom de
+#   l'acteur ET dans le titre de la brève. En cas de plusieurs correspondances,
+#   la plus longue (la plus précise) l'emporte.
+# - Mets un motclé DISTINCTIF (« la rosiere », pas « rosiere » seul).
+# - Préfère la page d'accueil ou la page presse/actualités officielle stable.
+#
+# Exemples (à DÉCOMMENTER et VÉRIFIER avant usage — ne rien laisser au hasard) :
+# la rosiere ; https://www.larosiere.net
+# cci nice ; https://www.cote-azur.cci.fr
+# confindustria ; https://www.confindustria.it
+# politecnico di torino ; https://www.polito.it
+# universite cote d'azur ; https://univ-cotedazur.fr

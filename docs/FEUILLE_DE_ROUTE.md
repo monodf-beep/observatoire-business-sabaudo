@@ -84,6 +84,9 @@ Au quotidien, c'est **`02_Veille_traitee`** qui compte : les synthèses y arrive
 - [ ] Alimentation des sources réelles (newsletters + flux à surveiller)
 
 ### 🔮 Pistes pour la suite (à décider ensemble, optionnel)
+- **Liens « site officiel »** : annuaire curé `config/official_links.txt` à étoffer
+  (acteur → URL officielle), pour que les brèves issues de la presse renvoient au
+  site de l'acteur. Mécanisme en place ; reste à enrichir la liste au fil de l'eau.
 - **Lecture plus agréable** : synthèses en Google Doc plutôt qu'en fichier texte.
 - **Envoi automatique** de la newsletter Brevo après validation.
 - **Tableau de bord visuel** « Business Sabaudo » (page web : tendances, carte du

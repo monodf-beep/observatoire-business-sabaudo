@@ -65,6 +65,49 @@ def pick_image(territory: str, key: str, images: dict[str, list[str]]) -> str:
     return pool[idx]
 
 
+_OFFICIAL_FILE = Path(__file__).resolve().parent.parent / "config" / "official_links.txt"
+
+
+def _strip_accents(text: str) -> str:
+    import unicodedata
+
+    return "".join(
+        c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn"
+    )
+
+
+def load_official_links(path: Path | None = None) -> dict[str, str]:
+    """Charge l'annuaire des liens officiels : {motclé normalisé: url}."""
+    path = path or _OFFICIAL_FILE
+    links: dict[str, str] = {}
+    if not path.exists():
+        return links
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or ";" not in line:
+            continue
+        key, url = (p.strip() for p in line.split(";", 1))
+        if key and url:
+            links[_strip_accents(key).lower()] = url
+    return links
+
+
+def resolve_official(actor: str, title: str, links: dict[str, str]) -> str:
+    """Renvoie l'URL officielle si un motclé curé apparaît dans l'acteur ou le titre.
+
+    En cas de correspondances multiples, le motclé le PLUS LONG (le plus précis)
+    l'emporte. '' si aucune correspondance — la brève reste alors sans lien.
+    """
+    if not links:
+        return ""
+    haystack = _strip_accents(f"{actor} {title}").lower()
+    best_key = ""
+    for key in links:
+        if key in haystack and len(key) > len(best_key):
+            best_key = key
+    return links.get(best_key, "")
+
+
 def domain_of(record: dict) -> str:
     """Domaine de la source (sans www), pour le favicon. '' si introuvable."""
     link = record.get("link") or record.get("feed_url") or ""

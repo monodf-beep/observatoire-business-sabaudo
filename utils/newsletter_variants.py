@@ -84,9 +84,12 @@ def _header(week_label: str, tagline: str, logo_url: str | None = None) -> str:
     """Masthead éditorial blanc : surtitre + logo éditeur (petit) + titre + date."""
     logo_cell = ""
     if logo_url:
+        # Logo horizontal : on borne hauteur ET largeur. Sans borne de largeur,
+        # Gmail mobile ignore la hauteur et affiche l'image à sa taille native.
         logo_cell = (
             f'<td align="right" valign="middle"><img src="{logo_url}" alt="Une publication Cultura Sabauda" '
-            'height="24" style="height:24px;border:0;display:inline-block;"></td>'
+            'height="24" style="height:24px;width:auto;max-height:24px;max-width:170px;'
+            'border:0;display:inline-block;"></td>'
         )
     return (
         '<tr><td style="padding:28px 36px 0;background:#fff;">'
@@ -122,9 +125,12 @@ def _eyebrow(text: str) -> str:
 def _footer(logo_url: str | None = None) -> str:
     logo = ""
     if logo_url:
+        # Pictogramme carré : largeur ET hauteur verrouillées (44x44). Indispensable
+        # pour Gmail mobile, qui sinon affiche l'image à sa taille native (trop gros).
         logo = (
             f'<div style="margin-bottom:16px;"><img src="{logo_url}" alt="Cultura Sabauda" '
-            'height="46" style="height:46px;border:0;display:block;"></div>'
+            'width="44" height="44" style="width:44px;height:44px;max-width:44px;'
+            'border:0;display:block;"></div>'
         )
     return (
         f'<tr><td style="background:#f7f9fc;padding:26px 36px;border-top:1px solid {BORDER};">'
@@ -203,7 +209,7 @@ def variant_magazine(data: dict) -> str:
             f'<tr><td style="padding:0 0 6px;font-size:19px;font-weight:700;color:{INK};line-height:1.3;">'
             f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{escape(it["title"])}</a></td></tr>'
             f'<tr><td style="font-size:15px;color:#374151;line-height:1.6;">{escape(it["summary"])}</td></tr>'
-            f'<tr><td style="padding:10px 0 0;">{_cta(it["url"])}</td></tr>'
+            f'<tr><td style="padding:10px 0 0;">{_cta(it["url"], it.get("cta_label", "Lire la suite"))}</td></tr>'
             "</table>"
         )
     inner = (
@@ -218,7 +224,7 @@ def variant_magazine(data: dict) -> str:
         + f'<tr><td style="padding:14px 36px 6px;">{_tag(hero["territory"])}&nbsp;&nbsp;{_source(hero)}'
           f'<div style="font-size:25px;font-weight:800;color:{INK};line-height:1.25;margin:11px 0 8px;">{escape(hero["title"])}</div>'
           f'<div style="font-size:15px;color:#374151;line-height:1.6;">{escape(hero["summary"])}</div>'
-          + (f'<div style="margin-top:16px;">{_button(hero["url"], "Lire l’article")}</div>' if hero.get("url") else "")
+          + (f'<div style="margin-top:16px;">{_button(hero["url"], hero.get("cta_label", "Lire l’article"))}</div>' if hero.get("url") else "")
           + "</td></tr>"
         # SIGNAUX (Intérêt)
         + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow("Les signaux de la semaine")}'
@@ -272,7 +278,7 @@ def variant_editorial(data: dict) -> str:
             f'{_tag(it["territory"])}&nbsp;&nbsp;{_source(it)}'
             f'<div style="font-size:17px;font-weight:700;color:{INK};line-height:1.3;margin:8px 0 5px;">'
             f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{escape(it["title"])}</a></div>'
-            f'<div style="font-size:14px;color:#4b5563;line-height:1.6;">{escape(it["summary"])} {_cta(it["url"], "lire")}</div>'
+            f'<div style="font-size:14px;color:#4b5563;line-height:1.6;">{escape(it["summary"])} {_cta(it["url"], it.get("cta_label", "lire"))}</div>'
             "</td></tr>"
         )
     sig = (
@@ -281,7 +287,7 @@ def variant_editorial(data: dict) -> str:
         f'<div style="font-size:12px;font-weight:800;color:{ACCENT};text-transform:uppercase;letter-spacing:1px;">Le signal de la semaine</div>'
         f'<div style="font-size:20px;font-weight:800;color:{INK};line-height:1.3;margin:8px 0 6px;">{escape(hero["title"])}</div>'
         f'<div style="font-size:15px;color:#374151;line-height:1.6;">{escape(hero["summary"])}</div>'
-        f'<div style="margin-top:12px;">{_tag(hero["territory"])}&nbsp;&nbsp;{_source(hero)}&nbsp;&nbsp;{_cta(hero["url"])}</div>'
+        f'<div style="margin-top:12px;">{_tag(hero["territory"])}&nbsp;&nbsp;{_source(hero)}&nbsp;&nbsp;{_cta(hero["url"], hero.get("cta_label", "Lire la suite"))}</div>'
         "</td></tr></table></td></tr>"
     )
     inner = (
