@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 import re
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from utils.logger import get_logger
 
@@ -22,10 +22,46 @@ log = get_logger("official_search")
 
 _WEB_SEARCH_TOOL = {"type": "web_search_20250305", "name": "web_search", "max_uses": 2}
 
+# Métadonnées d'image sociale (og:image / twitter:image), ordre/attributs variables.
+_OG_IMAGE_PATTERNS = (
+    re.compile(r'<meta[^>]+property=["\']og:image(?::secure_url|:url)?["\'][^>]+content=["\']([^"\']+)["\']', re.I),
+    re.compile(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image(?::secure_url|:url)?["\']', re.I),
+    re.compile(r'<meta[^>]+name=["\']twitter:image(?::src)?["\'][^>]+content=["\']([^"\']+)["\']', re.I),
+)
+
 
 def is_enabled() -> bool:
     """Vrai si la recherche de liens officiels est explicitement activée."""
     return os.getenv("OFFICIAL_LINK_SEARCH", "").strip() in {"1", "true", "True", "yes"}
+
+
+def fetch_og_image(url: str, timeout: int = 10, max_bytes: int = 200_000) -> str:
+    """Récupère l'URL de l'image sociale (og:image) d'une page, ou '' si absente.
+
+    Ne télécharge que le début de la page (les balises <meta> sont dans le <head>).
+    Tolérant aux pannes : toute erreur réseau/parsing renvoie ''.
+    """
+    if not url:
+        return ""
+    import urllib.request
+
+    try:
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "Mozilla/5.0 (BusinessSabaudo/1.0; veille éco)"}
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            html = resp.read(max_bytes).decode("utf-8", errors="ignore")
+    except Exception as exc:  # réseau, TLS, 4xx/5xx, décodage…
+        log.warning("og:image — récupération impossible (%s) : %s", url, exc)
+        return ""
+
+    for pattern in _OG_IMAGE_PATTERNS:
+        match = pattern.search(html)
+        if match and match.group(1).strip():
+            img = urljoin(url, match.group(1).strip())
+            if img.lower().startswith(("http://", "https://")):
+                return img
+    return ""
 
 
 def _urls_on_domain(blocks, domain: str) -> list[str]:

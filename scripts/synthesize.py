@@ -279,6 +279,13 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
             if url:
                 entry.update({"url": url, "domain": dom, "cta_label": "Sur le site officiel"})
                 log.info("Lien officiel trouvé (%s) : %s", dom, url)
+                # Vraie photo du sujet : og:image de l'article officiel (repli
+                # bannière plus bas si absente). N'écrase pas une image existante.
+                if not entry.get("image"):
+                    og = official_search.fetch_og_image(url)
+                    if og:
+                        entry["image"] = og
+                        log.info("Image officielle (og:image) : %s", og)
     # On retire le champ technique avant sérialisation/rendu.
     for entry in ([hero] if hero else []) + items:
         entry.pop("_official_domain", None)

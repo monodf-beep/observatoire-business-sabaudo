@@ -97,8 +97,12 @@ Au quotidien, c'est **`02_Veille_traitee`** qui compte : les synthèses y arrive
   → **Usage actuel : interne (pilotage éditorial).** Version publique envisagée —
   objectif **autorité / observatoire de référence** ; granularité (barème mensuel/
   trimestriel lissé vs hebdo) à trancher plus tard, une fois les sources densifiées.
+- [x] **Vraie photo du sujet (`og:image`)** : pour une brève presse dont on a
+  trouvé l'article officiel (OFFICIAL_LINK_SEARCH), on récupère l'`og:image` de la
+  page — image réelle, exacte, publiée par l'acteur. Repli bannière si absente.
 - [ ] **Envoi automatique** de la newsletter Brevo après validation.
-- [ ] **Photos topiques** (Pexels) avec repli sur les bannières de marque.
+- [ ] **Photos topiques (Pexels)** — couche 3 *optionnelle*, réservée aux sujets
+  génériques (mention « illustration »). À activer plus tard si besoin.
 
 ### 🔮 Pistes pour plus tard
 - **Statistiques avancées** : dynamiques des signaux dans le temps, carte du territoire.
