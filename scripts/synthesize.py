@@ -33,6 +33,7 @@ DEFAULT_MODEL = "claude-sonnet-4-6"
 
 # Bornes pour rester dans une enveloppe de tokens raisonnable
 MAX_BODY_CHARS = 1500
+MAX_BODY_EMAIL_CHARS = 6000   # une newsletter est un digest long (plusieurs sujets)
 MAX_ITEMS_PER_TERRITORY = 40
 
 log = get_logger("synthesize")
@@ -116,10 +117,15 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         for rid, rec in by_terr[territory]:
             origin = rec.get("feed_title") or rec.get("from") or rec.get("feed_url", "")
             date = rec.get("date", "")[:10]
-            body = (rec.get("body") or "").strip()[:MAX_BODY_CHARS]
+            is_email = rec.get("source") == "gmail"
+            # Une newsletter est un digest long (plusieurs sujets) : on lui laisse
+            # beaucoup plus de place qu'à un item RSS mono-sujet.
+            budget = MAX_BODY_EMAIL_CHARS if is_email else MAX_BODY_CHARS
+            body = (rec.get("body") or "").strip()[:budget]
             link = rec.get("link", "")
+            kind = "Newsletter (digest — peut contenir plusieurs sujets)" if is_email else "Flux"
             lines.append(f"\n### [#{rid}] {rec.get('title', '(sans titre)')}")
-            lines.append(f"- Source : {origin} | Date : {date}")
+            lines.append(f"- Type : {kind} | Source : {origin} | Date : {date}")
             if link:
                 lines.append(f"- Lien : {link}")
             if body:
@@ -152,6 +158,11 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "  - 'une' = l'actualité la plus marquante (le héros).\n"
         "  - 'signaux' = 3 à 5 signaux forts (titres courts).\n"
         "  - 'articles' = 4 à 6 brèves éditorialisées (hors 'une'), une par sujet fort.\n"
+        "  - NEWSLETTERS (éléments « Type : Newsletter ») : ce sont des DIGESTS qui\n"
+        "    regroupent PLUSIEURS sujets distincts. Lis le contenu en entier et extrais\n"
+        "    CHAQUE sujet à valeur économique comme une brève séparée — tu PEUX produire\n"
+        "    plusieurs brèves à partir du même [#id] (une par sujet). N'en tire pas une\n"
+        "    seule brève générique : ces emails sont la matière la plus riche de la semaine.\n"
         "  - Ne retiens que les contenus à VALEUR ÉCONOMIQUE/ÉDITORIALE. Ignore les emails\n"
         "    de service (réponses automatiques, confirmations, fils internes) et les sujets\n"
         "    non économiques (faits divers, sport, météo). Si rien n'a de valeur,\n"
