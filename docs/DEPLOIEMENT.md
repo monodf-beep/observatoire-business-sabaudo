@@ -84,6 +84,17 @@ python scripts/synthesize.py --upload  # synthèse + dépôt dans le Drive
 La synthèse apparaît dans `02_Veille_traitee/Syntheses_hebdomadaires/` **et**
 (avec `--upload`) dans le dossier Drive « Observatoire économique Sabaudo ».
 
+## Mettre à jour une installation existante (déjà déployée)
+
+Sur une machine déjà installée, une seule commande récupère la dernière version,
+active la recherche de liens officiels (`OFFICIAL_LINK_SEARCH=1`) et lance une
+synthèse de test (aucun envoi) :
+
+```bash
+bash deploy.sh            # pull + .env + synthèse de test locale
+bash deploy.sh --no-test  # pull + .env seulement (sans appel API)
+```
+
 ## Activer la planification automatique
 
 Une fois les tests concluants, sur la machine choisie :
