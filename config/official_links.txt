@@ -22,31 +22,40 @@
 # - La valeur est un DOMAINE (pas une URL d'article) : larosiere.net, polito.it…
 #
 # ---------------------------------------------------------------------------
-# CANDIDATS DE DÉPART (à VÉRIFIER puis DÉCOMMENTER). Domaines à confirmer un par
-# un — ne rien activer sans avoir ouvert le site et confirmé qu'il publie bien
-# des actualités/communiqués. Liste indicative, à compléter selon tes acteurs.
+# DOMAINES OFFICIELS CONFIRMÉS (vérifiés par navigation — juin 2026).
 #
 # — Savoie / Haute-Savoie —
-# la rosiere ; larosiere.net
-# cci savoie ; savoie.cci.fr
-# cci haute-savoie ; haute-savoie.cci.fr
-# savoie mont blanc ; savoie-mont-blanc.com
+la rosiere ; larosiere.net
+cci savoie ; savoie.cci.fr
+cci haute-savoie ; haute-savoie.cci.fr
+departement haute-savoie ; hautesavoie.fr
 #
 # — Piémont —
-# politecnico di torino ; polito.it
-# i3p ; i3p.it
-# confindustria ; confindustria.it
-# regione piemonte ; regione.piemonte.it
+politecnico di torino ; polito.it
+i3p ; i3p.it
+confindustria ; confindustria.it
+regione piemonte ; regione.piemonte.it
+finpiemonte ; finpiemonte.it
+fondazione crt ; fondazionecrt.it
 #
 # — Vallée d'Aoste —
-# pepinieres vda ; pepinieresvda.eu
-# regione valle d'aosta ; regione.vda.it
+pepinieres vda ; pepinieresvda.eu
+regione valle d'aosta ; regione.vda.it
+finaosta ; finaosta.com
 #
 # — Nice / Sophia-Antipolis —
-# cci nice ; cote-azur.cci.fr
-# universite cote d'azur ; univ-cotedazur.fr
-# team cote d'azur ; investincotedazur.com
-# metropole nice ; nicecotedazur.org
+cci nice ; cote-azur.cci.fr
+universite cote d'azur ; univ-cotedazur.fr
+team cote d'azur ; investincotedazur.com
+metropole nice ; nicecotedazur.org
 #
 # — Alcotra (transfrontalier) —
-# interreg alcotra ; interreg-alcotra.eu
+interreg alcotra ; interreg-alcotra.eu
+#
+# ---------------------------------------------------------------------------
+# À VÉRIFIER MANUELLEMENT (domaines non confirmables en navigation auto —
+# décommenter après contrôle) :
+# savoie mont blanc ; savoie-mont-blanc.com
+# sophia antipolis ; sophia-antipolis.org
+# chambery grand lac ; chambery-grandlac.fr
+# environment park ; envipark.com

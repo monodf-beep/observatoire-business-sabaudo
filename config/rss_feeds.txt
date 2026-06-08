@@ -13,6 +13,8 @@
 # et fiable). Locale FR pour Savoie/Nice, IT pour Piémont/Vallée d'Aoste.
 
 # ===================== SAVOIE / HAUTE-SAVOIE =====================
+# Institutionnel : Département de la Haute-Savoie (crédité + lié)
+https://hautesavoie.fr/actualites/feed/;Savoie
 # Radar éco (Google News)
 https://news.google.com/rss/search?q=%C3%A9conomie+Savoie+entreprise+OR+investissement&hl=fr&gl=FR&ceid=FR:fr;Savoie
 # Radar presse régionale (contenu complet)
@@ -22,14 +24,18 @@ https://www.ledauphine.com/haute-savoie/rss;Savoie
 # ===================== PIÉMONT =====================
 # Institutionnel : incubateur du Politecnico (crédité + lié)
 https://www.i3p.it/news/feed/;Piemonte
+# Institutionnel : Finpiemonte (agence de développement régional) + Fondazione CRT
+https://www.finpiemonte.it/rss.xml;Piemonte
+https://www.fondazionecrt.it/feed/;Piemonte
 # Radar éco (Google News, locale IT)
 https://news.google.com/rss/search?q=economia+Piemonte+impresa+OR+startup&hl=it&gl=IT&ceid=IT:it;Piemonte
 # Radar presse régionale
 https://www.quotidianopiemontese.it/feed/;Piemonte
 
 # ===================== VALLÉE D'AOSTE =====================
-# Institutionnel : pépinières d'entreprises (crédité + lié)
+# Institutionnel : pépinières d'entreprises + Finaosta (financière régionale)
 https://www.pepinieresvda.eu/feed;Vallee-Aoste
+https://www.finaosta.com/feed/;Vallee-Aoste
 # Radar éco (Google News, locale IT)
 https://news.google.com/rss/search?q=economia+%22Valle+d%27Aosta%22&hl=it&gl=IT&ceid=IT:it;Vallee-Aoste
 # Radar presse régionale
@@ -38,6 +44,10 @@ https://www.aostasera.it/feed/;Vallee-Aoste
 # ===================== NICE (Nice + Sophia-Antipolis + pôles) =====================
 # Périmètre : Nice, Menton, Éco-Vallée + Sophia-Antipolis, Université Côte d'Azur
 # et pôles de compétitivité. Exclus : Cannes (cinéma/tourisme) et Grasse-ville.
+# Institutionnel : CCI Nice Côte d'Azur, Team Côte d'Azur, Métropole NCA (crédités + liés)
+https://www.cote-azur.cci.fr/feed/;Nice
+https://www.investincotedazur.com/feed/;Nice
+https://www.nicecotedazur.org/feed/;Nice
 # Radar éco (Google News)
 https://news.google.com/rss/search?q=%C3%A9conomie+Nice+OR+Menton+OR+%22Sophia+Antipolis%22+OR+%22Universit%C3%A9+C%C3%B4te+d%27Azur%22+-Cannes+-Grasse&hl=fr&gl=FR&ceid=FR:fr;Nice
 # Radar presse : Nice-Matin rubrique Économie (contenu complet)
