@@ -12,10 +12,10 @@ PY=/usr/bin/python3
 # Collecte RSS — tous les jours à 08h00
 0 8 * * * cd $PROJECT && $PY scripts/rss_collect.py >> logs/cron_rss.log 2>&1
 
-# Synthèse hebdomadaire — chaque vendredi à 18h00
+# Synthèse hebdomadaire — chaque vendredi à 15h00
 # --upload : dépôt Drive (archive Markdown + Google Doc)  |  --brevo : brouillon Brevo
 # (AUCUN envoi auto : Franck relit et envoie la newsletter depuis Brevo)
-0 18 * * 5 cd $PROJECT && $PY scripts/synthesize.py --upload --brevo >> logs/cron_synth.log 2>&1
+0 15 * * 5 cd $PROJECT && $PY scripts/synthesize.py --upload --brevo >> logs/cron_synth.log 2>&1
 
-# Tableau de bord visuel — chaque vendredi à 18h15 (après la synthèse)
-15 18 * * 5 cd $PROJECT && $PY scripts/build_dashboard.py --upload >> logs/cron_dashboard.log 2>&1
+# Tableau de bord visuel — chaque vendredi à 15h15 (après la synthèse)
+15 15 * * 5 cd $PROJECT && $PY scripts/build_dashboard.py --upload >> logs/cron_dashboard.log 2>&1

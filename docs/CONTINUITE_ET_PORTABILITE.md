@@ -39,7 +39,9 @@ observatoire-business-sabaudo/
 ├── scripts/
 │   ├── gmail_collect.py     # collecte les newsletters (lundi 7h)
 │   ├── rss_collect.py       # collecte les flux RSS (tous les jours 8h)
-│   ├── synthesize.py        # synthèse + brouillon Brevo (vendredi 18h)
+│   ├── synthesize.py        # synthèse + brouillon Brevo (vendredi 15h)
+│   ├── build_dashboard.py   # tableau de bord visuel (vendredi 15h15)
+│   ├── migrate_gdocs.py     # convertit les synthèses en Google Docs (ponctuel)
 │   ├── push_brevo.py        # crée le brouillon Brevo (appelé par synthesize)
 │   └── demo_newsletter.py   # maquette de démonstration (manuel)
 ├── utils/
@@ -70,7 +72,8 @@ observatoire-business-sabaudo/
 |-------|--------|-----------------|
 | Tous les jours **8h** | `rss_collect.py` | collecte les flux RSS (5 territoires) |
 | Lundi **7h** | `gmail_collect.py` | collecte les newsletters reçues |
-| Vendredi **18h** | `synthesize.py --upload --brevo` | synthèse de la semaine → Drive + **brouillon Brevo** |
+| Vendredi **15h** | `synthesize.py --upload --brevo` | synthèse de la semaine → Drive (Markdown + **Google Doc**) + **brouillon Brevo** |
+| Vendredi **15h15** | `build_dashboard.py --upload` | tableau de bord visuel → Drive |
 
 Entre-temps, la matière s'accumule en silence. Le vendredi, l'IA sélectionne et
 éditorialise, puis dépose un **brouillon** (jamais d'envoi auto).

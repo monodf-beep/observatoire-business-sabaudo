@@ -23,7 +23,7 @@ rédige chaque semaine une **synthèse prête à relire**. Franck valide et publ
 |-------|--------------------------------|
 | **Tous les jours – 8h** | Collecte des flux RSS (sites, institutions, pépinières…) |
 | **Lundi – 7h** | Collecte des newsletters reçues sur la boîte de veille |
-| **Vendredi – 18h** | Rédaction de la synthèse de la semaine + dépôt dans le Drive |
+| **Vendredi – 15h** | Rédaction de la synthèse (Markdown + Google Doc) + tableau de bord, déposés dans le Drive |
 
 Entre-temps, l'outil accumule la matière en silence. Tout tourne sur un serveur
 allumé en permanence (VPS Hostinger) — aucune intervention nécessaire.

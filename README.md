@@ -19,7 +19,8 @@ observatoire-business-sabaudo/
 ├── scripts/
 │   ├── gmail_collect.py        # Script 1 — collecte Gmail   (cron lundi 7h)
 │   ├── rss_collect.py          # Script 2 — collecte RSS     (cron quotidien 8h)
-│   └── synthesize.py           # Script 3 — synthèse hebdo   (cron vendredi 18h)
+│   ├── synthesize.py           # Script 3 — synthèse hebdo   (cron vendredi 15h)
+│   └── build_dashboard.py      # Tableau de bord visuel      (cron vendredi 15h15)
 ├── utils/
 │   ├── drive_upload.py         # upload vers Google Drive
 │   ├── logger.py               # logs horodatés
@@ -99,7 +100,7 @@ crontab crontab.txt     # après avoir adapté les chemins PROJECT et PY
 
 - Collecte Gmail : **lundi 7h**
 - Collecte RSS : **tous les jours 8h**
-- Synthèse hebdomadaire : **vendredi 18h**
+- Synthèse hebdomadaire : **vendredi 15h**
 
 ## Notes
 

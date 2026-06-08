@@ -4,7 +4,7 @@ L'outil doit s'exécuter **automatiquement à heures fixes** :
 
 - Collecte Gmail → **lundi 7h**
 - Collecte RSS → **tous les jours 8h**
-- Synthèse hebdo → **vendredi 18h** (déposée dans le Drive, à valider avant publication)
+- Synthèse hebdo → **vendredi 15h** (déposée dans le Drive, à valider avant publication)
 
 Pour que ces rendez-vous soient tenus, il faut une machine **allumée à ces
 heures-là**. Voici les options, de la plus simple à la plus robuste.

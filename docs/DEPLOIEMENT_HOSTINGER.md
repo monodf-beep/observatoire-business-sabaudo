@@ -136,7 +136,7 @@ Sabaudo », **tout fonctionne** 🎉.
 
 ## Partie E — Automatiser (cron)
 
-Active la planification (lundi 7h, tous les jours 8h, vendredi 18h) :
+Active la planification (lundi 7h, tous les jours 8h, vendredi 15h) :
 
 ```bash
 # adapter le chemin du projet dans crontab.txt si besoin :
