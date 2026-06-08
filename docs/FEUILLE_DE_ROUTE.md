@@ -94,6 +94,9 @@ Au quotidien, c'est **`02_Veille_traitee`** qui compte : les synthèses y arrive
 - [x] **Tableau de bord visuel** « Business Sabaudo » (`scripts/build_dashboard.py`)
   : page HTML autonome — indicateurs clés, volume hebdo, répartition par
   territoire, la une de la semaine. Régénéré chaque vendredi, déposé sur le Drive.
+  → **Usage actuel : interne (pilotage éditorial).** Version publique envisagée —
+  objectif **autorité / observatoire de référence** ; granularité (barème mensuel/
+  trimestriel lissé vs hebdo) à trancher plus tard, une fois les sources densifiées.
 - [ ] **Envoi automatique** de la newsletter Brevo après validation.
 - [ ] **Photos topiques** (Pexels) avec repli sur les bannières de marque.
 
