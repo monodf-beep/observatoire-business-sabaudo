@@ -60,7 +60,6 @@ interreg alcotra ; interreg-alcotra.eu
 # ---------------------------------------------------------------------------
 # À VÉRIFIER MANUELLEMENT (domaines non confirmables en navigation auto —
 # décommenter après contrôle) :
-# savoie mont blanc ; savoie-mont-blanc.com
 # sophia antipolis ; sophia-antipolis.org
 # confindustria piemonte ; confindustria-piemonte.it
 # camera valdostana ; camera.vda.it
