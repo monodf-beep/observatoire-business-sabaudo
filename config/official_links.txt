@@ -29,6 +29,9 @@ la rosiere ; larosiere.net
 cci savoie ; savoie.cci.fr
 cci haute-savoie ; haute-savoie.cci.fr
 departement haute-savoie ; hautesavoie.fr
+departement savoie ; savoie.fr
+chambery grand lac ; chambery-grandlac.fr
+grand annecy ; grandannecy.fr
 #
 # — Piémont —
 politecnico di torino ; polito.it
@@ -37,6 +40,8 @@ confindustria ; confindustria.it
 regione piemonte ; regione.piemonte.it
 finpiemonte ; finpiemonte.it
 fondazione crt ; fondazionecrt.it
+camera di commercio di torino ; to.camcom.it
+environment park ; envipark.com
 #
 # — Vallée d'Aoste —
 pepinieres vda ; pepinieresvda.eu
@@ -57,5 +62,7 @@ interreg alcotra ; interreg-alcotra.eu
 # décommenter après contrôle) :
 # savoie mont blanc ; savoie-mont-blanc.com
 # sophia antipolis ; sophia-antipolis.org
-# chambery grand lac ; chambery-grandlac.fr
-# environment park ; envipark.com
+# confindustria piemonte ; confindustria-piemonte.it
+# camera valdostana ; camera.vda.it
+# pole scs ; pole-scs.com
+# safe cluster ; safe-cluster.eu

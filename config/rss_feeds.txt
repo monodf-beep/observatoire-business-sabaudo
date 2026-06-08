@@ -13,8 +13,9 @@
 # et fiable). Locale FR pour Savoie/Nice, IT pour Piémont/Vallée d'Aoste.
 
 # ===================== SAVOIE / HAUTE-SAVOIE =====================
-# Institutionnel : Département de la Haute-Savoie (crédité + lié)
+# Institutionnel : Département de la Haute-Savoie + agglo Chambéry-Grand Lac
 https://hautesavoie.fr/actualites/feed/;Savoie
+https://www.chambery-grandlac.fr/feed/;Savoie
 # Radar éco (Google News)
 https://news.google.com/rss/search?q=%C3%A9conomie+Savoie+entreprise+OR+investissement&hl=fr&gl=FR&ceid=FR:fr;Savoie
 # Radar presse régionale (contenu complet)
