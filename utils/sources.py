@@ -76,8 +76,19 @@ def _strip_accents(text: str) -> str:
     )
 
 
+def _normalize_domain(value: str) -> str:
+    """Réduit une valeur (domaine ou URL) à un domaine nu, sans www ni chemin."""
+    value = value.strip()
+    if "//" in value:
+        value = urlparse(value).netloc or value
+    value = value.split("/", 1)[0].lower()
+    if value.startswith("www."):
+        value = value[4:]
+    return value
+
+
 def load_official_links(path: Path | None = None) -> dict[str, str]:
-    """Charge l'annuaire des liens officiels : {motclé normalisé: url}."""
+    """Charge l'annuaire des sites officiels : {motclé normalisé: domaine officiel}."""
     path = path or _OFFICIAL_FILE
     links: dict[str, str] = {}
     if not path.exists():
@@ -86,14 +97,15 @@ def load_official_links(path: Path | None = None) -> dict[str, str]:
         line = raw.strip()
         if not line or line.startswith("#") or ";" not in line:
             continue
-        key, url = (p.strip() for p in line.split(";", 1))
-        if key and url:
-            links[_strip_accents(key).lower()] = url
+        key, value = (p.strip() for p in line.split(";", 1))
+        domain = _normalize_domain(value)
+        if key and domain:
+            links[_strip_accents(key).lower()] = domain
     return links
 
 
 def resolve_official(actor: str, title: str, links: dict[str, str]) -> str:
-    """Renvoie l'URL officielle si un motclé curé apparaît dans l'acteur ou le titre.
+    """Renvoie le DOMAINE officiel si un motclé curé apparaît dans l'acteur/le titre.
 
     En cas de correspondances multiples, le motclé le PLUS LONG (le plus précis)
     l'emporte. '' si aucune correspondance — la brève reste alors sans lien.

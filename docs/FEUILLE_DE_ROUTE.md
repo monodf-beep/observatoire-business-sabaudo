@@ -85,8 +85,10 @@ Au quotidien, c'est **`02_Veille_traitee`** qui compte : les synthèses y arrive
 
 ### 🔮 Pistes pour la suite (à décider ensemble, optionnel)
 - **Liens « site officiel »** : annuaire curé `config/official_links.txt` à étoffer
-  (acteur → URL officielle), pour que les brèves issues de la presse renvoient au
-  site de l'acteur. Mécanisme en place ; reste à enrichir la liste au fil de l'eau.
+  (acteur → domaine officiel). Pour une brève issue de la presse, le système
+  retrouve l'**article/communiqué précis** sur ce domaine (recherche web, URL
+  réelle citée — jamais la home, jamais devinée). Opt-in `OFFICIAL_LINK_SEARCH=1`.
+  Mécanisme en place ; reste à enrichir la liste des domaines au fil de l'eau.
 - **Lecture plus agréable** : synthèses en Google Doc plutôt qu'en fichier texte.
 - **Envoi automatique** de la newsletter Brevo après validation.
 - **Tableau de bord visuel** « Business Sabaudo » (page web : tendances, carte du

@@ -206,12 +206,10 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
 
     Si la source est un média de presse (config/press_domains.txt), on n'expose
     NI lien, NI logo, NI image : on attribue à l'acteur primaire (pas de pub au
-    journal). On tente alors un lien vers le SITE OFFICIEL de l'acteur s'il figure
-    dans l'annuaire curé (config/official_links.txt) → bouton « Sur le site officiel ».
-    Sinon (source institutionnelle), on crédite et on lie normalement.
+    journal). Si l'acteur figure dans l'annuaire des sites officiels (curé), on
+    note son DOMAINE dans '_official_domain' ; l'article précis sera retrouvé plus
+    tard (build_email_data). Sinon (source institutionnelle), on crédite/lie.
     """
-    from urllib.parse import urlparse
-
     from utils.sources import domain_of, is_press, resolve_official, source_label
 
     rec = registry.get(int(entry.get("id", -1))) if str(entry.get("id", "")).strip().lstrip("-").isdigit() else None
@@ -227,13 +225,10 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
     if is_press(domain, press):
         # Radar : on garde l'info, on retire tout ce qui crédite/promeut le journal.
         base.update({"url": "", "image": "", "domain": "", "source": actor})
-        # « Lire plus » vers le site officiel de l'acteur, si on en connaît un (curé).
-        official_url = resolve_official(actor, base["title"], official or {})
-        if official_url:
-            off_domain = urlparse(official_url).netloc.lower()
-            if off_domain.startswith("www."):
-                off_domain = off_domain[4:]
-            base.update({"url": official_url, "domain": off_domain, "cta_label": "Sur le site officiel"})
+        # Domaine officiel de l'acteur, si curé → l'article précis sera cherché après.
+        off_domain = resolve_official(actor, base["title"], official or {})
+        if off_domain:
+            base["_official_domain"] = off_domain
     else:
         base.update({
             "url": rec.get("link", ""),
@@ -268,6 +263,25 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         return None
     if hero is None and items:  # repli : le 1er article devient la une
         hero = items.pop(0)
+
+    # Lien « site officiel » : pour les brèves radar dont l'acteur a un domaine
+    # officiel curé, on retrouve l'article PRÉCIS (opt-in OFFICIAL_LINK_SEARCH).
+    from utils import official_search
+    if official_search.is_enabled():
+        model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
+        for entry in ([hero] if hero else []) + items:
+            dom = entry.get("_official_domain")
+            if not dom or entry.get("url"):
+                continue
+            url = official_search.find_article_url(
+                entry.get("source", ""), entry["title"], entry.get("summary", ""), dom, model
+            )
+            if url:
+                entry.update({"url": url, "domain": dom, "cta_label": "Sur le site officiel"})
+                log.info("Lien officiel trouvé (%s) : %s", dom, url)
+    # On retire le champ technique avant sérialisation/rendu.
+    for entry in ([hero] if hero else []) + items:
+        entry.pop("_official_domain", None)
 
     # Images de substitution par territoire quand l'image d'origine manque
     # (presse sans image réutilisable, ou flux sans visuel).

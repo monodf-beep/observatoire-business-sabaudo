@@ -1,25 +1,52 @@
-# Annuaire des LIENS OFFICIELS par acteur (mode radar → « lire plus »)
+# Annuaire des SITES OFFICIELS par acteur (mode radar → « lire le communiqué »)
 # ---------------------------------------------------------------------------
 # Quand une info vient de la PRESSE (config/press_domains.txt), on retire le lien
-# du journal (pas de pub aux concurrents). Mais si l'ACTEUR primaire a un site
-# officiel, on peut y renvoyer le lecteur via un bouton « Sur le site officiel ».
+# du journal (pas de pub aux concurrents). Si l'ACTEUR primaire a un site officiel,
+# on va y chercher AUTOMATIQUEMENT l'article / le communiqué PRÉCIS qui traite du
+# sujet, et on l'attache à la brève (bouton « Sur le site officiel »).
 #
-# Ce fichier est CURÉ À LA MAIN : aucune URL n'est devinée par l'IA. Tu déclares
-# ici les sites officiels que TU connais et valides. Tant qu'un acteur n'est pas
-# listé, sa brève reste sans lien (comportement radar actuel, inchangé).
+# IMPORTANT : on ne renvoie JAMAIS vers la page d'accueil. On déclare seulement le
+# DOMAINE officiel ; le système retrouve la page précise par recherche web
+# (restreinte à ce domaine). L'URL provient des résultats réels — jamais devinée.
+#
+# Pré-requis : activer la recherche en posant OFFICIAL_LINK_SEARCH=1 dans .env
+# (désactivé par défaut, pour ne pas alourdir le cron). Sans activation, ou si
+# aucun article précis n'est trouvé, la brève reste sans lien (comportement radar).
 #
 # Format (une entrée par ligne) :
-#   motclé ; https://site-officiel.tld
+#   motclé ; domaine-officiel.tld
 #
 # - « motclé » est cherché (sans accents, insensible à la casse) dans le nom de
-#   l'acteur ET dans le titre de la brève. En cas de plusieurs correspondances,
-#   la plus longue (la plus précise) l'emporte.
+#   l'acteur ET dans le titre de la brève. La correspondance la plus longue gagne.
 # - Mets un motclé DISTINCTIF (« la rosiere », pas « rosiere » seul).
-# - Préfère la page d'accueil ou la page presse/actualités officielle stable.
+# - La valeur est un DOMAINE (pas une URL d'article) : larosiere.net, polito.it…
 #
-# Exemples (à DÉCOMMENTER et VÉRIFIER avant usage — ne rien laisser au hasard) :
-# la rosiere ; https://www.larosiere.net
-# cci nice ; https://www.cote-azur.cci.fr
-# confindustria ; https://www.confindustria.it
-# politecnico di torino ; https://www.polito.it
-# universite cote d'azur ; https://univ-cotedazur.fr
+# ---------------------------------------------------------------------------
+# CANDIDATS DE DÉPART (à VÉRIFIER puis DÉCOMMENTER). Domaines à confirmer un par
+# un — ne rien activer sans avoir ouvert le site et confirmé qu'il publie bien
+# des actualités/communiqués. Liste indicative, à compléter selon tes acteurs.
+#
+# — Savoie / Haute-Savoie —
+# la rosiere ; larosiere.net
+# cci savoie ; savoie.cci.fr
+# cci haute-savoie ; haute-savoie.cci.fr
+# savoie mont blanc ; savoie-mont-blanc.com
+#
+# — Piémont —
+# politecnico di torino ; polito.it
+# i3p ; i3p.it
+# confindustria ; confindustria.it
+# regione piemonte ; regione.piemonte.it
+#
+# — Vallée d'Aoste —
+# pepinieres vda ; pepinieresvda.eu
+# regione valle d'aosta ; regione.vda.it
+#
+# — Nice / Sophia-Antipolis —
+# cci nice ; cote-azur.cci.fr
+# universite cote d'azur ; univ-cotedazur.fr
+# team cote d'azur ; investincotedazur.com
+# metropole nice ; nicecotedazur.org
+#
+# — Alcotra (transfrontalier) —
+# interreg alcotra ; interreg-alcotra.eu
