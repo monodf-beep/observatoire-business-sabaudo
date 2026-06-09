@@ -254,6 +254,25 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
     return base
 
 
+# Motifs d'images « génériques » (logo / visuel social / placeholder) : acceptables
+# en vignette de carte, mais à ÉVITER en une (on veut une vraie photo du sujet).
+_GENERIC_IMAGE_TOKENS = (
+    "social-image", "social_image", "/social/", "sharing", "share-image",
+    "/logo", "logo.", "default", "placeholder", "fallback", "og-default", "generic",
+)
+
+
+def _is_generic_image(url: str) -> bool:
+    u = (url or "").lower()
+    return any(tok in u for tok in _GENERIC_IMAGE_TOKENS)
+
+
+def _genuine_photo(entry: dict) -> bool:
+    """Vrai si l'entrée porte une vraie photo du sujet (pas une image générique)."""
+    img = entry.get("image") or ""
+    return bool(img) and not _is_generic_image(img)
+
+
 def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
                      logo_url: str, picto_url: str = "") -> dict | None:
     """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
@@ -322,21 +341,27 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     for entry in ([hero] if hero else []) + items:
         entry.pop("_official_domain", None)
 
-    # Le HERO doit porter une VRAIE image (photo d'origine ou og:image), jamais une
-    # simple bannière. À ce stade, seules les vraies images sont posées (la
-    # substitution par bannière vient APRÈS). Si la une n'a pas d'image mais qu'une
-    # brève en a une, on promeut cette brève en une (l'ancienne passe en tête des
-    # brèves, elle reste donc visible).
-    if hero and not hero.get("image"):
+    # Garde-fou QUALITÉ : la une doit porter une VRAIE photo du sujet (pas une
+    # bannière, pas un visuel générique type logo/social). Si la une choisie par le
+    # modèle n'en a pas, on promeut la meilleure brève qui en a une — en privilégiant
+    # celle qui a AUSSI un lien (vraie photo + lien = la vitrine idéale). L'ancienne
+    # une passe en tête des brèves : elle reste visible.
+    if hero and not _genuine_photo(hero):
+        best_i, best_rank = None, 0
         for i, it in enumerate(items):
-            if it.get("image"):
-                promoted = items.pop(i)
-                items.insert(0, hero)
-                hero = promoted
-                log.info("Une promue pour sa vraie image : %s", hero["title"])
-                break
+            if not _genuine_photo(it):
+                continue
+            rank = 2 + (1 if it.get("url") else 0)  # 3 = photo+lien, 2 = photo seule
+            if rank > best_rank:
+                best_rank, best_i = rank, i
+        if best_i is not None:
+            promoted = items.pop(best_i)
+            items.insert(0, hero)
+            hero = promoted
+            log.info("Une promue (vraie photo%s) : %s",
+                     " + lien" if hero.get("url") else "", hero["title"])
         else:
-            log.warning("Aucune brève avec vraie image : la une restera en bannière.")
+            log.warning("Aucune brève avec vraie photo : la une restera en bannière.")
 
     # Images de substitution par territoire quand l'image d'origine manque
     # (presse sans image réutilisable, ou flux sans visuel).
