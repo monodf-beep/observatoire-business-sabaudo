@@ -32,8 +32,9 @@ INPUT_DIR = ROOT / "01_Veille_brute"
 OUTPUT_DIR = ROOT / "02_Veille_traitee" / "Syntheses_hebdomadaires"
 # Synthèse éditoriale (1 appel/sem, qualité critique) → modèle le plus capable.
 DEFAULT_MODEL = "claude-opus-4-8"
-# Recherche de liens officiels (≈10 appels/sem, tâche simple) → modèle économique.
-DEFAULT_SEARCH_MODEL = "claude-haiku-4-5"
+# Recherche de liens officiels : Sonnet (plus tenace pour débusquer la source
+# officielle / l'autorité compétente — ministère, registre — que Haiku ratait).
+DEFAULT_SEARCH_MODEL = "claude-sonnet-4-6"
 
 # Bornes pour rester dans une enveloppe de tokens raisonnable
 MAX_BODY_CHARS = 1500
