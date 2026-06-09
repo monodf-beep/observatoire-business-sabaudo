@@ -30,7 +30,10 @@ from utils.logger import get_logger  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 INPUT_DIR = ROOT / "01_Veille_brute"
 OUTPUT_DIR = ROOT / "02_Veille_traitee" / "Syntheses_hebdomadaires"
-DEFAULT_MODEL = "claude-sonnet-4-6"
+# Synthèse éditoriale (1 appel/sem, qualité critique) → modèle le plus capable.
+DEFAULT_MODEL = "claude-opus-4-8"
+# Recherche de liens officiels (≈10 appels/sem, tâche simple) → modèle économique.
+DEFAULT_SEARCH_MODEL = "claude-haiku-4-5"
 
 # Bornes pour rester dans une enveloppe de tokens raisonnable
 MAX_BODY_CHARS = 1500
@@ -282,7 +285,8 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     # JAMAIS un journal : on attribue et on lie l'acteur.
     from utils import official_search
     if official_search.is_enabled():
-        model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
+        # Tâche simple et répétée → modèle économique (surchargeable).
+        model = os.getenv("OFFICIAL_SEARCH_MODEL", DEFAULT_SEARCH_MODEL)
         for entry in ([hero] if hero else []) + items:
             if entry.get("url"):
                 continue  # déjà un lien (brève institutionnelle)

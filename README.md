@@ -104,7 +104,8 @@ crontab crontab.txt     # après avoir adapté les chemins PROJECT et PY
 
 ## Notes
 
-- Le modèle de synthèse est `claude-sonnet-4-6` (surchargé via `ANTHROPIC_MODEL`).
+- Modèles : **synthèse** = `claude-opus-4-8` (surchargé via `ANTHROPIC_MODEL`) ;
+  **recherche de liens officiels** = `claude-haiku-4-5` (surchargé via `OFFICIAL_SEARCH_MODEL`).
 - Tous les secrets (`.env`, `credentials.json`, `token*.json`) et les données
   collectées sont exclus du dépôt (voir `.gitignore`).
 - Chaque routine écrit un journal horodaté dans `logs/`.
