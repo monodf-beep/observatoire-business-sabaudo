@@ -170,3 +170,94 @@ def find_article_url(actor: str, title: str, summary: str, domain: str,
     # 2) Repli : première URL des résultats/citations hébergée sur le domaine.
     on_domain = _urls_on_domain(blocks, domain)
     return on_domain[0] if on_domain else ""
+
+
+# Hôtes à exclure d'une recherche généralisée : agrégateurs et réseaux sociaux
+# (ce ne sont pas le « site officiel de l'acteur »). La presse est filtrée à part.
+_NON_OFFICIAL_HOSTS = (
+    "google.com", "news.google.com", "bing.com", "yahoo.com", "duckduckgo.com",
+    "wikipedia.org", "linkedin.com", "facebook.com", "twitter.com", "x.com",
+    "instagram.com", "youtube.com", "youtu.be", "tiktok.com", "msn.com",
+)
+
+
+def _host(url: str) -> str:
+    host = (urlparse(url).netloc or "").lower()
+    return host[4:] if host.startswith("www.") else host
+
+
+def _all_urls(blocks) -> list[str]:
+    """Toutes les URLs (résultats web + citations), tous domaines confondus."""
+    urls: list[str] = []
+    for block in blocks:
+        btype = getattr(block, "type", "")
+        if btype == "web_search_tool_result":
+            for res in getattr(block, "content", None) or []:
+                u = getattr(res, "url", "") or (res.get("url", "") if isinstance(res, dict) else "")
+                if u:
+                    urls.append(u)
+        if btype == "text":
+            for cit in getattr(block, "citations", None) or []:
+                u = getattr(cit, "url", "") or (cit.get("url", "") if isinstance(cit, dict) else "")
+                if u:
+                    urls.append(u)
+    return urls
+
+
+def find_actor_official_url(actor: str, title: str, summary: str, press: set[str],
+                            model: str, api_key: str | None = None) -> str:
+    """Sans annuaire : cherche LE site OFFICIEL de l'acteur traitant du sujet.
+
+    Recherche web ouverte, mais on EXCLUT la presse (set `press`) et les
+    agrégateurs / réseaux sociaux : on ne renvoie que la page propre de l'acteur.
+    '' si rien de probant. Respecte la règle radar (jamais de lien vers un journal).
+    """
+    from utils.sources import is_press  # import paresseux (évite tout cycle)
+
+    if not actor or not title:
+        return ""
+    api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        return ""
+    try:
+        import anthropic
+    except ImportError:
+        return ""
+
+    prompt = (
+        "Trouve la page du SITE OFFICIEL de l'acteur ci-dessous qui traite de ce "
+        "sujet — son propre site institutionnel ou d'entreprise. STRICTEMENT PAS un "
+        "article de presse, PAS un réseau social, PAS un annuaire.\n\n"
+        f"Acteur : {actor}\n"
+        f"Sujet : {title}\n"
+        f"Détail : {summary or '—'}\n\n"
+        "Réponds UNIQUEMENT par l'URL exacte de cette page officielle. Si l'acteur "
+        "n'a pas de page officielle traitant du sujet, réponds exactement : AUCUN."
+    )
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model=model,
+            max_tokens=1024,
+            tools=[_WEB_SEARCH_TOOL],
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except Exception as exc:
+        log.warning("Recherche site officiel (%s) impossible : %s", actor, exc)
+        return ""
+
+    blocks = message.content or []
+    text = _text_of(blocks)
+    if "AUCUN" in text.upper() and "http" not in text.lower():
+        return ""
+
+    # Candidats : URLs citées dans le texte d'abord, puis résultats/citations.
+    cited = [m.rstrip(".,);") for m in re.findall(r"https?://[^\s)\"']+", text)]
+    for url in cited + _all_urls(blocks):
+        host = _host(url)
+        if not host or is_press(host, press):
+            continue
+        if any(host == h or host.endswith("." + h) for h in _NON_OFFICIAL_HOSTS):
+            continue
+        return url
+    return ""

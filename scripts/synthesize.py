@@ -20,6 +20,7 @@ import sys
 from collections import defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
@@ -275,18 +276,26 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     if hero is None and items:  # repli : le 1er article devient la une
         hero = items.pop(0)
 
-    # Lien « site officiel » : pour les brèves radar dont l'acteur a un domaine
-    # officiel curé, on retrouve l'article PRÉCIS (opt-in OFFICIAL_LINK_SEARCH).
+    # Lien « site officiel » pour les brèves radar (opt-in OFFICIAL_LINK_SEARCH) :
+    # acteur curé → article PRÉCIS sur son domaine ; sinon → recherche généralisée
+    # du site officiel de l'acteur (presse et réseaux sociaux exclus). On ne lie
+    # JAMAIS un journal : on attribue et on lie l'acteur.
     from utils import official_search
     if official_search.is_enabled():
         model = os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
         for entry in ([hero] if hero else []) + items:
-            dom = entry.get("_official_domain")
-            if not dom or entry.get("url"):
+            if entry.get("url"):
+                continue  # déjà un lien (brève institutionnelle)
+            actor = entry.get("source", "")
+            if not actor:
                 continue
-            url = official_search.find_article_url(
-                entry.get("source", ""), entry["title"], entry.get("summary", ""), dom, model
-            )
+            title, summary = entry.get("title", ""), entry.get("summary", "")
+            dom = entry.get("_official_domain")
+            url = ""
+            if dom:  # acteur dans l'annuaire curé → article précis sur SON domaine
+                url = official_search.find_article_url(actor, title, summary, dom, model)
+            if not url:  # pas d'annuaire (ou rien trouvé) → site officiel de l'acteur
+                url = official_search.find_actor_official_url(actor, title, summary, press, model)
             if not url:
                 continue
             # On VALIDE le lien avant de l'attacher : un 404 (URL malformée renvoyée
@@ -296,8 +305,9 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
             if status == "notfound":
                 log.info("Lien officiel abandonné (page inexistante) : %s", url)
                 continue
-            entry.update({"url": final_url, "domain": dom, "cta_label": "Sur le site officiel"})
-            log.info("Lien officiel trouvé (%s) : %s", dom, final_url)
+            link_domain = urlparse(final_url).netloc.lower().removeprefix("www.")
+            entry.update({"url": final_url, "domain": link_domain, "cta_label": "Sur le site officiel"})
+            log.info("Lien officiel trouvé : %s", final_url)
             # Vraie photo du sujet : og:image de la page (repli bannière plus bas).
             if html and not entry.get("image"):
                 og = official_search.og_image_from_html(html, final_url)
