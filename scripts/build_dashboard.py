@@ -92,20 +92,39 @@ def _publish_ftp(host, port, user, password, target_dir, local_path, use_tls) ->
         return False
 
 
-def publish_ftp(local_path: Path) -> bool:
-    """Publie le dashboard sur l'hébergement web → page publique (index.html).
+def _publish_local(target_dir: str, local_path: Path) -> bool:
+    """Copie locale (VPS) : dépose index.html dans le dossier servi par nginx."""
+    import shutil
 
-    Piloté par .env : DASHBOARD_FTP_HOST / _USER / _PASS / _DIR, et
-    DASHBOARD_FTP_PROTO = sftp (défaut, ex. Gandi) | ftp | ftps. Port optionnel
-    (_PORT). Sans config : ne fait rien (silencieux). Tolérant aux pannes.
+    try:
+        Path(target_dir).mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(local_path, Path(target_dir) / "index.html")
+        log.info("Tableau de bord copié (local) : %s/index.html", target_dir)
+        return True
+    except Exception as exc:
+        log.warning("Copie locale du dashboard impossible : %s", exc)
+        return False
+
+
+def publish_ftp(local_path: Path) -> bool:
+    """Publie le dashboard → page publique (index.html).
+
+    DASHBOARD_FTP_PROTO = local (copie dans un dossier servi par nginx — défaut VPS)
+    | sftp (Gandi…) | ftp | ftps. Selon le proto : DASHBOARD_FTP_DIR (+ HOST/USER/
+    PASS/PORT pour les protos distants). Sans config utile : ne fait rien (silencieux).
     """
+    proto = (os.getenv("DASHBOARD_FTP_PROTO", "local").strip().lower() or "local")
+    target_dir = os.getenv("DASHBOARD_FTP_DIR", "").strip()
+
+    if proto == "local":
+        return _publish_local(target_dir, local_path) if target_dir else False
+
     host = os.getenv("DASHBOARD_FTP_HOST", "").strip()
     user = os.getenv("DASHBOARD_FTP_USER", "").strip()
     password = os.getenv("DASHBOARD_FTP_PASS", "")
     if not (host and user and password):
         return False
-    target_dir = os.getenv("DASHBOARD_FTP_DIR", "").strip() or "/observatoire"
-    proto = (os.getenv("DASHBOARD_FTP_PROTO", "sftp").strip().lower() or "sftp")
+    target_dir = target_dir or "/observatoire"
     port = int(os.getenv("DASHBOARD_FTP_PORT", "0") or 0)
 
     if proto == "sftp":
