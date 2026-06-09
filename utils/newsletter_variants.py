@@ -108,6 +108,17 @@ def _dashboard_band(url: str) -> str:
     )
 
 
+def _veille_link(url: str) -> str:
+    """Petit lien sous « Aussi cette semaine » → toute la veille (tableau de bord)."""
+    if not url:
+        return ""
+    return (
+        '<div style="padding:14px 0 0;font-size:13px;">'
+        f'<a href="{escape(url)}" style="color:{ACCENT};font-weight:700;text-decoration:none;">'
+        "Et toute la veille de la semaine &rarr;</a></div>"
+    )
+
+
 def _header(week_label: str, tagline: str, logo_url: str | None = None) -> str:
     """Masthead éditorial blanc : surtitre + logo éditeur (petit) + titre + date."""
     logo_cell = ""
@@ -212,12 +223,16 @@ def variant_magazine(data: dict) -> str:
             f'background:{BRAND};color:#fff;font-size:12px;font-weight:800;line-height:24px;'
             f'text-align:center;">{i}</span>'
         )
+        # Titre cliquable : vers sa source, ou (à défaut) vers le tableau de bord.
+        s_title = escape(s["title"])
+        if s.get("url"):
+            s_title = f'<a href="{escape(s["url"])}" style="color:{INK};text-decoration:none;">{s_title}</a>'
         signaux += (
             "<tr>"
             f'<td width="36" valign="top" style="padding:12px 0;{border}">{badge}</td>'
             f'<td valign="top" style="padding:12px 0;{border}">{_tag(s["territory"])}'
             f'<div style="font-size:15px;color:{INK};font-weight:700;line-height:1.4;margin-top:5px;">'
-            f'{escape(s["title"])}</div></td></tr>'
+            f'{s_title}</div></td></tr>'
         )
     items = data["items"]
     cards = ""
@@ -257,9 +272,10 @@ def variant_magazine(data: dict) -> str:
           f'<div style="font-size:15px;color:#374151;line-height:1.6;">{escape(hero["summary"])}</div>'
           + (f'<div style="margin-top:16px;">{_button(hero["url"], hero.get("cta_label", "Lire l’article"))}</div>' if hero.get("url") else "")
           + "</td></tr>"
-        # SIGNAUX (Intérêt)
-        + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow("Les signaux de la semaine")}'
-          f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{signaux}</table></td></tr>'
+        # AUSSI CETTE SEMAINE (breadth : sujets non développés, cliquables)
+        + f'<tr><td style="padding:30px 36px 4px;">{_eyebrow("Aussi cette semaine")}'
+          f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{signaux}</table>'
+          f'{_veille_link(data.get("dashboard_url", ""))}</td></tr>'
         # CARTES (Désir + Action)
         + f'<tr><td style="padding:30px 36px 34px;">{_eyebrow("Le tour des territoires")}'
           f'{cards}</td></tr>'

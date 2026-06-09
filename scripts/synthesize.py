@@ -311,11 +311,22 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     une = parsed.get("une") or {}
     hero = _enrich(une, registry, press, official)
     items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry, press, official))]
+    from utils.sources import domain_of, is_press
+    dashboard_url = os.getenv("DASHBOARD_URL", "")
     signaux = []
     for s in parsed.get("signaux", []):
         rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None
-        if rec is not None and s.get("titre"):
-            signaux.append({"title": s["titre"], "territory": rec.get("territoire", "Indetermine")})
+        if rec is None or not s.get("titre"):
+            continue
+        # Lien : source institutionnelle si dispo (jamais la presse) ; sinon le
+        # tableau de bord (où le sujet est listé) → toujours un chemin vers l'info.
+        link = rec.get("link", "")
+        url = link if (link and not is_press(domain_of(rec), press)) else dashboard_url
+        signaux.append({
+            "title": s["titre"],
+            "territory": rec.get("territoire", "Indetermine"),
+            "url": url,
+        })
     if hero is None and not items:
         requested = [une.get("id")] + [a.get("id") for a in parsed.get("articles", [])]
         log.warning(
