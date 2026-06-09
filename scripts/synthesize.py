@@ -412,6 +412,8 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         "items": items,
         "signature": parsed.get("signature", "La rédaction — Cultura Sabauda"),
         "cta_url": "https://culturasabauda.eu",
+        # Lien « Voir toute la veille » → tableau de bord public (si configuré).
+        "dashboard_url": os.getenv("DASHBOARD_URL", ""),
     }
 
 
@@ -568,6 +570,16 @@ def main() -> int:
         create_from_data(data, force=args.force)
     elif args.brevo:
         log.warning("--brevo demandé mais aucune donnée structurée : brouillon non créé.")
+
+    # Tableau de bord : régénéré à CHAQUE synthèse (déposé sur le Drive si --upload),
+    # pour qu'il reste le reflet à jour de la veille — et la cible du lien
+    # « Voir toute la veille » de la newsletter.
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import build_dashboard
+        build_dashboard.build(upload=args.upload)
+    except Exception as exc:  # ne jamais faire échouer la synthèse pour le dashboard
+        log.warning("Tableau de bord non régénéré : %s", exc)
 
     log.info("=== Fin synthèse hebdomadaire ===")
     return 0

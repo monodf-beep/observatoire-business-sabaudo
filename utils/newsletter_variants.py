@@ -88,6 +88,26 @@ def _button(url: str, label: str) -> str:
     )
 
 
+def _dashboard_band(url: str) -> str:
+    """Bandeau « Voir toute la veille » → tableau de bord. Vide si pas d'URL.
+
+    Assume la curation : rappelle que la lettre est une sélection et que tous les
+    signaux captés sont accessibles — anti-frustration sans diluer l'éditorial.
+    """
+    if not url:
+        return ""
+    return (
+        '<tr><td style="padding:2px 36px 30px;text-align:center;">'
+        f'<a href="{escape(url)}" style="display:inline-block;background:{BRAND};color:#fff;'
+        'font-size:14px;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:8px;">'
+        'Voir toute la veille de la semaine &rarr;</a>'
+        f'<div style="font-size:12px;color:{MUTED};margin-top:9px;line-height:1.5;">'
+        "Cette lettre est une <strong>sélection</strong> de l'essentiel. "
+        'Tous les signaux captés sont sur le tableau de bord.</div>'
+        "</td></tr>"
+    )
+
+
 def _header(week_label: str, tagline: str, logo_url: str | None = None) -> str:
     """Masthead éditorial blanc : surtitre + logo éditeur (petit) + titre + date."""
     logo_cell = ""
@@ -243,6 +263,8 @@ def variant_magazine(data: dict) -> str:
         # CARTES (Désir + Action)
         + f'<tr><td style="padding:30px 36px 34px;">{_eyebrow("Le tour des territoires")}'
           f'{cards}</td></tr>'
+        # Porte vers la veille complète (tableau de bord) — si configurée.
+        + _dashboard_band(data.get("dashboard_url", ""))
         + _footer(data.get("pictogram_url") or data.get("logo_url"))
     )
     return _shell(inner, preheader=data["preheader"])

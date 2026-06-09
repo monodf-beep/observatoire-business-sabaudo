@@ -45,12 +45,9 @@ def load_weeks() -> list[tuple[str, dict]]:
     return weeks
 
 
-def main() -> int:
-    load_dotenv(ROOT / ".env")
-    parser = argparse.ArgumentParser(description="Tableau de bord Business Sabaudo.")
-    parser.add_argument("--upload", action="store_true", help="Déposer la page sur le Drive.")
-    args = parser.parse_args()
-
+def build(upload: bool = False) -> int:
+    """Génère le tableau de bord (et le dépose sur le Drive si upload). Réutilisable
+    depuis synthesize.py (mise à jour à chaque run)."""
     weeks = load_weeks()
     if not weeks:
         log.warning("Aucune donnée de synthèse (%s). Tableau de bord non généré.", OUTPUT_DIR)
@@ -62,7 +59,7 @@ def main() -> int:
     DASHBOARD_PATH.write_text(html, encoding="utf-8")
     log.info("Tableau de bord écrit : %s (%d semaine(s)).", DASHBOARD_PATH, len(weeks))
 
-    if args.upload:
+    if upload:
         from utils.drive_upload import upload_file
 
         subfolder = os.getenv("DRIVE_VEILLE_TRAITEE_SUBFOLDER", "02_Veille_traitee")
@@ -73,6 +70,14 @@ def main() -> int:
             log.warning("Dépôt Drive échoué — le fichier local reste disponible.")
 
     return 0
+
+
+def main() -> int:
+    load_dotenv(ROOT / ".env")
+    parser = argparse.ArgumentParser(description="Tableau de bord Business Sabaudo.")
+    parser.add_argument("--upload", action="store_true", help="Déposer la page sur le Drive.")
+    args = parser.parse_args()
+    return build(upload=args.upload)
 
 
 if __name__ == "__main__":
