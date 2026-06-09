@@ -93,6 +93,14 @@ def create_from_data(data: dict, force: bool = False) -> int | None:
 
     subject = data.get("subject") or f"Business Sabaudo — {data.get('week_label', '')}"
     html = variant_magazine(data)
+    # Vérité terrain : on écrit le HTML EXACT envoyé à Brevo dans un fichier local,
+    # pour pouvoir l'inspecter sans dépendre de l'affichage Brevo (brouillons en cache).
+    try:
+        out_html = SYNTH_DIR / "derniere_newsletter.html"
+        out_html.write_text(html, encoding="utf-8")
+        log.info("HTML local écrit : %s", out_html)
+    except OSError as exc:
+        log.warning("Écriture HTML locale impossible : %s", exc)
     name = f"Business Sabaudo — {data.get('week_label', '')}".strip(" —")
 
     try:

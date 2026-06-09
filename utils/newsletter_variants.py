@@ -162,6 +162,9 @@ def _shell(inner: str, *, preheader: str) -> str:
         '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
         "<title>Business Sabaudo</title></head>"
+        # Signature unique du gabarit actuel — permet de distinguer à coup sûr un
+        # brouillon fraîchement généré d'un ancien (chercher BSABAUDO-MAGAZINE-2026A).
+        "<!-- BSABAUDO-MAGAZINE-2026A · gabarit magazine (Le tour des territoires) -->"
         f'<body style="margin:0;padding:0;background:{BG};font-family:{_FONT};">'
         f'<div style="display:none;max-height:0;overflow:hidden;opacity:0;">{escape(preheader)}</div>'
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG};padding:24px 12px;">'
