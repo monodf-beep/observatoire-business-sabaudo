@@ -30,6 +30,48 @@ DASHBOARD_PATH = OUTPUT_DIR / "dashboard.html"
 log = get_logger("build_dashboard")
 
 
+def publish_ftp(local_path: Path) -> bool:
+    """Publie le dashboard sur l'hébergement web (FTP) → page publique.
+
+    Piloté par .env : DASHBOARD_FTP_HOST / _USER / _PASS / _DIR (défaut
+    /public_html/observatoire) / _TLS (1 pour FTP over TLS). Déposé sous le nom
+    index.html. Sans config FTP : on ne fait rien (silencieux). Tolérant aux pannes.
+    """
+    host = os.getenv("DASHBOARD_FTP_HOST", "").strip()
+    user = os.getenv("DASHBOARD_FTP_USER", "").strip()
+    password = os.getenv("DASHBOARD_FTP_PASS", "")
+    if not (host and user and password):
+        return False
+    target_dir = os.getenv("DASHBOARD_FTP_DIR", "/public_html/observatoire").strip()
+    use_tls = os.getenv("DASHBOARD_FTP_TLS", "").strip() in {"1", "true", "True", "yes"}
+
+    import ftplib
+
+    try:
+        ftp = ftplib.FTP_TLS(timeout=30) if use_tls else ftplib.FTP(timeout=30)
+        ftp.connect(host, 21)
+        ftp.login(user, password)
+        if use_tls:
+            ftp.prot_p()
+        # Crée l'arborescence cible si besoin, puis s'y place.
+        for part in target_dir.strip("/").split("/"):
+            if not part:
+                continue
+            try:
+                ftp.cwd(part)
+            except ftplib.error_perm:
+                ftp.mkd(part)
+                ftp.cwd(part)
+        with open(local_path, "rb") as fh:
+            ftp.storbinary("STOR index.html", fh)
+        ftp.quit()
+        log.info("Tableau de bord publié par FTP : %s → %s/index.html", host, target_dir)
+        return True
+    except Exception as exc:  # réseau, auth, perms… → on n'échoue jamais le run
+        log.warning("Publication FTP du dashboard impossible : %s", exc)
+        return False
+
+
 def load_weeks() -> list[tuple[str, dict]]:
     """Charge les données de chaque semaine : [(week_id, data), ...]."""
     weeks: list[tuple[str, dict]] = []
@@ -58,6 +100,9 @@ def build(upload: bool = False) -> int:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     DASHBOARD_PATH.write_text(html, encoding="utf-8")
     log.info("Tableau de bord écrit : %s (%d semaine(s)).", DASHBOARD_PATH, len(weeks))
+
+    # Publication publique (FTP vers l'hébergement web) — page culturasabauda.eu.
+    publish_ftp(DASHBOARD_PATH)
 
     if upload:
         from utils.drive_upload import upload_file
