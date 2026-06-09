@@ -18,10 +18,17 @@ for arg in "$@"; do
   esac
 done
 
-# 1) Mise à jour du code sur la branche courante ------------------------------
-BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-echo "==> Mise à jour du code (branche : $BRANCH)"
-git pull origin "$BRANCH"
+# 1) Mise à jour du code — on FORCE toujours la branche canonique --------------
+# (Évite le piège où le VPS reste bloqué sur une mauvaise branche / un vieux
+#  commit : on se réaligne durement sur le tip distant à chaque déploiement.
+#  Les secrets/données — .env, credentials.json, 01_/02_… — ne sont pas suivis
+#  par git, donc intacts. Seul le CODE est réécrit ; sa source de vérité est GitHub.)
+BRANCH="${DEPLOY_BRANCH:-claude/pensive-einstein-S5Fds}"
+echo "==> Mise à jour du code (branche forcée : $BRANCH)"
+git fetch origin "$BRANCH"
+git checkout -B "$BRANCH" "origin/$BRANCH"
+git reset --hard "origin/$BRANCH"
+echo "==> Maintenant sur : $(git log --oneline -1)"
 
 # 2) Activation de OFFICIAL_LINK_SEARCH dans .env (idempotent) -----------------
 if [ ! -f .env ]; then
