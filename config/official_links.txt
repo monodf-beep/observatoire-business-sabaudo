@@ -42,6 +42,7 @@ finpiemonte ; finpiemonte.it
 fondazione crt ; fondazionecrt.it
 camera di commercio di torino ; to.camcom.it
 environment park ; envipark.com
+intesa sanpaolo ; group.intesasanpaolo.com
 #
 # — Vallée d'Aoste —
 pepinieres vda ; pepinieresvda.eu
