@@ -16,6 +16,9 @@
 # Institutionnel : Département de la Haute-Savoie + agglo Chambéry-Grand Lac
 https://hautesavoie.fr/actualites/feed/;Savoie
 https://www.chambery-grandlac.fr/feed/;Savoie
+# Institutionnel : clusters & technopôle (contenu liable + illustré)
+https://cluster-montagne.com/feed/;Savoie
+https://www.savoie-technolac.com/feed/;Savoie
 # Radar éco (Google News)
 https://news.google.com/rss/search?q=%C3%A9conomie+Savoie+entreprise+OR+investissement&hl=fr&gl=FR&ceid=FR:fr;Savoie
 # Radar presse régionale (contenu complet)
@@ -49,6 +52,9 @@ https://www.aostasera.it/feed/;Vallee-Aoste
 https://www.cote-azur.cci.fr/feed/;Nice
 https://www.investincotedazur.com/feed/;Nice
 https://www.nicecotedazur.org/feed/;Nice
+# Institutionnel : écosystème Sophia-Antipolis (technopôle + Telecom Valley)
+https://www.sophia-antipolis.fr/feed/;Nice
+https://www.telecom-valley.fr/feed/;Nice
 # Radar éco (Google News)
 https://news.google.com/rss/search?q=%C3%A9conomie+Nice+OR+Menton+OR+%22Sophia+Antipolis%22+OR+%22Universit%C3%A9+C%C3%B4te+d%27Azur%22+-Cannes+-Grasse&hl=fr&gl=FR&ceid=FR:fr;Nice
 # Radar presse : Nice-Matin rubrique Économie (contenu complet)
