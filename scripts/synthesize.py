@@ -287,16 +287,23 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
             url = official_search.find_article_url(
                 entry.get("source", ""), entry["title"], entry.get("summary", ""), dom, model
             )
-            if url:
-                entry.update({"url": url, "domain": dom, "cta_label": "Sur le site officiel"})
-                log.info("Lien officiel trouvé (%s) : %s", dom, url)
-                # Vraie photo du sujet : og:image de l'article officiel (repli
-                # bannière plus bas si absente). N'écrase pas une image existante.
-                if not entry.get("image"):
-                    og = official_search.fetch_og_image(url)
-                    if og:
-                        entry["image"] = og
-                        log.info("Image officielle (og:image) : %s", og)
+            if not url:
+                continue
+            # On VALIDE le lien avant de l'attacher : un 404 (URL malformée renvoyée
+            # par la recherche) est abandonné → la brève reste radar plutôt que de
+            # porter un lien mort. Page accessible → on en tire aussi l'og:image.
+            final_url, html, status = official_search.fetch_page(url)
+            if status == "notfound":
+                log.info("Lien officiel abandonné (page inexistante) : %s", url)
+                continue
+            entry.update({"url": final_url, "domain": dom, "cta_label": "Sur le site officiel"})
+            log.info("Lien officiel trouvé (%s) : %s", dom, final_url)
+            # Vraie photo du sujet : og:image de la page (repli bannière plus bas).
+            if html and not entry.get("image"):
+                og = official_search.og_image_from_html(html, final_url)
+                if og:
+                    entry["image"] = og
+                    log.info("Image officielle (og:image) : %s", og)
     # On retire le champ technique avant sérialisation/rendu.
     for entry in ([hero] if hero else []) + items:
         entry.pop("_official_domain", None)

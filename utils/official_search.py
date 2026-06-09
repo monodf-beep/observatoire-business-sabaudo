@@ -35,33 +35,58 @@ def is_enabled() -> bool:
     return os.getenv("OFFICIAL_LINK_SEARCH", "").strip() in {"1", "true", "True", "yes"}
 
 
-def fetch_og_image(url: str, timeout: int = 10, max_bytes: int = 200_000) -> str:
-    """Récupère l'URL de l'image sociale (og:image) d'une page, ou '' si absente.
+def _normalize_url(url: str) -> str:
+    """Nettoie une URL renvoyée par la recherche : espaces parasites (y compris
+    insécables encodés %C2%A0) qui se glissent dans les slugs et cassent le lien."""
+    url = (url or "").strip()
+    # Espace insécable (brut ou encodé) collé dans un slug → on le retire.
+    url = url.replace("%C2%A0", "").replace("%c2%a0", "").replace("\xa0", "")
+    return url.replace(" ", "%20")
 
-    Ne télécharge que le début de la page (les balises <meta> sont dans le <head>).
-    Tolérant aux pannes : toute erreur réseau/parsing renvoie ''.
+
+def fetch_page(url: str, timeout: int = 10, max_bytes: int = 200_000) -> tuple[str, str, str]:
+    """Récupère une page et indique si elle EXISTE vraiment.
+
+    Renvoie (url_finale, html, statut) où statut vaut :
+    - "ok"       : page accessible (HTML disponible pour en extraire l'og:image) ;
+    - "notfound" : page inexistante (HTTP 404/410) → le lien doit être ABANDONNÉ ;
+    - "error"    : incertain (blocage temporaire, timeout, 403…) → on conserve le
+                   lien (souvent valide pour un humain) mais sans og:image.
     """
-    if not url:
-        return ""
+    import urllib.error
     import urllib.request
 
+    url = _normalize_url(url)
+    if not url:
+        return "", "", "notfound"
     try:
         req = urllib.request.Request(
             url, headers={"User-Agent": "Mozilla/5.0 (BusinessSabaudo/1.0; veille éco)"}
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             html = resp.read(max_bytes).decode("utf-8", errors="ignore")
-    except Exception as exc:  # réseau, TLS, 4xx/5xx, décodage…
-        log.warning("og:image — récupération impossible (%s) : %s", url, exc)
-        return ""
+            return resp.geturl() or url, html, "ok"
+    except urllib.error.HTTPError as exc:
+        if exc.code in (404, 410):
+            log.warning("Lien officiel inexistant (HTTP %s) : %s", exc.code, url)
+            return url, "", "notfound"
+        log.warning("Lien officiel : HTTP %s (%s) — lien conservé sans image", exc.code, url)
+        return url, "", "error"
+    except Exception as exc:  # réseau, TLS, timeout, décodage…
+        log.warning("Lien officiel injoignable (%s) : %s — lien conservé sans image", url, exc)
+        return url, "", "error"
 
+
+def og_image_from_html(html: str, base_url: str) -> str:
+    """Extrait l'URL d'image sociale (og:image / twitter:image) d'un HTML, ou ''."""
     for pattern in _OG_IMAGE_PATTERNS:
-        match = pattern.search(html)
+        match = pattern.search(html or "")
         if match and match.group(1).strip():
-            img = urljoin(url, match.group(1).strip())
+            img = urljoin(base_url, match.group(1).strip())
             if img.lower().startswith(("http://", "https://")):
                 return img
     return ""
+
 
 
 def _urls_on_domain(blocks, domain: str) -> list[str]:
