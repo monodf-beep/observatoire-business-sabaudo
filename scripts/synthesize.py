@@ -308,6 +308,22 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     for entry in ([hero] if hero else []) + items:
         entry.pop("_official_domain", None)
 
+    # Le HERO doit porter une VRAIE image (photo d'origine ou og:image), jamais une
+    # simple bannière. À ce stade, seules les vraies images sont posées (la
+    # substitution par bannière vient APRÈS). Si la une n'a pas d'image mais qu'une
+    # brève en a une, on promeut cette brève en une (l'ancienne passe en tête des
+    # brèves, elle reste donc visible).
+    if hero and not hero.get("image"):
+        for i, it in enumerate(items):
+            if it.get("image"):
+                promoted = items.pop(i)
+                items.insert(0, hero)
+                hero = promoted
+                log.info("Une promue pour sa vraie image : %s", hero["title"])
+                break
+        else:
+            log.warning("Aucune brève avec vraie image : la une restera en bannière.")
+
     # Images de substitution par territoire quand l'image d'origine manque
     # (presse sans image réutilisable, ou flux sans visuel).
     from utils.sources import load_territory_images, pick_image
