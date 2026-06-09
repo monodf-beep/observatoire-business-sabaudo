@@ -225,14 +225,20 @@ def find_actor_official_url(actor: str, title: str, summary: str, press: set[str
         return ""
 
     prompt = (
-        "Trouve la page du SITE OFFICIEL de l'acteur ci-dessous qui traite de ce "
-        "sujet — son propre site institutionnel ou d'entreprise. STRICTEMENT PAS un "
-        "article de presse, PAS un réseau social, PAS un annuaire.\n\n"
+        "Trouve la SOURCE OFFICIELLE la plus autoritaire qui documente précisément "
+        "ce sujet. Par ordre de préférence : (1) le site propre de l'acteur ; sinon "
+        "(2) l'AUTORITÉ OU INSTITUTION COMPÉTENTE sur le sujet (ministère, agence "
+        "publique, collectivité, registre officiel UE/national — ex. pour une "
+        "AOP/DOP/IGP : le ministère de l'agriculture MASAF en Italie, l'INAO en "
+        "France, ou le registre eAmbrosia de l'UE ; pour un financement public : "
+        "l'organisme financeur) ; sinon (3) le communiqué officiel de l'opération. "
+        "STRICTEMENT EXCLU : article de presse, réseau social, annuaire, agrégateur.\n\n"
         f"Acteur : {actor}\n"
         f"Sujet : {title}\n"
         f"Détail : {summary or '—'}\n\n"
-        "Réponds UNIQUEMENT par l'URL exacte de cette page officielle. Si l'acteur "
-        "n'a pas de page officielle traitant du sujet, réponds exactement : AUCUN."
+        "Réponds UNIQUEMENT par l'URL exacte de la page (officielle/institutionnelle) "
+        "qui traite du sujet. Si vraiment aucune source officielle ne le couvre, "
+        "réponds exactement : AUCUN."
     )
     try:
         client = anthropic.Anthropic(api_key=api_key)
