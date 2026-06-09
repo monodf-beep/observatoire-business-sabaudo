@@ -30,30 +30,50 @@ DASHBOARD_PATH = OUTPUT_DIR / "dashboard.html"
 log = get_logger("build_dashboard")
 
 
-def publish_ftp(local_path: Path) -> bool:
-    """Publie le dashboard sur l'hébergement web (FTP) → page publique.
-
-    Piloté par .env : DASHBOARD_FTP_HOST / _USER / _PASS / _DIR (défaut
-    /public_html/observatoire) / _TLS (1 pour FTP over TLS). Déposé sous le nom
-    index.html. Sans config FTP : on ne fait rien (silencieux). Tolérant aux pannes.
-    """
-    host = os.getenv("DASHBOARD_FTP_HOST", "").strip()
-    user = os.getenv("DASHBOARD_FTP_USER", "").strip()
-    password = os.getenv("DASHBOARD_FTP_PASS", "")
-    if not (host and user and password):
+def _publish_sftp(host, port, user, password, target_dir, local_path) -> bool:
+    """Dépôt SFTP (ex. Gandi Simple Hosting). Nécessite paramiko."""
+    try:
+        import paramiko
+    except ImportError:
+        log.warning("paramiko absent — SFTP impossible (pip install paramiko).")
         return False
-    target_dir = os.getenv("DASHBOARD_FTP_DIR", "/public_html/observatoire").strip()
-    use_tls = os.getenv("DASHBOARD_FTP_TLS", "").strip() in {"1", "true", "True", "yes"}
+    transport = None
+    try:
+        transport = paramiko.Transport((host, port or 22))
+        transport.connect(username=user, password=password)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        # Crée l'arborescence cible si besoin (chemin absolu), puis dépose index.html.
+        path = ""
+        for part in target_dir.strip("/").split("/"):
+            if not part:
+                continue
+            path += "/" + part
+            try:
+                sftp.stat(path)
+            except IOError:
+                sftp.mkdir(path)
+        sftp.put(str(local_path), target_dir.rstrip("/") + "/index.html")
+        sftp.close()
+        log.info("Tableau de bord publié (SFTP) : %s → %s/index.html", host, target_dir)
+        return True
+    except Exception as exc:
+        log.warning("Publication SFTP du dashboard impossible : %s", exc)
+        return False
+    finally:
+        if transport is not None:
+            transport.close()
 
+
+def _publish_ftp(host, port, user, password, target_dir, local_path, use_tls) -> bool:
+    """Dépôt FTP/FTPS classique."""
     import ftplib
 
     try:
         ftp = ftplib.FTP_TLS(timeout=30) if use_tls else ftplib.FTP(timeout=30)
-        ftp.connect(host, 21)
+        ftp.connect(host, port or 21)
         ftp.login(user, password)
         if use_tls:
             ftp.prot_p()
-        # Crée l'arborescence cible si besoin, puis s'y place.
         for part in target_dir.strip("/").split("/"):
             if not part:
                 continue
@@ -65,11 +85,33 @@ def publish_ftp(local_path: Path) -> bool:
         with open(local_path, "rb") as fh:
             ftp.storbinary("STOR index.html", fh)
         ftp.quit()
-        log.info("Tableau de bord publié par FTP : %s → %s/index.html", host, target_dir)
+        log.info("Tableau de bord publié (FTP) : %s → %s/index.html", host, target_dir)
         return True
-    except Exception as exc:  # réseau, auth, perms… → on n'échoue jamais le run
+    except Exception as exc:
         log.warning("Publication FTP du dashboard impossible : %s", exc)
         return False
+
+
+def publish_ftp(local_path: Path) -> bool:
+    """Publie le dashboard sur l'hébergement web → page publique (index.html).
+
+    Piloté par .env : DASHBOARD_FTP_HOST / _USER / _PASS / _DIR, et
+    DASHBOARD_FTP_PROTO = sftp (défaut, ex. Gandi) | ftp | ftps. Port optionnel
+    (_PORT). Sans config : ne fait rien (silencieux). Tolérant aux pannes.
+    """
+    host = os.getenv("DASHBOARD_FTP_HOST", "").strip()
+    user = os.getenv("DASHBOARD_FTP_USER", "").strip()
+    password = os.getenv("DASHBOARD_FTP_PASS", "")
+    if not (host and user and password):
+        return False
+    target_dir = os.getenv("DASHBOARD_FTP_DIR", "").strip() or "/observatoire"
+    proto = (os.getenv("DASHBOARD_FTP_PROTO", "sftp").strip().lower() or "sftp")
+    port = int(os.getenv("DASHBOARD_FTP_PORT", "0") or 0)
+
+    if proto == "sftp":
+        return _publish_sftp(host, port, user, password, target_dir, local_path)
+    return _publish_ftp(host, port, user, password, target_dir, local_path,
+                        use_tls=(proto == "ftps"))
 
 
 def load_weeks() -> list[tuple[str, dict]]:
