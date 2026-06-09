@@ -32,6 +32,7 @@ departement haute-savoie ; hautesavoie.fr
 departement savoie ; savoie.fr
 chambery grand lac ; chambery-grandlac.fr
 grand annecy ; grandannecy.fr
+france active savoie mont-blanc ; franceactive-savoiemontblanc.org
 #
 # — Piémont —
 politecnico di torino ; polito.it
@@ -47,6 +48,7 @@ intesa sanpaolo ; group.intesasanpaolo.com
 # — Vallée d'Aoste —
 pepinieres vda ; pepinieresvda.eu
 regione valle d'aosta ; regione.vda.it
+sovraintendenza ; scuole.vda.it
 finaosta ; finaosta.com
 #
 # — Nice / Sophia-Antipolis —
