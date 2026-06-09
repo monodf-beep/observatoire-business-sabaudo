@@ -63,6 +63,14 @@ def _source(item: dict, size: int = 18) -> str:
     return f'<span style="color:{MUTED};font-size:12px;font-weight:600;vertical-align:middle;">{icon}{name}</span>'
 
 
+def _title(it: dict) -> str:
+    """Titre cliquable si un lien existe, sinon texte simple (jamais de lien mort)."""
+    label = escape(it["title"])
+    if it.get("url"):
+        return f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{label}</a>'
+    return label
+
+
 def _cta(url: str, label: str = "Lire la suite") -> str:
     if not url:
         return ""
@@ -207,7 +215,7 @@ def variant_magazine(data: dict) -> str:
             f"{img}"
             f'<tr><td style="padding:0 0 8px;">{_tag(it["territory"])}&nbsp;&nbsp;{_source(it)}</td></tr>'
             f'<tr><td style="padding:0 0 6px;font-size:19px;font-weight:700;color:{INK};line-height:1.3;">'
-            f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{escape(it["title"])}</a></td></tr>'
+            f'{_title(it)}</td></tr>'
             f'<tr><td style="font-size:15px;color:#374151;line-height:1.6;">{escape(it["summary"])}</td></tr>'
             f'<tr><td style="padding:10px 0 0;">{_cta(it["url"], it.get("cta_label", "Lire la suite"))}</td></tr>'
             "</table>"
@@ -251,7 +259,7 @@ def variant_digest(data: dict) -> str:
             'border-radius:8px;display:block;border:0;"></td>'
             f'<td valign="top">{_tag(it["territory"])}'
             f'<div style="font-size:16px;font-weight:700;color:{INK};line-height:1.3;margin:6px 0 4px;">'
-            f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{escape(it["title"])}</a></div>'
+            f'{_title(it)}</div>'
             f'<div style="font-size:13px;color:#4b5563;line-height:1.5;">{escape(it["summary"])}</div>'
             f'<div style="margin-top:6px;">{_source(it, 16)}</div>'
             "</td></tr></table>"
@@ -277,7 +285,7 @@ def variant_editorial(data: dict) -> str:
             f'<tr><td style="padding:16px 0 14px;border-bottom:1px solid {BORDER};">'
             f'{_tag(it["territory"])}&nbsp;&nbsp;{_source(it)}'
             f'<div style="font-size:17px;font-weight:700;color:{INK};line-height:1.3;margin:8px 0 5px;">'
-            f'<a href="{escape(it["url"])}" style="color:{INK};text-decoration:none;">{escape(it["title"])}</a></div>'
+            f'{_title(it)}</div>'
             f'<div style="font-size:14px;color:#4b5563;line-height:1.6;">{escape(it["summary"])} {_cta(it["url"], it.get("cta_label", "lire"))}</div>'
             "</td></tr>"
         )
