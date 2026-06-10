@@ -20,10 +20,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from utils.dashboard import render_dashboard  # noqa: E402
+from utils.dashboard import render_veille_page  # noqa: E402
 from utils.logger import get_logger  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
+INPUT_DIR = ROOT / "01_Veille_brute"
 OUTPUT_DIR = ROOT / "02_Veille_traitee" / "Syntheses_hebdomadaires"
 DASHBOARD_PATH = OUTPUT_DIR / "dashboard.html"
 
@@ -133,34 +134,56 @@ def publish_ftp(local_path: Path) -> bool:
                         use_tls=(proto == "ftps"))
 
 
-def load_weeks() -> list[tuple[str, dict]]:
-    """Charge les données de chaque semaine : [(week_id, data), ...]."""
-    weeks: list[tuple[str, dict]] = []
-    if not OUTPUT_DIR.exists():
-        return weeks
-    for jf in sorted(OUTPUT_DIR.glob("*.json")):
+def load_latest_week_items() -> tuple[str, dict]:
+    """Lit TOUTE la veille brute (01_Veille_brute), garde la semaine ISO la plus
+    récente, et renvoie (libellé semaine, {territoire: [items]}). Items dédupliqués
+    par URL/titre. C'est la matière de la page lecteur « toute la veille »."""
+    from collections import defaultdict
+
+    weeks: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
+    seen: set[str] = set()
+    if not INPUT_DIR.exists():
+        return "", {}
+    for jf in INPUT_DIR.rglob("*.json"):
         try:
-            data = json.loads(jf.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError) as exc:
-            log.warning("Synthèse illisible ignorée (%s) : %s", jf.name, exc)
+            rec = json.loads(jf.read_text(encoding="utf-8"))
+            dt = datetime.fromisoformat(rec.get("date", ""))
+        except (json.JSONDecodeError, OSError, ValueError):
             continue
-        weeks.append((jf.stem, data))
-    return weeks
+        iso = dt.isocalendar()
+        wk = f"{iso[0]}-W{iso[1]:02d}"
+        parts = jf.parent.name.split("-", 2)
+        terr = rec.get("territoire") or (parts[2] if len(parts) == 3 else "Indetermine")
+        key = (rec.get("link") or rec.get("title") or "").strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        weeks[wk][terr].append({
+            "title": rec.get("title", "(sans titre)"),
+            "url": rec.get("link", ""),
+            "source": rec.get("feed_title") or rec.get("from", "") or "",
+            "date": rec.get("date", "")[:10],
+        })
+    if not weeks:
+        return "", {}
+    latest = sorted(weeks)[-1]
+    return latest, weeks[latest]
 
 
 def build(upload: bool = False) -> int:
-    """Génère le tableau de bord (et le dépose sur le Drive si upload). Réutilisable
+    """Génère la page « toute la veille » (et la dépose si upload). Réutilisable
     depuis synthesize.py (mise à jour à chaque run)."""
-    weeks = load_weeks()
-    if not weeks:
-        log.warning("Aucune donnée de synthèse (%s). Tableau de bord non généré.", OUTPUT_DIR)
+    week_id, by_territory = load_latest_week_items()
+    if not by_territory:
+        log.warning("Aucune donnée de veille (%s). Page non générée.", INPUT_DIR)
         return 0
 
     generated = f"{datetime.now(timezone.utc):%d/%m/%Y}"
-    html = render_dashboard(weeks, generated_at=generated)
+    html = render_veille_page(week_id, by_territory, generated_at=generated)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     DASHBOARD_PATH.write_text(html, encoding="utf-8")
-    log.info("Tableau de bord écrit : %s (%d semaine(s)).", DASHBOARD_PATH, len(weeks))
+    n = sum(len(v) for v in by_territory.values())
+    log.info("Page « toute la veille » écrite : %s (%s, %d sujets).", DASHBOARD_PATH, week_id, n)
 
     # Publication publique (FTP vers l'hébergement web) — page culturasabauda.eu.
     publish_ftp(DASHBOARD_PATH)

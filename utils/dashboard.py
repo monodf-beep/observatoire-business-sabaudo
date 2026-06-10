@@ -169,6 +169,61 @@ def _latest_block(week_id: str, data: dict) -> str:
     )
 
 
+_TERR_ORDER = ["Savoie", "Piemonte", "Vallee-Aoste", "Nice", "Alcotra"]
+
+
+def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str = "") -> str:
+    """Page LECTEUR « toute la veille de la semaine » : la liste COMPLÈTE des sujets
+    captés, par territoire, avec lien vers la source. Page de référence publique."""
+    total = sum(len(v) for v in by_territory.values())
+    ordered = [t for t in _TERR_ORDER if by_territory.get(t)]
+    ordered += [t for t in by_territory if t not in _TERR_ORDER and by_territory.get(t)]
+
+    sections = ""
+    for terr in ordered:
+        items = by_territory[terr]
+        color, label = _terr_color(terr), _terr_label(terr)
+        rows = ""
+        for it in items:
+            title = escape(it.get("title", "(sans titre)"))
+            url = (it.get("url") or "").strip()
+            if url:
+                title = (f'<a href="{escape(url)}" target="_blank" rel="noopener" '
+                         f'style="color:{INK};text-decoration:none;">{title}</a>')
+            meta = " · ".join(x for x in [escape(it.get("source", "")), it.get("date", "")] if x)
+            rows += (
+                f'<li style="padding:11px 0;border-bottom:1px solid {BORDER};list-style:none;">'
+                f'<div style="font-size:15px;font-weight:600;line-height:1.4;">{title}</div>'
+                + (f'<div style="font-size:12px;color:{MUTED};margin-top:3px;">{meta}</div>' if meta else "")
+                + "</li>"
+            )
+        sections += (
+            '<section style="margin:0 0 30px;">'
+            f'<h2 style="font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;'
+            f'color:{color};margin:0 0 4px;border-left:4px solid {color};padding-left:10px;">'
+            f'{escape(label)} <span style="color:{MUTED};font-weight:600;">({len(items)})</span></h2>'
+            f'<ul style="margin:0;padding:0;">{rows}</ul></section>'
+        )
+    gen = f" · mis à jour le {escape(generated_at)}" if generated_at else ""
+    return (
+        '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+        "<title>Business Sabaudo — Toute la veille</title></head>"
+        f'<body style="margin:0;background:{BG};font-family:{_FONT};color:{INK};">'
+        f'<div style="max-width:760px;margin:0 auto;padding:34px 18px 60px;">'
+        f'<div style="font-size:11px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:{ACCENT};">Observatoire économique</div>'
+        f'<div style="font-size:32px;font-weight:800;color:{BRAND};line-height:1.05;margin:6px 0 2px;">Business Sabaudo<span style="color:{ACCENT};">.</span></div>'
+        f'<div style="font-size:13px;color:{MUTED};">Savoie · Piémont · Vallée d\'Aoste · Nice · Alcotra</div>'
+        f'<h1 style="font-size:19px;font-weight:800;margin:22px 0 4px;">Toute la veille — {escape(week_label)}</h1>'
+        f'<div style="font-size:13px;color:{MUTED};margin-bottom:26px;">{total} sujets économiques captés sur l\'espace sabaudo cette semaine{gen}.</div>'
+        f"{sections}"
+        f'<div style="border-top:1px solid {BORDER};padding-top:18px;margin-top:10px;font-size:12px;color:{MUTED};">'
+        "Veille assistée par IA, sélectionnée et validée par la rédaction de Cultura Sabauda. "
+        f'<a href="https://culturasabauda.eu" style="color:{ACCENT};">culturasabauda.eu</a></div>'
+        "</div></body></html>"
+    )
+
+
 def render_dashboard(weeks: list[tuple[str, dict]], *, generated_at: str = "") -> str:
     """Assemble le tableau de bord. `weeks` = liste (week_id, data) triée croissant."""
     weeks = sorted(weeks, key=lambda wd: wd[0])
