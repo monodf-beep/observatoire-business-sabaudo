@@ -15,3 +15,10 @@ tribuca.net
 quotidianopiemontese.it
 aostasera.it
 torinoggi.it
+# Agrégateurs / portails de presse (jamais crédités/liés)
+titrespresse.com
+google.com
+news.google.fr
+msn.com
+yahoo.com
+actu.fr

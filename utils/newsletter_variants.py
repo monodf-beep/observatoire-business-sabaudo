@@ -179,7 +179,7 @@ def _footer(logo_url: str | None = None) -> str:
         "<strong>Répondez à cet email</strong>, on lit tout."
         "</div>"
         f'<div style="color:{MUTED};font-size:12px;line-height:1.6;">'
-        "Observatoire économique de l'espace sabaudo — "
+        "Observatoire économique de l'espace sabaudo · "
         "Savoie · Piémont · Vallée d'Aoste · Nice · Alcotra<br>"
         "<em>Veille assistée par IA, sélectionnée et validée par la rédaction de Cultura Sabauda.</em><br>"
         f'<a href="https://culturasabauda.eu" style="color:{MUTED};">culturasabauda.eu</a> · '

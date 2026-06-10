@@ -46,6 +46,18 @@ log = get_logger("synthesize")
 _VALID_TERRITORIES = {"Savoie", "Piemonte", "Vallee-Aoste", "Nice", "Alcotra"}
 
 
+def _no_emdash(t: str) -> str:
+    """Supprime les tirets cadratins/demi-cadratins (signal IA, proscrits par la
+    charte) : « X — Y » → « X, Y » ; tiret collé → trait d'union simple."""
+    if not t:
+        return t
+    t = t.replace(" — ", ", ").replace(" – ", ", ").replace(" — ", ", ")
+    t = t.replace("—", "-").replace("–", "-")
+    t = re.sub(r"\s+,", ",", t)
+    t = re.sub(r",\s*,", ", ", t)
+    return t
+
+
 def _pick_territory(model_val: str | None, rec: dict) -> str:
     """Territoire choisi par le modèle s'il est canonique (corrige un mauvais tag
     de flux, ex. Chamonix tagué Vallée d'Aoste) ; sinon celui hérité de la source."""
@@ -233,6 +245,18 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "écris « Casino » (pas « Casinò »), « le mois de mai » (pas « mai » seul), « la Vallée\n"
         "d'Aoste ». Soigne grammaire, accords et tournures.\n"
         "Reste strictement factuel : pas de source = pas de brève.\n"
+        "CHARTE RÉDACTIONNELLE (rigueur média, anti-IA) — IMPÉRATIF :\n"
+        "  • JAMAIS de tiret cadratin/demi-cadratin (— ou –). Utilise virgules,\n"
+        "    deux-points ou phrases courtes (« Teva, premier fabricant mondial, … »).\n"
+        "  • PAS de transitions scolaires : « En conclusion », « Par conséquent »,\n"
+        "    « En effet » (vide), « Comme nous l'avons vu », « Il convient de souligner »,\n"
+        "    « Force est de constater », « Tout d'abord… Ensuite… Enfin ».\n"
+        "  • PAS d'argumentation par la négation (« X n'est pas Y, c'est Z ») : montre\n"
+        "    par les faits.\n"
+        "  • PAS de superlatifs creux (« exceptionnel », « historique », « incroyable »)\n"
+        "    ni de mots passe-partout (« levier », « transformation », « dynamique »).\n"
+        "  • Voix ACTIVE, phrases courtes, verbes précis. Un seul mot d'enthousiasme\n"
+        "    par brève au maximum. Pas d'emoji, pas de point d'exclamation.\n"
     )
     return (
         f"{instructions}\n"
@@ -327,16 +351,15 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     hero = _enrich(une, registry, press, official)
     items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry, press, official))]
     from utils.sources import domain_of, is_press
-    dashboard_url = os.getenv("DASHBOARD_URL", "")
     signaux = []
     for s in parsed.get("signaux", []):
         rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None
         if rec is None or not s.get("titre"):
             continue
-        # Lien : source institutionnelle si dispo (jamais la presse) ; sinon le
-        # tableau de bord (où le sujet est listé) → toujours un chemin vers l'info.
+        # Lien : source institutionnelle si dispo (jamais la presse). Sinon AUCUN
+        # lien (texte simple) — pas de redirection vers le dashboard, qui désoriente.
         link = rec.get("link", "")
-        url = link if (link and not is_press(domain_of(rec), press)) else dashboard_url
+        url = link if (link and not is_press(domain_of(rec), press)) else ""
         signaux.append({
             "title": s["titre"],
             "territory": _pick_territory(s.get("territoire"), rec),
@@ -369,10 +392,22 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
             title, summary = entry.get("title", ""), entry.get("summary", "")
             dom = entry.get("_official_domain")
             url = ""
-            if dom:  # acteur dans l'annuaire curé → article précis sur SON domaine
+            if dom:
+                # Acteur CURÉ : son domaine fait foi. PAS de repli généralisé (qui
+                # ramènerait une autre entité, ex. franceactive.org au lieu de la
+                # version Savoie Mont-Blanc, ou un agrégateur de presse).
                 url = official_search.find_article_url(actor, title, summary, dom, model)
-            if not url:  # pas d'annuaire (ou rien trouvé) → site officiel de l'acteur
+            else:
+                # Acteur non curé : on cherche son site officiel (presse exclue).
                 url = official_search.find_actor_official_url(actor, title, summary, press, model)
+            if not url:
+                # Cas AOP/DOP/IGP : l'autorité compétente publie le dossier — on la
+                # cible directement (MASAF côté italien, INAO côté français).
+                blob = f"{title} {summary}".lower()
+                if any(k in blob for k in ("aop", "dop", "igp", "appellation d'origine", "indication géographique")):
+                    authority = ("masaf.gov.it" if entry.get("territory") in {"Piemonte", "Vallee-Aoste"}
+                                 else "inao.gouv.fr")
+                    url = official_search.find_article_url(actor, title, summary, authority, model)
             if not url:
                 continue
             # On VALIDE le lien avant de l'attacher : un 404 (URL malformée renvoyée
@@ -427,16 +462,23 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         if not it.get("image"):
             it["image"] = pick_image(it["territory"], it["title"], terr_images)
 
+    # Charte : aucun tiret cadratin dans les textes rédigés (titres, résumés, objet…).
+    for entry in ([hero] if hero else []) + items + signaux:
+        if entry.get("title"):
+            entry["title"] = _no_emdash(entry["title"])
+        if entry.get("summary"):
+            entry["summary"] = _no_emdash(entry["summary"])
+
     return {
         "week_label": week_label,
         "logo_url": logo_url,
         "pictogram_url": picto_url,
-        "preheader": parsed.get("preheader", ""),
-        "subject": (parsed.get("objet") or f"Business Sabaudo — {week_label}")[:120],
+        "preheader": _no_emdash(parsed.get("preheader", "")),
+        "subject": _no_emdash(parsed.get("objet") or f"Business Sabaudo, {week_label}")[:120],
         "hero": hero,
         "signaux": signaux,
         "items": items,
-        "signature": parsed.get("signature", "La rédaction — Cultura Sabauda"),
+        "signature": _no_emdash(parsed.get("signature", "La rédaction, Cultura Sabauda")),
         "cta_url": "https://culturasabauda.eu",
         # Lien « Voir toute la veille » → tableau de bord public (si configuré).
         "dashboard_url": os.getenv("DASHBOARD_URL", ""),
