@@ -219,9 +219,11 @@ def variant_magazine(data: dict) -> str:
     for i, s in enumerate(sig_list, 1):
         border = "" if i == len(sig_list) else f"border-bottom:1px solid {BORDER};"
         badge = (
-            f'<span style="display:inline-block;width:24px;height:24px;border-radius:50%;'
-            f'background:{BRAND};color:#fff;font-size:12px;font-weight:800;line-height:24px;'
-            f'text-align:center;">{i}</span>'
+            '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>'
+            f'<td width="24" height="24" align="center" valign="middle" '
+            f'style="width:24px;height:24px;background:{BRAND};color:#fff;border-radius:50%;'
+            f'font-size:12px;font-weight:800;font-family:{_FONT};line-height:24px;text-align:center;">'
+            f'{i}</td></tr></table>'
         )
         # Titre cliquable : vers sa source, ou (à défaut) vers le tableau de bord.
         s_title = escape(s["title"])

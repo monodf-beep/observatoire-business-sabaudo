@@ -60,9 +60,13 @@ def fetch_page(url: str, timeout: int = 10, max_bytes: int = 200_000) -> tuple[s
     if not url:
         return "", "", "notfound"
     try:
-        req = urllib.request.Request(
-            url, headers={"User-Agent": "Mozilla/5.0 (BusinessSabaudo/1.0; veille éco)"}
-        )
+        # En-têtes « navigateur » pour limiter les 403 anti-bot (ex. decathlon.media).
+        req = urllib.request.Request(url, headers={
+            "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                           "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+        })
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             html = resp.read(max_bytes).decode("utf-8", errors="ignore")
             return resp.geturl() or url, html, "ok"
@@ -264,6 +268,11 @@ def find_actor_official_url(actor: str, title: str, summary: str, press: set[str
         if not host or is_press(host, press):
             continue
         if any(host == h or host.endswith("." + h) for h in _NON_OFFICIAL_HOSTS):
+            continue
+        # On REJETTE les pages d'accueil / génériques : on veut la page qui traite
+        # DU sujet, pas la home (« exactement ce qu'on ne veut pas »).
+        path = urlparse(url).path.strip("/")
+        if not path or path in {"index.html", "index.php", "home", "accueil", "fr", "it", "en"}:
             continue
         return url
     return ""

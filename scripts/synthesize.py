@@ -43,6 +43,15 @@ MAX_ITEMS_PER_TERRITORY = 40
 
 log = get_logger("synthesize")
 
+_VALID_TERRITORIES = {"Savoie", "Piemonte", "Vallee-Aoste", "Nice", "Alcotra"}
+
+
+def _pick_territory(model_val: str | None, rec: dict) -> str:
+    """Territoire choisi par le modèle s'il est canonique (corrige un mauvais tag
+    de flux, ex. Chamonix tagué Vallée d'Aoste) ; sinon celui hérité de la source."""
+    v = (model_val or "").strip()
+    return v if v in _VALID_TERRITORIES else rec.get("territoire", "Indetermine")
+
 
 def iso_week_id(dt: datetime) -> str:
     year, week, _ = dt.isocalendar()
@@ -149,17 +158,23 @@ def build_prompt(registry: dict[int, dict], target_week: str) -> str:
         "  {\n"
         '    "objet": "objet email, 60 caractères max, porteur de valeur",\n'
         '    "preheader": "phrase de prévisualisation qui complète l\'objet",\n'
-        '    "une": {"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases", "acteur": "source primaire"},\n'
-        '    "signaux": [{"id": <id>, "titre": "titre court"}],\n'
-        '    "articles": [{"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases", "acteur": "source primaire"}],\n'
+        '    "une": {"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases", "acteur": "source primaire", "territoire": "Savoie|Piemonte|Vallee-Aoste|Nice|Alcotra"},\n'
+        '    "signaux": [{"id": <id>, "titre": "titre court", "territoire": "Savoie|Piemonte|Vallee-Aoste|Nice|Alcotra"}],\n'
+        '    "articles": [{"id": <id>, "titre": "titre éditorialisé", "resume": "2-3 phrases", "acteur": "source primaire", "territoire": "Savoie|Piemonte|Vallee-Aoste|Nice|Alcotra"}],\n'
         '    "signature": "Bonne lecture,\\nLa rédaction — Cultura Sabauda"\n'
         "  }\n"
         "  ```\n"
         "  - Remplace chaque <id> par un identifiant RÉEL [#id] de la liste ci-dessous\n"
         "    (un entier ≥ 1 réellement présent). N'invente JAMAIS d'id, n'utilise pas 0.\n"
-        "  - 'acteur' = l'ENTITÉ PRIMAIRE de l'info (l'entreprise, l'institution, l'organisme\n"
-        "    concerné : ex. « FC Annecy », « Casino de Saint-Vincent », « CCI Nice »). JAMAIS\n"
-        "    le journal/média qui l'a relayée — on ne cite pas la presse comme source.\n"
+        "  - 'acteur' = l'ENTITÉ PRIMAIRE de l'info, NOMMÉE précisément (l'entreprise,\n"
+        "    l'institution, l'organisme : ex. « FC Annecy », « Casino de Saint-Vincent »).\n"
+        "    Si la source DONNE le nom de l'entreprise/start-up, utilise-le — JAMAIS un\n"
+        "    descriptif vague type « une start-up niçoise ». JAMAIS le journal/média qui\n"
+        "    a relayé l'info (on ne cite pas la presse comme source).\n"
+        "  - 'territoire' = OÙ se passe physiquement l'info (le lieu du sujet), PAS un\n"
+        "    territoire voisin cité en contexte. Ex. Chamonix/Saint-Gervais → « Savoie »\n"
+        "    (même si la Vallée d'Aoste est proche) ; Santhià → « Piemonte ». Valeurs\n"
+        "    EXACTES uniquement : Savoie, Piemonte, Vallee-Aoste, Nice, Alcotra.\n"
         "  - 'une' = l'actualité la plus marquante (le héros).\n"
         "  - 'signaux' = 3 à 5 signaux forts (titres courts).\n"
         "  - 'articles' = 4 à 6 brèves éditorialisées (hors 'une'), une par sujet fort.\n"
@@ -263,7 +278,7 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
     base = {
         "title": entry.get("titre") or rec.get("title", ""),
         "summary": entry.get("resume", ""),
-        "territory": rec.get("territoire", "Indetermine"),
+        "territory": _pick_territory(entry.get("territoire"), rec),
     }
     if is_press(domain, press):
         # Radar : on garde l'info, on retire tout ce qui crédite/promeut le journal.
@@ -324,7 +339,7 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         url = link if (link and not is_press(domain_of(rec), press)) else dashboard_url
         signaux.append({
             "title": s["titre"],
-            "territory": rec.get("territoire", "Indetermine"),
+            "territory": _pick_territory(s.get("territoire"), rec),
             "url": url,
         })
     if hero is None and not items:
