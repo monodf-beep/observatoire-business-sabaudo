@@ -343,14 +343,23 @@ def _genuine_photo(entry: dict) -> bool:
 def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
                      logo_url: str, picto_url: str = "") -> dict | None:
     """Construit le dict attendu par variant_magazine à partir du JSON de Claude."""
-    from utils.sources import load_official_links, load_press_domains
+    from utils.sources import load_blocked_image_domains, load_official_links, load_press_domains
     press = load_press_domains()
     official = load_official_links()
+    blocked_img = load_blocked_image_domains()
 
     une = parsed.get("une") or {}
     hero = _enrich(une, registry, press, official)
     items = [d for e in parsed.get("articles", []) if (d := _enrich(e, registry, press, official))]
-    from utils.sources import domain_of, is_press
+    from utils.sources import domain_of, is_blocked_image, is_press
+
+    # Ceinture de sécurité IMAGES : on jette toute vignette servie par un hôte
+    # proscrit (CDN de presse, agrégateur) — typiquement une photo tierce sans
+    # rapport. Champ vidé → la bannière de territoire prendra le relais plus bas.
+    for entry in ([hero] if hero else []) + items:
+        if is_blocked_image(entry.get("image", ""), blocked_img):
+            log.info("Image proscrite ignorée (%s) : %s", entry.get("title", "")[:50], entry["image"])
+            entry["image"] = ""
     signaux = []
     for s in parsed.get("signaux", []):
         rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None
@@ -423,7 +432,7 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
             # Vraie photo du sujet : og:image de la page (repli bannière plus bas).
             if html and not entry.get("image"):
                 og = official_search.og_image_from_html(html, final_url)
-                if og:
+                if og and not is_blocked_image(og, blocked_img):
                     entry["image"] = og
                     log.info("Image officielle (og:image) : %s", og)
     # On retire le champ technique avant sérialisation/rendu.

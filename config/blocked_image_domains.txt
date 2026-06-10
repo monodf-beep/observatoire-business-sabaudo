@@ -1,0 +1,25 @@
+# Hôtes d'IMAGES proscrits : CDN de presse / agrégateurs.
+# Une image servie par l'un de ces domaines n'est JAMAIS affichée dans la
+# newsletter : on retombe automatiquement sur la bannière de territoire.
+# C'est une ceinture de sécurité EN PLUS du filtrage des domaines de presse :
+# un agrégateur (ex. titrespresse) republie souvent un sujet avec une vignette
+# d'un média tiers (ex. une photo BFMTV « carburants ») sans aucun rapport.
+# Voir utils/sources.is_blocked_image. Un domaine par ligne (sous-domaines inclus).
+
+bfmtv.com
+titrespresse.com
+i.f1g.fr
+lefigaro.fr
+lemonde.fr
+img.lemde.fr
+leparisien.fr
+ouest-france.fr
+sudouest.fr
+ladepeche.fr
+lpnt.fr
+ouest-france.fr
+20minutes.fr
+actu.fr
+msn.com
+yahoo.com
+googleusercontent.com

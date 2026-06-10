@@ -35,6 +35,36 @@ def is_press(domain: str, press: set[str]) -> bool:
     return any(domain == p or domain.endswith("." + p) for p in press)
 
 
+_BLOCKED_IMG_FILE = Path(__file__).resolve().parent.parent / "config" / "blocked_image_domains.txt"
+
+
+def load_blocked_image_domains(path: Path | None = None) -> set[str]:
+    """Charge les hôtes d'images PROSCRITS (CDN de presse, agrégateurs)."""
+    path = path or _BLOCKED_IMG_FILE
+    if not path.exists():
+        return set()
+    domains: set[str] = set()
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip().lower()
+        if line and not line.startswith("#"):
+            domains.add(line.lstrip("."))
+    return domains
+
+
+def is_blocked_image(url: str, blocked: set[str]) -> bool:
+    """Vrai si l'URL d'image provient d'un hôte proscrit (presse/agrégateur).
+
+    Empêche qu'une vignette tierce sans rapport (typiquement une photo de média
+    récupérée par un agrégateur) ne s'affiche : on retombe sur la bannière.
+    """
+    if not url or not blocked:
+        return False
+    host = urlparse(url).netloc.lower()
+    if host.startswith("www."):
+        host = host[4:]
+    return any(host == b or host.endswith("." + b) for b in blocked)
+
+
 _IMAGES_FILE = Path(__file__).resolve().parent.parent / "config" / "territory_images.txt"
 
 
