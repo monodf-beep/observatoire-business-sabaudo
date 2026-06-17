@@ -9,3 +9,4 @@ anthropic>=0.25.0
 python-dotenv>=1.0.0
 markdown>=3.4                     # synthèse Markdown -> HTML pour le brouillon Brevo
 paramiko>=3.0           # publication SFTP du tableau de bord (Gandi Simple Hosting)
+flask>=3.0              # page admin privée (bouton « relancer la newsletter »)

@@ -4,7 +4,8 @@
 # Adapter PROJECT et PY aux chemins réels de la machine.
 
 PROJECT=/home/user/observatoire-business-sabaudo
-PY=/usr/bin/python3
+# Interpréteur du venv du projet (contient les dépendances). À défaut : /usr/bin/python3.
+PY=/home/user/observatoire-business-sabaudo/.venv/bin/python
 
 # Collecte Gmail — chaque lundi à 07h00
 0 7 * * 1 cd $PROJECT && $PY scripts/gmail_collect.py >> logs/cron_gmail.log 2>&1
@@ -12,10 +13,17 @@ PY=/usr/bin/python3
 # Collecte RSS — tous les jours à 08h00
 0 8 * * * cd $PROJECT && $PY scripts/rss_collect.py >> logs/cron_rss.log 2>&1
 
-# Synthèse hebdomadaire — chaque vendredi à 15h00
+# Page « toute la veille » — rafraîchie MARDI, JEUDI, SAMEDI à 09h00.
+# Aucun appel IA (gratuit) : on relit la veille déjà collectée et on republie la
+# page publique. C'est la mise à jour 3x/semaine du radar lecteur.
+0 9 * * 2,4,6 cd $PROJECT && $PY scripts/build_dashboard.py >> logs/cron_dashboard.log 2>&1
+
+# Synthèse hebdomadaire (NEWSLETTER) — chaque vendredi à 15h00.
 # --upload : dépôt Drive (archive Markdown + Google Doc)  |  --brevo : brouillon Brevo
 # (AUCUN envoi auto : Franck relit et envoie la newsletter depuis Brevo)
+# La newsletter reste un rendez-vous HEBDOMADAIRE ; pour une édition à la demande,
+# utiliser le bouton de la page admin (scripts/admin_server.py).
 0 15 * * 5 cd $PROJECT && $PY scripts/synthesize.py --upload --brevo >> logs/cron_synth.log 2>&1
 
-# Tableau de bord visuel — chaque vendredi à 15h15 (après la synthèse)
+# Tableau de bord visuel — chaque vendredi à 15h15 (après la synthèse, avec dépôt Drive)
 15 15 * * 5 cd $PROJECT && $PY scripts/build_dashboard.py --upload >> logs/cron_dashboard.log 2>&1

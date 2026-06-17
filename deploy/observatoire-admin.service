@@ -1,0 +1,31 @@
+# Service systemd — page admin privée « Business Sabaudo » (bouton newsletter).
+#
+# Installation sur le VPS :
+#   sudo cp deploy/observatoire-admin.service /etc/systemd/system/
+#   # adapter User= et les chemins si besoin
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now observatoire-admin
+#   systemctl status observatoire-admin
+#
+# Le service écoute sur 127.0.0.1:8099. Pour y accéder :
+#   - rapide / immédiat : tunnel SSH  ->  ssh -L 8099:127.0.0.1:8099 user@152.239.112.112
+#     puis ouvrir http://127.0.0.1:8099 (identifiants ADMIN_USER/ADMIN_PASS du .env).
+#   - propre / permanent : router /admin vers ce port via Traefik (HTTPS), ex. label
+#     PathPrefix(`/admin`) sur le host observatoire.culturasabauda.eu.
+#
+# ⚠ Toujours derrière HTTPS — l'auth Basic transite sinon en clair.
+
+[Unit]
+Description=Business Sabaudo — page admin (bouton newsletter)
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/observatoire-business-sabaudo
+ExecStart=/home/user/observatoire-business-sabaudo/.venv/bin/python scripts/admin_server.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
