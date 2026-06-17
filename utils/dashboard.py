@@ -199,6 +199,32 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
         f'padding:12px 0 5px;margin:0 0 18px;border-bottom:1px solid {BORDER};">{nav_pills}</div>'
     )
 
+    # Filtre : Tout / Sources officielles / Radar presse (toggle JS côté navigateur).
+    n_off = sum(1 for items in by_territory.values() for it in items if not it.get("press"))
+    n_radar = total - n_off
+    fbtns = ""
+    for key, lbl, n in [("all", "Tout", total), ("officiel", "Sources officielles", n_off),
+                        ("radar", "Radar presse", n_radar)]:
+        on = key == "all"
+        fbtns += (
+            f'<button type="button" data-f="{key}" onclick="vfilter(this)" '
+            f'style="font-size:13px;font-weight:700;cursor:pointer;border:1px solid {BORDER};'
+            f'border-radius:20px;padding:6px 13px;margin:0 7px 7px 0;'
+            f'background:{INK if on else CARD};color:{"#fff" if on else INK};">'
+            f'{escape(lbl)} <span style="opacity:.6;font-weight:600;">{n}</span></button>'
+        )
+    filterbar = f'<div style="margin:4px 0 14px;">{fbtns}</div>'
+    filterjs = (
+        "<script>function vfilter(b){var f=b.getAttribute('data-f');"
+        "document.querySelectorAll('[data-f]').forEach(function(x){var on=x===b;"
+        f"x.style.background=on?'{INK}':'{CARD}';x.style.color=on?'#fff':'{INK}';}});"
+        "document.querySelectorAll('li[data-type]').forEach(function(li){"
+        "li.style.display=(f==='all'||li.getAttribute('data-type')===f)?'':'none';});"
+        "document.querySelectorAll('section[data-veille]').forEach(function(s){var vis=false;"
+        "s.querySelectorAll('li[data-type]').forEach(function(li){"
+        "if(li.style.display!=='none')vis=true;});s.style.display=vis?'':'none';});}</script>"
+    )
+
     sections = ""
     for terr in ordered:
         items = by_territory[terr]
@@ -219,15 +245,16 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
                      f'text-transform:uppercase;color:{MUTED};background:{BG};border:1px solid {BORDER};'
                      f'border-radius:4px;padding:1px 6px;margin-right:7px;">Radar</span>' if is_press_item else "")
             meta = " · ".join(x for x in [src, it.get("date", "")] if x)
+            dtype = "radar" if is_press_item else "officiel"
             rows += (
-                f'<li style="padding:11px 0;border-bottom:1px solid {BORDER};list-style:none;">'
+                f'<li data-type="{dtype}" style="padding:11px 0;border-bottom:1px solid {BORDER};list-style:none;">'
                 f'<div style="font-size:15px;font-weight:600;line-height:1.4;">{title_html}</div>'
                 + (f'<div style="font-size:12px;color:{MUTED};margin-top:3px;">{badge}{meta}</div>'
                    if (meta or badge) else "")
                 + "</li>"
             )
         sections += (
-            f'<section id="t-{escape(terr)}" style="margin:0 0 30px;scroll-margin-top:64px;">'
+            f'<section id="t-{escape(terr)}" data-veille="1" style="margin:0 0 30px;scroll-margin-top:64px;">'
             f'<h2 style="font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;'
             f'color:{color};margin:0 0 4px;border-left:4px solid {color};padding-left:10px;">'
             f'{escape(label)} <span style="color:{MUTED};font-weight:600;">({len(items)})</span></h2>'
@@ -246,11 +273,13 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
         f'<h1 style="font-size:19px;font-weight:800;margin:22px 0 4px;">Toute la veille — {escape(week_label)}</h1>'
         f'<div style="font-size:13px;color:{MUTED};margin-bottom:6px;">{total} sujets économiques captés sur l\'espace sabaudo cette semaine{gen}.</div>'
         f'<div style="font-size:12px;color:{MUTED};margin-bottom:4px;">Les sujets marqués <strong>Radar</strong> proviennent de la presse : ils servent à ne rien manquer, sans lien vers le journal.</div>'
+        f"{filterbar}"
         f"{nav}"
         f"{sections}"
         f'<div style="border-top:1px solid {BORDER};padding-top:18px;margin-top:10px;font-size:12px;color:{MUTED};">'
         "Veille assistée par IA, sélectionnée et validée par la rédaction de Cultura Sabauda. "
         f'<a href="https://culturasabauda.eu" style="color:{ACCENT};">culturasabauda.eu</a></div>'
+        f"{filterjs}"
         "</div></body></html>"
     )
 
