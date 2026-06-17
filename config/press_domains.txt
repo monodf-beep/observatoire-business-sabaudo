@@ -11,10 +11,46 @@
 news.google.com
 ledauphine.com
 nicematin.com
+nice-matin.com
 tribuca.net
 quotidianopiemontese.it
 aostasera.it
 torinoggi.it
+# Presse nationale / régionale FR
+lefigaro.fr
+lemonde.fr
+leparisien.fr
+ouest-france.fr
+sudouest.fr
+ladepeche.fr
+20minutes.fr
+liberation.fr
+lexpress.fr
+lepoint.fr
+latribune.fr
+lesechos.fr
+bfmtv.com
+francetvinfo.fr
+francebleu.fr
+# Presse italienne (Piémont, Vallée d'Aoste, nationale)
+lastampa.it
+repubblica.it
+corriere.it
+ilsole24ore.com
+ansa.it
+ilfattoquotidiano.it
+ilgiornale.it
+ilmessaggero.it
+gazzetta.it
+torino.repubblica.it
+torinotoday.it
+ilcorrieredellesera.it
+lavocediasti.it
+ilrestodelcarlino.it
+gazzettadalba.it
+targatocn.it
+aostanews24.it
+aostaoggi.it
 # Agrégateurs / portails de presse (jamais crédités/liés)
 titrespresse.com
 google.com

@@ -134,11 +134,24 @@ def publish_ftp(local_path: Path) -> bool:
                         use_tls=(proto == "ftps"))
 
 
+def _sender_label(frm: str) -> str:
+    """Nom lisible d'un expéditeur de newsletter (« I3P » plutôt que l'adresse)."""
+    import re
+
+    frm = (frm or "").strip()
+    m = re.match(r'\s*"?([^"<]+?)"?\s*<', frm)
+    if m and m.group(1).strip():
+        return m.group(1).strip()
+    m2 = re.search(r"@([\w.-]+)", frm)
+    return m2.group(1) if m2 else frm
+
+
 def load_latest_week_items() -> tuple[str, dict]:
     """Lit TOUTE la veille brute (01_Veille_brute), garde la semaine ISO la plus
     récente, et renvoie (libellé semaine, {territoire: [items]}). Items dédupliqués
     par URL/titre. C'est la matière de la page lecteur « toute la veille »."""
     from collections import defaultdict
+    from urllib.parse import urlparse
 
     from utils.sources import domain_of, is_press, load_press_domains
 
@@ -157,21 +170,50 @@ def load_latest_week_items() -> tuple[str, dict]:
         wk = f"{iso[0]}-W{iso[1]:02d}"
         parts = jf.parent.name.split("-", 2)
         terr = rec.get("territoire") or (parts[2] if len(parts) == 3 else "Indetermine")
-        key = (rec.get("link") or rec.get("title") or "").strip().lower()
-        if not key or key in seen:
-            continue
-        seen.add(key)
-        # Presse = radar : on garde le sujet (pour voir si on est passé à côté de
-        # quelque chose) mais on n'expose PAS le lien vers le journal. Seules les
-        # sources officielles/institutionnelles restent cliquables.
-        from_press = is_press(domain_of(rec), press)
-        weeks[wk][terr].append({
-            "title": rec.get("title", "(sans titre)"),
-            "url": "" if from_press else rec.get("link", ""),
-            "source": rec.get("feed_title") or rec.get("from", "") or "",
-            "date": rec.get("date", "")[:10],
-            "press": from_press,
-        })
+        date = rec.get("date", "")[:10]
+
+        # Newsletters institutionnelles : on ÉCLATE l'email en autant de SOURCES
+        # (les liens qu'il cite) au lieu d'un bloc opaque. C'est ce qui fait enfin
+        # remonter l'info institutionnelle dans la veille (et pas que la presse RSS).
+        gmail_links = rec.get("links") if rec.get("source") == "gmail" else None
+        emitted: list[dict] = []
+        if gmail_links:
+            sender = _sender_label(rec.get("from", "")) or rec.get("title", "")
+            subject = rec.get("title", "")
+            for ln in gmail_links:
+                u = (ln.get("url") or "").strip()
+                if not u:
+                    continue
+                host = urlparse(u).netloc.lower()
+                if host.startswith("www."):
+                    host = host[4:]
+                link_press = is_press(host, press)
+                emitted.append({
+                    "title": (ln.get("text") or subject or "(sans titre)")[:200],
+                    "url": "" if link_press else u,
+                    "source": sender,
+                    "date": date,
+                    "press": link_press,
+                    "via": sender,
+                })
+        else:
+            # Presse = radar : on garde le sujet (voir si on est passé à côté) mais
+            # on n'expose PAS le lien vers le journal. L'officiel reste cliquable.
+            from_press = is_press(domain_of(rec), press)
+            emitted.append({
+                "title": rec.get("title", "(sans titre)"),
+                "url": "" if from_press else rec.get("link", ""),
+                "source": rec.get("feed_title") or rec.get("from", "") or "",
+                "date": date,
+                "press": from_press,
+            })
+
+        for item in emitted:
+            key = (item.get("url") or item.get("title") or "").strip().lower()
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            weeks[wk][terr].append(item)
     if not weeks:
         return "", {}
     latest = sorted(weeks)[-1]

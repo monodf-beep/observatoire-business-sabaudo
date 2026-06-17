@@ -218,6 +218,58 @@ def _header(headers: list[dict], name: str) -> str:
     return ""
 
 
+_A_RE = re.compile(r'<a\b[^>]*?href=["\']([^"\']+)["\'][^>]*?>(.*?)</a>', re.I | re.S)
+_TAG_RE = re.compile(r"<[^>]+>")
+# Fragments d'URL à ÉCARTER : traceurs/ESP, réseaux sociaux, liens utilitaires.
+# Une newsletter institutionnelle cite des SOURCES (annonces, appels, dossiers) :
+# ce sont elles qu'on veut garder ; le reste est du bruit d'emailing.
+_LINK_SKIP = (
+    "unsubscribe", "desabon", "désabon", "optout", "opt-out", "/preferences",
+    "gestion-abonnement", "list-manage", "view-in-browser", "/webversion",
+    "webview", "mirror", "/vb/", "manage/", "profile-center",
+    "facebook.com", "twitter.com", "x.com/", "linkedin.com", "instagram.com",
+    "youtube.com", "youtu.be", "tiktok.com", "wa.me", "whatsapp", "t.me/",
+    "mailto:", "tel:", "javascript:", "google.com/maps",
+)
+
+
+def extract_links(payload: dict) -> list[dict]:
+    """Liens de CONTENU d'une newsletter HTML — les « sources » qu'elle cite.
+
+    Filtre les liens utilitaires (désabonnement, voir en ligne), les traceurs et
+    les réseaux sociaux ; déduplique. C'est la matière qui, en aval, devient
+    autant d'items de veille pointant vers la source officielle.
+    """
+    htmls: list[str] = []
+
+    def walk(part: dict) -> None:
+        body = part.get("body", {})
+        data = body.get("data")
+        if part.get("parts"):
+            for sub in part["parts"]:
+                walk(sub)
+        elif data and part.get("mimeType") == "text/html":
+            htmls.append(_decode_part(data))
+
+    walk(payload)
+    out: list[dict] = []
+    seen: set[str] = set()
+    for m in _A_RE.finditer("\n".join(htmls)):
+        url = m.group(1).strip()
+        low = url.lower()
+        if not low.startswith("http"):
+            continue
+        if any(s in low for s in _LINK_SKIP):
+            continue
+        norm = low.split("#")[0].rstrip("/")
+        if norm in seen:
+            continue
+        seen.add(norm)
+        text = clean_text(_TAG_RE.sub(" ", m.group(2))).strip()
+        out.append({"url": url, "text": text[:160]})
+    return out
+
+
 def parse_message(msg: dict) -> dict:
     payload = msg.get("payload", {})
     headers = payload.get("headers", [])
@@ -250,6 +302,7 @@ def parse_message(msg: dict) -> dict:
         "title": subject,
         "body": extract_body(payload),
         "image": extract_image(payload),
+        "links": extract_links(payload),
         "collected_at": datetime.now(timezone.utc).isoformat(),
     }
 
