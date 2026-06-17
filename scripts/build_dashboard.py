@@ -140,6 +140,9 @@ def load_latest_week_items() -> tuple[str, dict]:
     par URL/titre. C'est la matière de la page lecteur « toute la veille »."""
     from collections import defaultdict
 
+    from utils.sources import domain_of, is_press, load_press_domains
+
+    press = load_press_domains()
     weeks: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
     seen: set[str] = set()
     if not INPUT_DIR.exists():
@@ -158,11 +161,16 @@ def load_latest_week_items() -> tuple[str, dict]:
         if not key or key in seen:
             continue
         seen.add(key)
+        # Presse = radar : on garde le sujet (pour voir si on est passé à côté de
+        # quelque chose) mais on n'expose PAS le lien vers le journal. Seules les
+        # sources officielles/institutionnelles restent cliquables.
+        from_press = is_press(domain_of(rec), press)
         weeks[wk][terr].append({
             "title": rec.get("title", "(sans titre)"),
-            "url": rec.get("link", ""),
+            "url": "" if from_press else rec.get("link", ""),
             "source": rec.get("feed_title") or rec.get("from", "") or "",
             "date": rec.get("date", "")[:10],
+            "press": from_press,
         })
     if not weeks:
         return "", {}
