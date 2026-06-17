@@ -108,7 +108,11 @@ def list_messages(service, query: str) -> list[dict]:
             resp = (
                 service.users()
                 .messages()
-                .list(userId="me", q=query, pageToken=page_token, maxResults=100)
+                # includeSpamTrash : les expéditeurs sont whitelistés (donc de
+                # confiance) ; on récupère leurs emails même si Gmail les a classés
+                # en spam (cas vu : une confirmation Camera di Torino tombée en spam).
+                .list(userId="me", q=query, pageToken=page_token, maxResults=100,
+                      includeSpamTrash=True)
                 .execute()
             )
             messages.extend(resp.get("messages", []))

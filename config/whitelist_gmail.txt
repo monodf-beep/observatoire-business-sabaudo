@@ -23,17 +23,30 @@ newsletter@i3p.it;Piemonte
 comunicazione@i3p.it;Piemonte
 # ✅ Camera di commercio di Torino (double opt-in confirmé)
 to.camcom.it;Piemonte
-# ✅ Piemonte Innova
-piemonteinnova.it;Piemonte
+# ⛔ Piemonte Innova : DÉSACTIVÉ — audit 17/06/2026, aucun flux newsletter, le
+# domaine ne captait que des emails de contacts humains (projet ALIVE). À réactiver
+# UNIQUEMENT avec une adresse de newsletter dédiée une fois l'abonnement souscrit.
+# piemonteinnova.it;Piemonte
 
 # ===================== VALLÉE D'AOSTE =====================
-# ✅ Pépinières d'entreprises VDA (gérées par la Fondazione Brodolini)
+# ⏳ Pépinières VDA (Fondazione Brodolini) — inscription du 02/06, en attente du 1er
+# envoi (cadence sans doute mensuelle). Capté dès qu'une newsletter arrivera.
 pepinieres@fondazionebrodolini.eu;Vallee-Aoste
 
 # ===================== NICE / ALPES-MARITIMES =====================
-# ✅ CCI Nice Côte d'Azur
+# ⏳ CCI Nice Côte d'Azur — inscription du 02/06, en attente du 1er envoi.
 newsletter@cote-azur.cci.fr;Nice
 
 # ===================== TRANSFRONTALIER ALCOTRA =====================
-# ⏳ inscription validée sur le site ; expéditeur réel à confirmer au 1er envoi
-interreg-alcotra.eu;Alcotra
+# ❌ Interreg Alcotra : audit 17/06/2026 — ZÉRO email reçu, abonnement non confirmé
+# ou inexistant. À (re)souscrire sur le site, puis confirmer l'expéditeur réel.
+# interreg-alcotra.eu;Alcotra
+
+# ===================== CANDIDATS « BONUS » (audit 17/06/2026) =====================
+# Newsletters institutionnelles éco/innovation repérées dans la boîte mais pas encore
+# whitelistées. Décommenter en remplaçant par l'ADRESSE EXPÉDITRICE EXACTE (à relever
+# sur un email reçu), sinon la capture ne matchera pas.
+# tech&fest (écosystème tech alpin, Grenoble) → Savoie
+# <adresse-expediteur-techfest>;Savoie
+# EU-Startups (financements startups européens) → périmètre à trancher (Alcotra ?)
+# newsletter@eu-startups.com;Alcotra
