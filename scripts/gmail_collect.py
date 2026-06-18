@@ -21,6 +21,7 @@ import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
@@ -224,9 +225,7 @@ def _header(headers: list[dict], name: str) -> str:
 
 _A_RE = re.compile(r'<a\b[^>]*?href=["\']([^"\']+)["\'][^>]*?>(.*?)</a>', re.I | re.S)
 _TAG_RE = re.compile(r"<[^>]+>")
-# Fragments d'URL à ÉCARTER : traceurs/ESP, réseaux sociaux, liens utilitaires.
-# Une newsletter institutionnelle cite des SOURCES (annonces, appels, dossiers) :
-# ce sont elles qu'on veut garder ; le reste est du bruit d'emailing.
+# Liens utilitaires / réseaux sociaux à ÉCARTER d'office.
 _LINK_SKIP = (
     "unsubscribe", "desabon", "désabon", "optout", "opt-out", "/preferences",
     "gestion-abonnement", "list-manage", "view-in-browser", "/webversion",
@@ -235,15 +234,43 @@ _LINK_SKIP = (
     "youtube.com", "youtu.be", "tiktok.com", "wa.me", "whatsapp", "t.me/",
     "mailto:", "tel:", "javascript:", "google.com/maps",
 )
+# Hôtes d'ESP / traceurs d'emailing : un lien qui RESTE sur l'un d'eux n'est pas une
+# vraie source externe (c'est un tracker, ou la version web de l'email lui-même).
+_ESP_HOSTS = (
+    "4dem.it", "mailchef", "list-manage.com", "mailchimp", "campaign-archive",
+    "brevosend", "sendinblue", "sibautomation", "sendibm", "mailjet", "mlsend",
+    "mailerlite", "sendgrid", "sarbacane", "sbc24", "hubspotemail", "hs-sites",
+    "rs6.net", "constantcontact", "cmail", "createsend", "mailup", "sg-mail",
+)
+# Ancre indiquant la « version web » de la newsletter (« ouvrir dans le navigateur »).
+_WEB_VERSION_RE = re.compile(
+    r"navigateur|browser|en ?ligne|version ?web|vedi.*(online|browser)|"
+    r"visualizza|view.*browser|online version|leggi.*online", re.I)
 
 
-def extract_links(payload: dict) -> list[dict]:
-    """Liens de CONTENU d'une newsletter HTML — les « sources » qu'elle cite.
+def _esp_host(host: str) -> bool:
+    host = (host or "").lower()
+    return any(e in host for e in _ESP_HOSTS)
 
-    Filtre les liens utilitaires (désabonnement, voir en ligne), les traceurs et
-    les réseaux sociaux ; déduplique. C'est la matière qui, en aval, devient
-    autant d'items de veille pointant vers la source officielle.
-    """
+
+def _resolve_url(url: str, timeout: int = 5) -> str:
+    """Suit les redirections jusqu'à l'URL finale réelle. '' si échec/inaccessible."""
+    import urllib.request
+
+    try:
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml",
+        })
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.geturl() or ""
+    except Exception:
+        return ""
+
+
+def _anchors(payload: dict) -> list[tuple[str, str]]:
+    """(href, texte d'ancre) de tous les liens HTTP de l'email HTML."""
     htmls: list[str] = []
 
     def walk(part: dict) -> None:
@@ -256,21 +283,56 @@ def extract_links(payload: dict) -> list[dict]:
             htmls.append(_decode_part(data))
 
     walk(payload)
+    out: list[tuple[str, str]] = []
+    for m in _A_RE.finditer("\n".join(htmls)):
+        href = m.group(1).strip()
+        if href.lower().startswith("http"):
+            text = clean_text(_TAG_RE.sub(" ", m.group(2))).strip()
+            out.append((href, text))
+    return out
+
+
+def extract_web_version(payload: dict) -> str:
+    """Lien « ouvrir dans le navigateur » : permalien web de la newsletter."""
+    for href, text in _anchors(payload):
+        if _WEB_VERSION_RE.search(text):
+            return href
+    return ""
+
+
+def extract_links(payload: dict, *, resolve: bool = True, cap: int = 40) -> list[dict]:
+    """Liens de CONTENU (les SOURCES citées), traceurs « déballés » vers l'URL réelle.
+
+    On suit la redirection des liens enveloppés par un routeur d'emailing (ESP) pour
+    retrouver l'article réel. Un lien qui ne répond pas, ou qui reste sur un domaine
+    d'ESP après résolution, est écarté : c'est ce qui évite le « on clique, on n'a
+    rien ». Déduplique sur l'URL finale.
+    """
     out: list[dict] = []
     seen: set[str] = set()
-    for m in _A_RE.finditer("\n".join(htmls)):
-        url = m.group(1).strip()
-        low = url.lower()
-        if not low.startswith("http"):
+    resolved = 0
+    for href, text in _anchors(payload):
+        low = href.lower()
+        if any(s in low for s in _LINK_SKIP) or _WEB_VERSION_RE.search(text):
             continue
-        if any(s in low for s in _LINK_SKIP):
-            continue
-        norm = low.split("#")[0].rstrip("/")
+        final = href
+        host = urlparse(href).netloc.lower().removeprefix("www.")
+        if _esp_host(host):
+            if not resolve or resolved >= cap:
+                continue
+            resolved += 1
+            real = _resolve_url(href)
+            if not real:
+                continue
+            final = real
+            host = urlparse(final).netloc.lower().removeprefix("www.")
+            if _esp_host(host):
+                continue  # toujours chez l'ESP → pas une vraie source externe
+        norm = final.lower().split("#")[0].rstrip("/")
         if norm in seen:
             continue
         seen.add(norm)
-        text = clean_text(_TAG_RE.sub(" ", m.group(2))).strip()
-        out.append({"url": url, "text": text[:160]})
+        out.append({"url": final, "text": text[:160]})
     return out
 
 
@@ -307,6 +369,7 @@ def parse_message(msg: dict) -> dict:
         "body": extract_body(payload),
         "image": extract_image(payload),
         "links": extract_links(payload),
+        "web_version": extract_web_version(payload),
         "collected_at": datetime.now(timezone.utc).isoformat(),
     }
 

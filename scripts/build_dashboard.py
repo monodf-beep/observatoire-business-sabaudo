@@ -175,12 +175,13 @@ def load_latest_week_items() -> tuple[str, dict]:
         # Newsletters institutionnelles : on ÉCLATE l'email en autant de SOURCES
         # (les liens qu'il cite) au lieu d'un bloc opaque. C'est ce qui fait enfin
         # remonter l'info institutionnelle dans la veille (et pas que la presse RSS).
-        gmail_links = rec.get("links") if rec.get("source") == "gmail" else None
+        is_gmail = rec.get("source") == "gmail"
+        gmail_links = rec.get("links") if is_gmail else None
         emitted: list[dict] = []
-        if gmail_links:
+        if is_gmail:
             sender = _sender_label(rec.get("from", "")) or rec.get("title", "")
             subject = rec.get("title", "")
-            for ln in gmail_links:
+            for ln in (gmail_links or []):
                 u = (ln.get("url") or "").strip()
                 if not u:
                     continue
@@ -194,6 +195,18 @@ def load_latest_week_items() -> tuple[str, dict]:
                     "source": sender,
                     "date": date,
                     "press": link_press,
+                    "via": sender,
+                })
+            if not emitted:
+                # Aucune source externe exploitable : on pointe vers la newsletter
+                # ENTIÈRE (version web « ouvrir dans le navigateur ») pour que le clic
+                # mène quand même quelque part. Sinon, texte simple (jamais de vide).
+                emitted.append({
+                    "title": subject or "(newsletter)",
+                    "url": (rec.get("web_version") or "").strip(),
+                    "source": sender,
+                    "date": date,
+                    "press": False,
                     "via": sender,
                 })
         else:
