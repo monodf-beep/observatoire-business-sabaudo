@@ -11,6 +11,7 @@ Scheduler prévu : cron du lundi 7h (voir crontab.txt).
 """
 from __future__ import annotations
 
+import argparse
 import base64
 import hashlib
 import json
@@ -402,7 +403,14 @@ def write_json(path: Path, record: dict) -> None:
 # --------------------------------------------------------------------------- #
 def main() -> int:
     load_dotenv(ROOT / ".env")
-    log.info("=== Démarrage collecte Gmail ===")
+    parser = argparse.ArgumentParser(description="Collecte Gmail des newsletters de veille.")
+    parser.add_argument("--force", action="store_true",
+                        help="Re-traiter les emails déjà collectés (ré-applique l'extraction "
+                             "et la résolution des liens sur les newsletters existantes).")
+    parser.add_argument("--lookback", type=int, default=None,
+                        help="Fenêtre de collecte en jours (défaut : GMAIL_LOOKBACK_DAYS ou 8).")
+    args = parser.parse_args()
+    log.info("=== Démarrage collecte Gmail%s ===", " (--force)" if args.force else "")
 
     whitelist = load_whitelist()
     if not whitelist:
@@ -415,7 +423,7 @@ def main() -> int:
         log.error("Authentification impossible : %s", exc)
         return 1
 
-    lookback = int(os.getenv("GMAIL_LOOKBACK_DAYS", "8"))
+    lookback = args.lookback if args.lookback is not None else int(os.getenv("GMAIL_LOOKBACK_DAYS", "8"))
     query = build_query(whitelist, lookback)
     log.info("Requête Gmail : %s", query)
 
@@ -430,19 +438,21 @@ def main() -> int:
         record = parse_message(msg)
         territory = match_territory(record["from"], whitelist)
         out = output_path(record, territory)
-        if out.exists():
+        existed = out.exists()
+        if existed and not args.force:
             dup_count += 1
             continue
         try:
             write_json(out, record)
             new_count += 1
-            log.info("[%s] %s", territory, record["title"][:80] or "(sans objet)")
+            log.info("[%s]%s %s", territory, " (maj)" if existed else "",
+                     record["title"][:80] or "(sans objet)")
         except OSError as exc:
             err_count += 1
             log.error("Écriture impossible (%s) : %s", out, exc)
 
     log.info(
-        "=== Fin collecte Gmail : %d nouveau(x), %d doublon(s), %d erreur(s) ===",
+        "=== Fin collecte Gmail : %d traité(s)/maj, %d doublon(s) ignoré(s), %d erreur(s) ===",
         new_count, dup_count, err_count,
     )
     return 0
