@@ -241,9 +241,17 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
                 # Radar : texte simple, pas de lien vers le journal.
                 title_html = f'<span style="color:{INK};">{title}</span>'
             src = escape(it.get("source", ""))
-            badge = (f'<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;'
-                     f'text-transform:uppercase;color:{MUTED};background:{BG};border:1px solid {BORDER};'
-                     f'border-radius:4px;padding:1px 6px;margin-right:7px;">Radar</span>' if is_press_item else "")
+            is_newsletter = bool(it.get("newsletter"))
+            if is_press_item:
+                badge = (f'<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;'
+                         f'text-transform:uppercase;color:{MUTED};background:{BG};border:1px solid {BORDER};'
+                         f'border-radius:4px;padding:1px 6px;margin-right:7px;">Radar</span>')
+            elif is_newsletter:
+                badge = (f'<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;'
+                         f'text-transform:uppercase;color:{BRAND};background:#eef2fb;border:1px solid #c7d5ef;'
+                         f'border-radius:4px;padding:1px 6px;margin-right:7px;">Newsletter</span>')
+            else:
+                badge = ""
             meta = " · ".join(x for x in [src, it.get("date", "")] if x)
             dtype = "radar" if is_press_item else "officiel"
             rows += (
@@ -277,7 +285,7 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
         f"{nav}"
         f"{sections}"
         f'<div style="border-top:1px solid {BORDER};padding-top:18px;margin-top:10px;font-size:12px;color:{MUTED};">'
-        "Veille assistée par IA, sélectionnée et validée par la rédaction de Cultura Sabauda. "
+        "Veille collectée et traitée automatiquement par l'Observatoire économique de Cultura Sabauda. "
         f'<a href="https://culturasabauda.eu" style="color:{ACCENT};">culturasabauda.eu</a></div>'
         f"{filterjs}"
         "</div></body></html>"

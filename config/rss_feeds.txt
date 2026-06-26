@@ -21,9 +21,9 @@ https://cluster-montagne.com/feed/;Savoie
 https://www.savoie-technolac.com/feed/;Savoie
 # Radar éco (Google News)
 https://news.google.com/rss/search?q=%C3%A9conomie+Savoie+entreprise+OR+investissement&hl=fr&gl=FR&ceid=FR:fr;Savoie
-# Radar presse régionale (contenu complet)
-https://www.ledauphine.com/savoie/rss;Savoie
-https://www.ledauphine.com/haute-savoie/rss;Savoie
+# Radar presse régionale — section Économie uniquement (même pattern que Nice-Matin /economie/rss)
+# Les flux "toute l'info locale" généraient 93 % de bruit (sport, faits divers, météo).
+https://www.ledauphine.com/economie/rss;Savoie
 
 # ===================== PIÉMONT =====================
 # Institutionnel : incubateur du Politecnico (crédité + lié)

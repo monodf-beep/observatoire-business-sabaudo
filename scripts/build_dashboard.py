@@ -187,17 +187,23 @@ def load_latest_week_items() -> tuple[str, dict]:
                 u = (ln.get("url") or "").strip()
                 if not u:
                     continue
+                text = (ln.get("text") or "").strip()
+                if not text:
+                    # Lien sans texte d'ancre : titre non informatif (sujet répété n fois)
+                    # → skip ; si tous les liens sont vides, le fallback web_version prend le relais.
+                    continue
                 host = urlparse(u).netloc.lower()
                 if host.startswith("www."):
                     host = host[4:]
                 link_press = is_press(host, press)
                 emitted.append({
-                    "title": (ln.get("text") or subject or "(sans titre)")[:200],
+                    "title": text[:200],
                     "url": "" if link_press else u,
                     "source": sender,
                     "date": date,
                     "press": link_press,
                     "via": sender,
+                    "newsletter": True,
                 })
             if not emitted:
                 # Aucune source externe exploitable : on pointe vers la newsletter
