@@ -130,6 +130,7 @@ def _launch(task_key: str) -> tuple[bool, str]:
     # On enchaîne la commande et l'écriture du code retour dans le MÊME process
     # détaché : le code retour permet d'afficher succès/échec ensuite.
     rc_file = STATE_DIR / f"admin_{task_key}.rc"
+    rc_file.unlink(missing_ok=True)  # repart de zéro pour éviter le faux-positif PID réutilisé
     quoted = " ".join(_shquote(a) for a in task["argv"])
     shell_cmd = f'{quoted}; echo $? > {_shquote(str(rc_file))}'
     with open(logf, "ab") as fh:
@@ -161,8 +162,10 @@ def _status_rows() -> str:
         info = state.get(key, {})
         status = info.get("status", "—")
         # Réconcilie l'état « running » avec la réalité du process.
-        if status == "running" and not _pid_alive(info.get("pid", -1)):
-            rc_file = STATE_DIR / f"admin_{key}.rc"
+        # On considère le process terminé si le PID est mort OU si le fichier .rc
+        # existe (signal fiable : évite le faux-positif quand le PID est réutilisé).
+        rc_file = STATE_DIR / f"admin_{key}.rc"
+        if status == "running" and (not _pid_alive(info.get("pid", -1)) or rc_file.exists()):
             try:
                 rc = rc_file.read_text().strip()
                 status = "succès" if rc == "0" else f"échec (code {rc})"
