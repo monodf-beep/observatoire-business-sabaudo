@@ -20,10 +20,11 @@ Description=Business Sabaudo — page admin (bouton newsletter)
 After=network.target
 
 [Service]
+# Chemins du VPS (projet déployé sous /root). Adapter si déployé ailleurs.
 Type=simple
-User=user
-WorkingDirectory=/home/user/observatoire-business-sabaudo
-ExecStart=/home/user/observatoire-business-sabaudo/.venv/bin/python scripts/admin_server.py
+User=root
+WorkingDirectory=/root/observatoire-business-sabaudo
+ExecStart=/root/observatoire-business-sabaudo/.venv/bin/python scripts/admin_server.py
 Restart=on-failure
 RestartSec=5
 
