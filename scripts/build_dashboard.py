@@ -155,9 +155,16 @@ def load_latest_week_items() -> tuple[str, dict]:
     from collections import defaultdict
     from urllib.parse import urlparse
 
-    from utils.sources import domain_of, is_press, load_press_domains
+    from utils.sources import (
+        domain_of,
+        is_offtopic,
+        is_press,
+        load_press_domains,
+        load_topic_filter,
+    )
 
     press = load_press_domains()
+    off_re, eco_re = load_topic_filter()
     weeks: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
     seen: set[str] = set()
     if not INPUT_DIR.exists():
@@ -221,8 +228,13 @@ def load_latest_week_items() -> tuple[str, dict]:
             # Presse = radar : on garde le sujet (voir si on est passé à côté) mais
             # on n'expose PAS le lien vers le journal. L'officiel reste cliquable.
             from_press = is_press(domain_of(rec), press)
+            title = rec.get("title", "(sans titre)")
+            # Élague le bruit du radar (sport, faits divers, météo…) : un titre de
+            # presse hors-sujet sans angle éco est ignoré. L'officiel passe toujours.
+            if from_press and is_offtopic(title, off_re, eco_re):
+                continue
             emitted.append({
-                "title": rec.get("title", "(sans titre)"),
+                "title": title,
                 "url": "" if from_press else rec.get("link", ""),
                 "source": rec.get("feed_title") or rec.get("from", "") or "",
                 "date": date,

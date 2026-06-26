@@ -1,0 +1,145 @@
+# Mots-clés HORS-SUJET pour le RADAR presse (FR + IT).
+#
+# Un sujet de PRESSE dont le titre contient l'un de ces mots est ÉCARTÉ de la
+# veille — SAUF s'il contient aussi un mot de config/economic_keywords.txt
+# (filet de sécurité : « les soldes en pleine canicule » reste, car « soldes »).
+#
+# Ne s'applique JAMAIS aux sources officielles ni aux newsletters (toujours gardées).
+# Comparaison : minuscules, sans accents, par mot entier. Un mot par ligne.
+
+# ---- Sport ----
+cyclisme
+ciclismo
+cycliste
+ciclista
+cyclo
+cyclosportive
+football
+calcio
+rugby
+natation
+nuoto
+trail
+ultra-trail
+marathon
+biathlon
+handball
+aviron
+gymnastique
+gymnastique
+basket
+pétanque
+tennis
+ski-alpinisme
+ski alpin
+skieur
+parapente
+parapentiste
+motogp
+ducati
+podium
+podio
+médaille
+medaglia
+championnat
+championnats
+champion
+campionato
+vainqueur
+peloton
+maillot
+tour de france
+tour de suisse
+giro
+coupe des alpes
+coupe du monde
+mercato
+transferts
+
+# ---- Faits divers / justice / accidents ----
+noyade
+noyé
+annega
+incidente
+mortel
+mortelle
+décédé
+décédée
+deceduto
+tué
+tuée
+ucciso
+omicidio
+incendie
+incendio
+arresta
+arrestation
+arrêté
+interpellé
+vol
+furto
+trafic
+traffico
+cocaïne
+cocaina
+drogue
+droga
+spaccia
+prison
+carcere
+condamné
+condannato
+condanna
+séquestré
+agression
+aggressione
+blessé
+blessés
+ferito
+feriti
+secours
+soccorso
+soccorrere
+sortie de route
+coulée de boue
+gambizzato
+truffa
+truffe
+escroquerie
+disparu
+disparue
+scomparso
+scomparsa
+pédophilie
+viol
+gendarme
+carabinieri
+sauvé
+salvato
+
+# ---- Météo / canicule (seul, sans angle éco) ----
+canicule
+météo
+meteo
+chaleur
+caldo
+sécheresse
+siccità
+temporali
+temporale
+grandine
+afa
+
+# ---- People / divertissement / nécrologie ----
+concert
+festival du film
+dj
+panthéon
+carnet de deuil
+nécrologie
+addio
+è morto
+è morta
+état civil
+adotta un amico
+giostra

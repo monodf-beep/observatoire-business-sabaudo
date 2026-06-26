@@ -65,6 +65,54 @@ def is_blocked_image(url: str, blocked: set[str]) -> bool:
     return any(host == b or host.endswith("." + b) for b in blocked)
 
 
+_OFFTOPIC_FILE = Path(__file__).resolve().parent.parent / "config" / "offtopic_keywords.txt"
+_ECONOMIC_FILE = Path(__file__).resolve().parent.parent / "config" / "economic_keywords.txt"
+
+
+def _load_keywords(path: Path) -> list[str]:
+    if not path.exists():
+        return []
+    out: list[str] = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if line and not line.startswith("#"):
+            out.append(_strip_accents(line).lower())
+    return out
+
+
+def _compile_keywords(words: list[str]):
+    """Compile une alternation \\b(mot1|mot2|…)\\b (accents déjà retirés)."""
+    if not words:
+        return None
+    # Tri par longueur décroissante pour que les expressions multi-mots priment.
+    parts = sorted((re.escape(w) for w in words), key=len, reverse=True)
+    return re.compile(r"\b(?:" + "|".join(parts) + r")\b")
+
+
+def load_topic_filter(
+    offtopic_path: Path | None = None, economic_path: Path | None = None
+) -> tuple[object, object]:
+    """Charge (regex hors-sujet, regex économique) pour filtrer le radar presse."""
+    off = _compile_keywords(_load_keywords(offtopic_path or _OFFTOPIC_FILE))
+    eco = _compile_keywords(_load_keywords(economic_path or _ECONOMIC_FILE))
+    return off, eco
+
+
+def is_offtopic(title: str, offtopic_re, economic_re) -> bool:
+    """Vrai si le titre de presse est HORS-SUJET : il matche un mot hors-sujet
+    ET ne contient aucun mot économique (filet de sécurité). Sert à élaguer le
+    bruit du radar (sport, faits divers, météo…) sans jeter les vraies brèves éco.
+    """
+    if offtopic_re is None or not title:
+        return False
+    norm = _strip_accents(title).lower()
+    if not offtopic_re.search(norm):
+        return False
+    if economic_re is not None and economic_re.search(norm):
+        return False  # angle économique détecté → on garde
+    return True
+
+
 _IMAGES_FILE = Path(__file__).resolve().parent.parent / "config" / "territory_images.txt"
 
 

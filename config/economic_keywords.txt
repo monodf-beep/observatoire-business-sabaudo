@@ -1,0 +1,164 @@
+# Mots-clés ÉCONOMIQUES (FR + IT) — filet de sécurité du filtre radar.
+#
+# Un sujet de presse qui matche un mot HORS-SUJET (offtopic_keywords.txt) est
+# malgré tout CONSERVÉ s'il contient l'un de ces mots : il a un angle économique.
+#
+# Comparaison : minuscules, sans accents, par mot entier. Un mot par ligne.
+
+# ---- Entreprise / activité ----
+entreprise
+entreprises
+impresa
+imprese
+société
+societa
+azienda
+aziende
+startup
+start-up
+pme
+pmi
+tpe
+usine
+stabilimento
+fabrique
+atelier
+artisan
+artisanat
+artigiano
+commerce
+commerçant
+commercio
+negozio
+magasin
+boutique
+soldes
+saldi
+vente
+ventes
+vendita
+prix
+prezzo
+pénurie
+penuria
+enseigne
+franchise
+chaîne
+groupe
+filiale
+
+# ---- Emploi ----
+emploi
+emplois
+lavoro
+posti di lavoro
+embauche
+recrute
+recrutement
+assume
+assunzioni
+licenciement
+plan social
+plan de sauvegarde
+délocalisation
+fermeture
+chômage
+salarié
+salariés
+dipendenti
+syndicat
+grève
+sciopero
+
+# ---- Finance / investissement ----
+investissement
+investissements
+investimento
+investimenti
+chiffre d'affaires
+fatturato
+croissance
+crescita
+bénéfice
+bénéfices
+fonds
+financement
+finanziamento
+subvention
+subventions
+contributo
+contributi
+levée de fonds
+capital
+banque
+banca
+bancaire
+crédit
+credito
+milliard
+milliards
+million
+millions
+milione
+milioni
+euros
+budget
+bilan
+bilancio
+
+# ---- Marché / secteurs ----
+économie
+économique
+economia
+economico
+marché
+mercato
+industrie
+industriel
+industria
+industriale
+commercial
+export
+exportation
+esportazioni
+import
+filière
+secteur
+settore
+immobilier
+immobiliare
+foncier
+loyer
+loyers
+tourisme
+turismo
+touristique
+hôtel
+hotel
+hôtellerie
+restaurant
+ristorante
+agriculture
+agricole
+agricoltura
+viticole
+foire
+salon
+salon professionnel
+fiera
+inauguration
+inaugura
+ouverture
+apertura
+relocalis
+implantation
+zone d'activité
+technopôle
+incubateur
+incubatore
+innovation
+innovazione
+numérique
+digitale
+ia
+intelligence artificielle
