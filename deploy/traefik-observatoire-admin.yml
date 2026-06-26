@@ -1,0 +1,31 @@
+# Route Traefik (provider FICHIER) pour exposer la page admin en HTTPS sous /admin.
+#
+# Déploiement sur le VPS :
+#   1. Copier ce fichier dans le dossier dynamique surveillé par Traefik :
+#        sudo cp deploy/traefik-observatoire-admin.yml /docker/traefik/dynamic/
+#      (Traefik le charge à chaud — providers.file.watch=true, pas de redémarrage.)
+#   2. Dans .env : ADMIN_BASE_PATH=/admin  + ADMIN_USER=…  + ADMIN_PASS=…
+#   3. Lancer/redémarrer le service admin :
+#        sudo systemctl restart observatoire-admin
+#   4. Ouvrir https://observatoire.culturasabauda.eu/admin (login = ADMIN_USER/PASS).
+#
+# Sécurité : l'authentification est gérée par l'app (HTTP Basic) ; Traefik fournit
+# le HTTPS. La page publique (le reste du host) continue d'être servie normalement
+# (ce routeur a une priorité plus haute UNIQUEMENT sur le préfixe /admin).
+
+http:
+  routers:
+    observatoire-admin:
+      rule: "Host(`observatoire.culturasabauda.eu`) && PathPrefix(`/admin`)"
+      entryPoints:
+        - websecure
+      service: observatoire-admin
+      priority: 100
+      tls:
+        certResolver: letsencrypt
+  services:
+    observatoire-admin:
+      loadBalancer:
+        servers:
+          # Traefik tourne en network_mode host → joint l'app sur la loopback.
+          - url: "http://127.0.0.1:8099"

@@ -39,13 +39,17 @@ log = get_logger("admin_server")
 STATE_DIR = ROOT / "logs"
 STATE_FILE = STATE_DIR / "admin_runs.json"
 PY = os.getenv("ADMIN_PYTHON") or sys.executable
+# Préfixe d'URL quand la page est servie derrière un proxy sous un sous-chemin
+# (ex. ADMIN_BASE_PATH=/admin → page sur https://…/admin). Vide = racine.
+BASE = os.getenv("ADMIN_BASE_PATH", "").rstrip("/")
 
 # Tâches déclenchables — commandes FIGÉES (aucune interpolation d'entrée).
 TASKS = {
     "newsletter": {
         "label": "Générer la newsletter (brouillon Brevo)",
-        "argv": [PY, "scripts/synthesize.py", "--upload", "--brevo"],
-        "note": "Consomme du crédit API. Crée un brouillon Brevo — aucun envoi automatique.",
+        "argv": [PY, "scripts/synthesize.py", "--upload", "--brevo", "--force"],
+        "note": "Force la création d'un brouillon Brevo (même semaine creuse). "
+                "Consomme du crédit API — aucun envoi automatique.",
     },
     "veille": {
         "label": "Rafraîchir la page « toute la veille »",
@@ -223,7 +227,7 @@ def _buttons() -> str:
     return html
 
 
-@app.route("/")
+@app.route(BASE + "/")
 @require_auth
 def home():
     flash = request.args.get("msg", "")
@@ -233,7 +237,7 @@ def home():
     return PAGE.format(flash=flash_html, buttons=_buttons(), rows=_status_rows())
 
 
-@app.route("/run/<task_key>", methods=["POST"])
+@app.route(BASE + "/run/<task_key>", methods=["POST"])
 @require_auth
 def run(task_key: str):
     if task_key not in TASKS:
@@ -242,7 +246,7 @@ def run(task_key: str):
     return redirect(url_for("home", msg=message))
 
 
-@app.route("/healthz")
+@app.route(BASE + "/healthz")
 def healthz():
     return "ok", 200
 
