@@ -38,9 +38,11 @@ def _publish_sftp(host, port, user, password, target_dir, local_path) -> bool:
     except ImportError:
         log.warning("paramiko absent — SFTP impossible (pip install paramiko).")
         return False
+    import socket
     transport = None
     try:
-        transport = paramiko.Transport((host, port or 22))
+        sock = socket.create_connection((host, port or 22), timeout=30)
+        transport = paramiko.Transport(sock)
         transport.connect(username=user, password=password)
         sftp = paramiko.SFTPClient.from_transport(transport)
         # Crée l'arborescence cible si besoin (chemin absolu), puis dépose index.html.
