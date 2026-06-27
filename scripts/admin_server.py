@@ -172,6 +172,8 @@ _ADMIN_CSS = (
     ".sec{font-size:11px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:#3f5f96;margin-bottom:14px}"
     ".flash{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:13px 16px;"
     "margin-bottom:18px;font-size:14px;font-weight:600}"
+    ".alert{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;border-radius:10px;padding:14px 16px;"
+    "margin-bottom:18px;font-size:14px;font-weight:700}"
     ".flow{overflow-x:auto;white-space:nowrap;padding:4px 0 8px;margin:0 -4px}"
     ".node{display:inline-block;vertical-align:middle;width:114px;text-align:center;background:#fff;"
     "border:1px solid #e9edf3;border-radius:14px;padding:13px 8px;box-shadow:0 2px 10px rgba(20,32,44,.07)}"
@@ -312,10 +314,10 @@ _ARCHI_STEPS = [
     ("3", "Scraping HTML", "Quotidien 8h15", "—", "Sites sans flux RSS"),
     ("4", "Tri IA", "Quotidien 8h30", "Haiku 4.5", "Garde/jette + réécrit les titres (caché)"),
     ("5", "Page veille", "Mar/Jeu/Sam 9h", "—", "Publie la page publique"),
-    ("6", "Newsletter", "Vendredi 15h", "Opus + Sonnet + Haiku", "Rédige, photos, Brevo, Drive"),
+    ("6", "Newsletter", "Vendredi 15h", "Sonnet + Haiku", "Rédige, photos, Brevo, Drive"),
 ]
 _ARCHI_LLM = [
-    ("Rédaction (une, brèves)", "claude-opus-4-8", "1×/sem."),
+    ("Rédaction (une, brèves)", "claude-sonnet-4-6", "1×/sem."),
     ("Tri pertinence + titres", "claude-haiku-4-5", "~400/sem. · caché"),
     ("Lien officiel + photo", "claude-sonnet-4-6", "par brève"),
     ("Validation photo (vision)", "claude-haiku-4-5", "par photo · caché"),
@@ -452,6 +454,31 @@ def _append_source(item: dict) -> None:
         fh.write(line)
 
 
+def _api_costs_html() -> str:
+    from utils import usage
+
+    s = usage.summarize()
+    cw = s["current_week"]
+    week = s["weeks"].get(cw, {"cost": 0.0, "calls": 0, "in": 0, "out": 0, "by_model": {}})
+    total = s["total"]
+    rows = ""
+    for model, m in sorted(week["by_model"].items(), key=lambda kv: -kv[1]["cost"]):
+        toks = f'{m["in"] + m["out"]:,}'.replace(",", " ")
+        rows += (f'<tr><td><code>{model}</code></td><td>{m["calls"]}</td>'
+                 f'<td>{toks}</td><td style="font-weight:700;">${m["cost"]:.2f}</td></tr>')
+    if not rows:
+        rows = '<tr><td colspan="4" style="color:#9aa3af;">Aucun appel enregistré cette semaine.</td></tr>'
+    return (
+        '<div class="sec">Coûts API (estimés)</div>'
+        f'<div style="font-size:14px;color:#374151;margin-bottom:12px;">Cette semaine ({cw}) : '
+        f'<b style="color:#2f4a78;font-size:16px;">${week["cost"]:.2f}</b> · {week["calls"]} appels'
+        f' &nbsp;·&nbsp; Total cumulé : <b>${total["cost"]:.2f}</b></div>'
+        f'<table class="t"><tr><th>Modèle</th><th>Appels</th><th>Tokens</th><th>Coût</th></tr>{rows}</table>'
+        '<div class="dlbl" style="display:block;margin-top:10px;">Estimation USD d\'après les tarifs de '
+        '<code>utils/usage.py</code>. Indicatif — la facture réelle est sur console.anthropic.com.</div>'
+    )
+
+
 def _suggestions_html() -> str:
     pending = [it for it in _load_suggestions() if it.get("status") == "pending"]
     head = '<div class="sec">Sources proposées</div>'
@@ -497,8 +524,9 @@ PAGE = """<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
 <body><div class="wrap">
   <div class="eyebrow">Espace privé</div>
   <div class="h1">Business Sabaudo<b>.</b> Admin</div>
-  {flash}
+  {alert}{flash}
   <div class="card">{pipeline}</div>
+  <div class="card">{costs}</div>
   <div class="card">{archi}</div>
   <div class="card">{buttons}</div>
   <div class="card">{suggest}</div>
@@ -532,14 +560,21 @@ def _buttons() -> str:
 def home():
     flash = request.args.get("msg", "")
     flash_html = f'<div class="flash">{_escape(flash)}</div>' if flash else ""
+    from utils import usage
+    alert = usage.get_alert()
+    alert_html = (
+        f'<div class="alert">⚠ Crédit API : un problème a été détecté lors d\'un appel '
+        f'({_escape(alert.get("message", ""))[:140]}). Vérifie/recharge sur '
+        f'console.anthropic.com.</div>' if alert else "")
     # _status_rows() réconcilie l'état des tâches terminées (running → succès/échec).
     # On l'évalue EN PREMIER pour que le pipeline et les boutons lisent un état à jour
     # (sinon : « en cours » dans le pipeline alors que le tableau affiche « succès »).
     rows = _status_rows()
     pipeline = _pipeline_html()
     buttons = _buttons()
-    return PAGE.format(css=_ADMIN_CSS, flash=flash_html, pipeline=pipeline,
-                       archi=_archi_html(), buttons=buttons, suggest=_suggestions_html(), rows=rows)
+    return PAGE.format(css=_ADMIN_CSS, alert=alert_html, flash=flash_html, pipeline=pipeline,
+                       costs=_api_costs_html(), archi=_archi_html(), buttons=buttons,
+                       suggest=_suggestions_html(), rows=rows)
 
 
 @app.route(BASE + "/run/<task_key>", methods=["POST"])

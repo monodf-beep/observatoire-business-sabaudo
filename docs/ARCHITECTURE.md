@@ -48,7 +48,7 @@ Nice/Alpes-Maritimes, périmètre transfrontalier Alcotra). Deux produits :
 | 3 | `scripts/html_scrape.py` | Scrape les sites sans RSS (`config/sources_a_scraper.txt`, type `html`) : titre + lien + image | — | Quotidien 8h15 |
 | 4 | `scripts/triage.py` | **Juge** chaque sujet (pertinence économique pour le périmètre) et **réécrit un titre propre**. Mise en cache (`logs/triage_cache.json`) : chaque item jugé une seule fois | **Haiku 4.5** | Quotidien 8h30 |
 | 5 | `scripts/build_dashboard.py` | Génère la **page publique** : board par territoire (newsletter > officiel > radar replié), encart « Synthèse de la semaine » | — (relit le cache de tri) | Mar/Jeu/Sam 9h |
-| 6 | `scripts/synthesize.py` | Génère la **newsletter** : rédaction, photos, brouillon Brevo, archive Drive, puis rebâtit la page veille | Opus + Sonnet + Haiku vision | **Vendredi 15h** |
+| 6 | `scripts/synthesize.py` | Génère la **newsletter** : rédaction, photos, brouillon Brevo, archive Drive, puis rebâtit la page veille | Sonnet + Haiku vision | **Vendredi 15h** |
 
 ---
 
@@ -56,7 +56,7 @@ Nice/Alpes-Maritimes, périmètre transfrontalier Alcotra). Deux produits :
 
 | Rôle | Modèle | Fréquence | Pourquoi |
 |------|--------|-----------|----------|
-| **Rédaction éditoriale** (une, brèves, ton B2B) | **claude-opus-4-8** | 1 appel / semaine | Le plus capable — cœur qualitatif |
+| **Rédaction éditoriale** (une, brèves, ton B2B) | **claude-sonnet-4-6** | 1 appel / semaine | Bon rapport qualité/coût (≈5× moins cher qu'Opus) |
 | **Tri pertinence + nettoyage des titres** | **claude-haiku-4-5** | ~400 sujets / sem., **caché** | Volume élevé, tâche simple → le moins cher |
 | **Recherche lien officiel + og:image** | **claude-sonnet-4-6** | par brève radar (opt. `OFFICIAL_LINK_SEARCH`) | Recherche web fiable |
 | **Validation des photos** (vision) | **claude-haiku-4-5** | par photo candidate, **caché** | Jugement visuel binaire |

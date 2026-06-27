@@ -150,6 +150,8 @@ def web_search_urls(query: str, model: str, api_key: str | None = None,
         log.warning("Recherche web (illustration) impossible : %s", exc)
         return []
 
+    from utils import usage
+    usage.record_message(model, message, label="recherche web (photo)")
     urls, seen = [], set()
     for block in (message.content or []):
         if getattr(block, "type", "") != "web_search_tool_result":
@@ -196,9 +198,13 @@ def find_article_url(actor: str, title: str, summary: str, domain: str,
             messages=[{"role": "user", "content": prompt}],
         )
     except Exception as exc:  # réseau, SDK trop ancien, quota… → on n'attache rien
+        from utils import usage
+        usage.note_api_error(exc)
         log.warning("Recherche lien officiel (%s) impossible : %s", domain, exc)
         return ""
 
+    from utils import usage
+    usage.record_message(model, message, label="lien officiel")
     blocks = message.content or []
     text = _text_of(blocks)
     if "AUCUN" in text.upper() and "http" not in text.lower():
@@ -291,9 +297,13 @@ def find_actor_official_url(actor: str, title: str, summary: str, press: set[str
             messages=[{"role": "user", "content": prompt}],
         )
     except Exception as exc:
+        from utils import usage
+        usage.note_api_error(exc)
         log.warning("Recherche site officiel (%s) impossible : %s", actor, exc)
         return ""
 
+    from utils import usage
+    usage.record_message(model, message, label="site officiel")
     blocks = message.content or []
     text = _text_of(blocks)
     if "AUCUN" in text.upper() and "http" not in text.lower():

@@ -142,9 +142,14 @@ def judge_image(image_url: str, title: str, *, model: str | None = None, log=Non
                     "(pas un logo, pas un pictogramme, pas un hors-sujet manifeste) ? Réponds OUI ou NON.")},
             ]}],
         )
+        from utils import usage
+        usage.record_message(model or os.getenv("IMAGE_JUDGE_MODEL", _DEFAULT_JUDGE_MODEL),
+                             msg, label="vision")
         text = "".join(getattr(b, "text", "") for b in msg.content).strip().lower()
         verdict = text.startswith("oui") or text.startswith("yes")
     except Exception as exc:
+        from utils import usage
+        usage.note_api_error(exc)
         if log:
             log.info("Juge vision indisponible : %s", exc)
         verdict = True  # erreur transitoire → on ne perd pas la photo

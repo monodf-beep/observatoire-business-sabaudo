@@ -103,6 +103,8 @@ def _call(units: list[dict], model: str, api_key: str) -> dict:
         model=model, max_tokens=4096, system=_SYSTEM,
         messages=[{"role": "user", "content": prompt}],
     )
+    from utils import usage
+    usage.record_message(model, msg, label="tri")
     text = "".join(getattr(b, "text", "") for b in msg.content)
     arr = _parse_json_array(text)
     out: dict = {}
@@ -148,6 +150,8 @@ def triage(units: list[dict], *, model: str | None = None, log=None) -> dict:
         try:
             verdicts = _call(batch, model, api_key)
         except Exception as exc:  # le tri ne doit jamais casser la collecte
+            from utils import usage
+            usage.note_api_error(exc)
             if log:
                 log.warning("Tri LLM (lot %d) échoué : %s", start // BATCH, exc)
             verdicts = {}

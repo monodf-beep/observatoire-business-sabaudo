@@ -30,8 +30,9 @@ from utils.logger import get_logger  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 INPUT_DIR = ROOT / "01_Veille_brute"
 OUTPUT_DIR = ROOT / "02_Veille_traitee" / "Syntheses_hebdomadaires"
-# Synthèse éditoriale (1 appel/sem, qualité critique) → modèle le plus capable.
-DEFAULT_MODEL = "claude-opus-4-8"
+# Synthèse éditoriale (1 appel/sem). Sonnet 4.6 : bon rapport qualité/coût (≈5× moins
+# cher qu'Opus). Surcharge possible via ANTHROPIC_MODEL=claude-opus-4-8 si besoin.
+DEFAULT_MODEL = "claude-sonnet-4-6"
 # Recherche de liens officiels : Sonnet (plus tenace pour débusquer la source
 # officielle / l'autorité compétente — ministère, registre — que Haiku ratait).
 DEFAULT_SEARCH_MODEL = "claude-sonnet-4-6"
@@ -618,15 +619,21 @@ def call_anthropic(prompt: str, model: str) -> str | None:
             messages=[{"role": "user", "content": prompt}],
         )
     except anthropic.APIStatusError as exc:
+        from utils import usage
+        usage.note_api_error(exc)
         log.error("Erreur API Anthropic (%s) : %s", exc.status_code, exc)
         return None
     except anthropic.APIConnectionError as exc:
         log.error("Connexion à l'API Anthropic impossible : %s", exc)
         return None
     except Exception as exc:  # pragma: no cover
+        from utils import usage
+        usage.note_api_error(exc)
         log.error("Échec de l'appel Anthropic : %s", exc)
         return None
 
+    from utils import usage
+    usage.record_message(model, message, label="rédaction")
     return "".join(block.text for block in message.content if getattr(block, "type", "") == "text")
 
 
