@@ -252,21 +252,10 @@ def load_latest_week_items() -> tuple[str, dict]:
                     "via": sender,
                     "newsletter": True,
                 })
-            if not emitted and not broad_src:
-                # Aucune source exploitable : une SEULE entrée vers la newsletter entière
-                # (version web), pour que le clic mène quelque part — sauf si l'objet
-                # lui-même est hors-sujet. (Pas de repli pour les sources larges :
-                # une newsletter pan-européenne sans sujet local ne doit rien laisser.)
-                if not is_offtopic(subject, off_re, eco_re):
-                    emitted.append({
-                        "title": subject or "(newsletter)",
-                        "url": (rec.get("web_version") or "").strip(),
-                        "source": sender,
-                        "date": date,
-                        "press": False,
-                        "via": sender,
-                        "newsletter": True,
-                    })
+            # Pas de repli sur l'OBJET de l'email : « 🚨 Les actus à ne pas manquer »
+            # n'apporte rien. Si on n'a pas su extraire d'article (titres en images,
+            # structure illisible), la newsletter ne contribue rien à la liste — elle
+            # reste tout de même marquée « reçue » dans le tableau des abonnements.
         else:
             # Presse = radar : on garde le sujet (voir si on est passé à côté) mais
             # on n'expose PAS le lien vers le journal. L'officiel reste cliquable.

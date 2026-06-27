@@ -474,13 +474,60 @@ def _looks_title(text: str) -> bool:
     return len(t) >= 20 and len(t.split()) >= 4 and not _is_generic_anchor(t)
 
 
-def extract_articles(payload: dict, *, resolve: bool = True, cap: int = 12) -> list[dict]:
+# Boutons d'article (« lire/découvrir ») : à APPARIER au titre qui les précède.
+_BUTTON_CTA = {
+    "plus d'infos", "plus d infos", "plus d'info", "decouvrir", "leggi", "leggi tutto",
+    "scopri", "scopri di piu", "en savoir plus", "lire la suite", "read more",
+    "per saperne di piu", "continua", "continua a leggere", "vedi", "vedi di piu",
+    "approfondisci", "details", "detail", "voir", "voir plus", "clicca", "clicca qui",
+    "vai", "vai al sito", "je participe", "je m'inscris",
+}
+# Extensions d'URL qui ne sont PAS des articles (images, documents).
+_BAD_URL_EXT = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".pdf", ".zip",
+                ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".mp4", ".mov")
+
+
+def _non_article_url(url: str) -> bool:
+    """Vrai si l'URL pointe une image / un document / une page d'accueil (pas un article)."""
+    path = (urlparse(url).path or "").lower()
+    return path in ("", "/") or path.endswith(_BAD_URL_EXT)
+
+
+def _is_button_cta(text: str) -> bool:
+    """Vrai si le texte est un BOUTON d'article (« >> Je découvre », « Plus d'infos »,
+    « Leggi »…) ou un lien vide (carte-image) → on l'apparie au titre précédent."""
+    t = _strip_accents_lower(text).lstrip(">•·|→#- ").strip()
+    if t == "":
+        return True
+    if t.startswith("je "):          # « je decouvre / participe / m'informe… »
+        return True
+    return t in _BUTTON_CTA or _is_generic_anchor(t)
+
+
+# Formules de « masthead » (en-tête d'email) à NE PAS prendre pour des titres d'article.
+_MASTHEAD = (
+    "a ne pas manquer", "newsletter", "lettre d'information", "lettre d information",
+    "le news piu", "news della settimana", "edito", "actus de la semaine",
+    "actualites de la semaine", "la lettre", "infos de la semaine",
+)
+
+
+def _is_masthead(text: str, subj_norm: str) -> bool:
+    """Vrai si le texte est l'objet de l'email ou une formule d'en-tête (pas un article)."""
+    tn = _strip_accents_lower(text)
+    if subj_norm and (tn == subj_norm or tn in subj_norm or subj_norm in tn):
+        return True
+    return any(m in tn for m in _MASTHEAD)
+
+
+def extract_articles(payload: dict, *, subject: str = "", resolve: bool = True,
+                     cap: int = 12) -> list[dict]:
     """ARTICLES d'une newsletter : chaque lien de contenu apparié à SON titre.
 
     Le titre est le texte du lien s'il est explicite ; sinon (bouton « Je découvre »,
-    « Plus d'infos »…) c'est le TITRE/heading qui précède le lien dans le corps. C'est
-    ce qui permet d'extraire les vrais sujets des newsletters type CCI, et pas juste
-    l'objet de l'email. Résout les traceurs ESP, déduplique par URL et par titre.
+    « Plus d'infos »…) c'est le TITRE/heading qui précède le lien dans le corps. On
+    EXCLUT l'objet de l'email et les formules de masthead (« 🚨 Les actus à ne pas
+    manquer ») des candidats-titres. Résout les traceurs ESP, déduplique URL + titre.
     """
     from utils.sources import is_newsletter_junk
 
@@ -490,6 +537,7 @@ def extract_articles(payload: dict, *, resolve: bool = True, cap: int = 12) -> l
     except Exception:
         return []
 
+    subj_norm = _strip_accents_lower(subject)
     out: list[dict] = []
     seen_u: set[str] = set()
     seen_t: set[str] = set()
@@ -499,7 +547,7 @@ def extract_articles(payload: dict, *, resolve: bool = True, cap: int = 12) -> l
     for ev in doc.events:
         if ev[0] in ("htext", "text"):
             t = clean_text(ev[1]).strip()
-            if t and _looks_title(t) and not is_newsletter_junk(t):
+            if t and _looks_title(t) and not is_newsletter_junk(t) and not _is_masthead(t, subj_norm):
                 if ev[0] == "htext":
                     last_head = t[:180]
                 else:
@@ -508,20 +556,24 @@ def extract_articles(payload: dict, *, resolve: bool = True, cap: int = 12) -> l
         href, atext = ev[1], clean_text(ev[2]).strip()
         if not href.lower().startswith("http") or _WEB_VERSION_RE.search(atext):
             continue
-        # Titre : ancre si exploitable, sinon le HEADING précédent, sinon le paragraphe.
-        if atext and not is_newsletter_junk(atext) and (len(atext.split()) >= 4 or len(atext) >= 22):
-            title = atext
-        elif last_head:
-            title = last_head
-        elif last_para:
-            title = last_para
-        else:
+        # Lien utilitaire (réseau social, désabo…) ou URL non-article (image, accueil) :
+        # on SAUTE sans toucher au titre courant — sinon il « volerait » le titre du
+        # vrai bouton d'article qui suit (bug CCI : « Téléchargez les images » au milieu).
+        low = href.lower()
+        if any(s in low for s in _LINK_SKIP) or _non_article_url(href):
             continue
+        # Titre de l'article :
+        if atext and not is_newsletter_junk(atext) and (len(atext.split()) >= 4 or len(atext) >= 22):
+            title = atext                       # titre explicite dans le texte du lien
+        elif _is_button_cta(atext):
+            # bouton « Je découvre » / carte-image → titre = heading/paragraphe précédent
+            title = last_head or last_para
+            if not title:
+                continue
+        else:
+            continue                            # autre déchet (Facebook, www…) → titre préservé
         # Déballage du traceur ESP (réutilise la logique de extract_links).
         final = href
-        low = href.lower()
-        if any(s in low for s in _LINK_SKIP):
-            continue
         host = urlparse(href).netloc.lower().removeprefix("www.")
         if _esp_host(host):
             if not resolve or budget <= 0:
@@ -531,7 +583,7 @@ def extract_articles(payload: dict, *, resolve: bool = True, cap: int = 12) -> l
             if not real:
                 continue
             final = real
-            if _esp_host(urlparse(final).netloc.lower().removeprefix("www.")):
+            if _esp_host(urlparse(final).netloc.lower().removeprefix("www.")) or _non_article_url(final):
                 continue
         nu = final.lower().split("#")[0].rstrip("/")
         nt = title.lower()
@@ -579,7 +631,7 @@ def parse_message(msg: dict) -> dict:
         "title": subject,
         "body": extract_body(payload),
         "image": extract_image(payload),
-        "articles": extract_articles(payload),
+        "articles": extract_articles(payload, subject=subject),
         "links": extract_links(payload),
         "web_version": extract_web_version(payload),
         "collected_at": datetime.now(timezone.utc).isoformat(),

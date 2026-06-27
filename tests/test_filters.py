@@ -135,6 +135,23 @@ def test_extract_articles():
     check("article: Facebook exclu", any("Facebook" in t for t in titles), False)
     check("article: 'Voir en ligne' exclu", any("Voir en ligne" in t for t in titles), False)
 
+    # Cas CCI : masthead exclu + lien utilitaire qui ne vole pas le titre du bouton.
+    html2 = (
+        "<html><body>"
+        "<h1>🚨 Les actus à ne pas manquer !</h1>"
+        "<span style='font-size:18px'>La facturation électronique obligatoire dès septembre 2026</span>"
+        "<a href='https://cdn.cci.fr/photo.jpg'>Téléchargez les images</a>"
+        "<a href='https://www.savoie.cci.fr/facture-2026'>&gt;&gt; Je découvre</a>"
+        "</body></html>"
+    )
+    p2 = {"mimeType": "text/html",
+          "body": {"data": base64.urlsafe_b64encode(html2.encode()).decode()}}
+    t2 = [a["text"] for a in extract_articles(p2, subject="🚨 Les actus à ne pas manquer !", resolve=False)]
+    check("article: masthead exclu",
+          "La facturation électronique obligatoire dès septembre 2026" in t2, True)
+    check("article: objet d'email jamais pris pour un titre",
+          any("ne pas manquer" in t for t in t2), False)
+
 
 def test_no_emdash():
     from scripts.synthesize import _no_emdash
