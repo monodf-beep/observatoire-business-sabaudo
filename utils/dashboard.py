@@ -221,6 +221,70 @@ def _newsletters_table(newsletters: list) -> str:
     )
 
 
+# Feuille de style de la page « toute la veille » (page web autonome → on peut
+# utiliser un <style> + media queries, contrairement à l'email). Couleurs en dur
+# (mêmes que la charte) pour éviter le doublage d'accolades en f-string.
+_VEILLE_CSS = (
+    "*{box-sizing:border-box}"
+    "body{margin:0;background:#eef1f5;color:#16202c;"
+    "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}"
+    ".wrap{max-width:1180px;margin:0 auto;padding:32px 18px 60px}"
+    ".eyebrow{font-size:11px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:#df664f}"
+    ".brand{font-size:32px;font-weight:800;color:#3f5f96;line-height:1.05;margin:6px 0 2px}"
+    ".brand span{color:#df664f}"
+    ".sub{font-size:13px;color:#6b7280}"
+    "h1{font-size:19px;font-weight:800;margin:22px 0 4px}"
+    ".intro{font-size:13px;color:#6b7280;margin-bottom:6px}"
+    ".filters{margin:10px 0 14px}"
+    ".fbtn{font-size:13px;font-weight:700;cursor:pointer;border:1px solid #e5e7eb;border-radius:20px;"
+    "padding:6px 13px;margin:0 7px 7px 0;background:#fff;color:#16202c}"
+    ".fbtn.on{background:#16202c;color:#fff}"
+    ".fbtn .c{opacity:.6;font-weight:600;margin-left:2px}"
+    ".nav{position:sticky;top:0;z-index:20;background:#eef1f5;padding:10px 0 4px;margin:0 0 16px;"
+    "border-bottom:1px solid #e5e7eb}"
+    ".pill{display:inline-block;text-decoration:none;font-size:13px;font-weight:700;color:#16202c;"
+    "background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:6px 13px;margin:0 7px 7px 0;white-space:nowrap}"
+    ".pill .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}"
+    ".pill .c{color:#6b7280;font-weight:600}"
+    ".board{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;align-items:start}"
+    ".col{background:#fff;border:1px solid #e5e7eb;border-top:3px solid #64748b;border-radius:12px;"
+    "padding:12px 16px 14px;scroll-margin-top:64px}"
+    ".col h2{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;"
+    "padding-left:9px;border-left:4px solid #64748b}"
+    ".col h2 .c{color:#6b7280;font-weight:600;margin-left:6px}"
+    ".items{margin:0;padding:0;list-style:none}"
+    ".item{padding:9px 0;border-bottom:1px solid #f0f2f5}"
+    ".item:last-child{border-bottom:0}"
+    ".item .t{font-size:14px;font-weight:600;line-height:1.35}"
+    ".item .t a{color:#16202c;text-decoration:none;border-bottom:1px solid #df664f}"
+    ".item .t span{color:#16202c}"
+    ".item .m{font-size:12px;color:#6b7280;margin-top:3px}"
+    ".empty{font-size:13px;color:#9aa3af;padding:6px 0 2px}"
+    ".badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;"
+    "border-radius:4px;padding:1px 6px;margin-right:7px}"
+    ".bn{color:#3f5f96;background:#eef2fb;border:1px solid #c7d5ef}"
+    ".br{color:#6b7280;background:#eef1f5;border:1px solid #e5e7eb}"
+    "details.radar{margin-top:10px;border-top:1px dashed #e5e7eb;padding-top:4px}"
+    "details.radar>summary{cursor:pointer;font-size:12px;font-weight:700;color:#6b7280;list-style:none;padding:6px 0}"
+    "details.radar>summary::-webkit-details-marker{display:none}"
+    "details.radar>summary .c{background:#eef1f5;border-radius:10px;padding:0 7px;margin-left:4px}"
+    ".foot{border-top:1px solid #e5e7eb;padding-top:18px;margin-top:24px;font-size:12px;color:#6b7280}"
+    ".foot a{color:#df664f}"
+    "@media(max-width:640px){.board{grid-template-columns:1fr}.wrap{padding:24px 14px 50px}}"
+)
+
+_VEILLE_JS = (
+    "<script>function vfilter(b){var f=b.getAttribute('data-f');"
+    "document.querySelectorAll('.fbtn').forEach(function(x){x.className='fbtn'+(x===b?' on':'');});"
+    "document.querySelectorAll('.item').forEach(function(li){"
+    "var t=li.getAttribute('data-tier');var ok=(f==='all')||(t===f);li.style.display=ok?'':'none';});"
+    "document.querySelectorAll('details.radar').forEach(function(d){d.open=(f==='radar');});"
+    "document.querySelectorAll('.col').forEach(function(c){var vis=false;"
+    "c.querySelectorAll('.item').forEach(function(li){if(li.style.display!=='none')vis=true;});"
+    "c.style.display=vis?'':'none';});}</script>"
+)
+
+
 def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str = "",
                        newsletters: list | None = None) -> str:
     """Page LECTEUR « toute la veille de la semaine » : la liste COMPLÈTE des sujets
@@ -232,118 +296,102 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
     ordered = [t for t in _TERR_ORDER if by_territory.get(t)]
     ordered += [t for t in by_territory if t not in _TERR_ORDER and by_territory.get(t)]
 
-    # Barre de navigation collante : une pastille par territoire (ancre + compteur).
+    def _tier(it: dict) -> str:
+        """Priorité d'affichage : newsletter > officiel (RSS) > radar (presse)."""
+        if it.get("press"):
+            return "radar"
+        if it.get("newsletter"):
+            return "news"
+        return "officiel"
+
+    def _by_date(seq: list) -> list:
+        """Plus récent en haut (date ISO AAAA-MM-JJ triée à l'envers)."""
+        return sorted(seq, key=lambda it: (it.get("date") or ""), reverse=True)
+
+    def _li(it: dict, tier: str) -> str:
+        title = escape(it.get("title", "(sans titre)"))
+        url = (it.get("url") or "").strip()
+        t_html = (f'<a href="{escape(url)}" target="_blank" rel="noopener">{title}</a>'
+                  if url else f"<span>{title}</span>")
+        badge = {"news": '<span class="badge bn">Newsletter</span>',
+                 "radar": '<span class="badge br">Radar</span>'}.get(tier, "")
+        meta = " · ".join(x for x in [escape(it.get("source", "")), it.get("date", "")] if x)
+        return (
+            f'<li class="item" data-tier="{tier}">'
+            f'<div class="t">{t_html}</div>'
+            + (f'<div class="m">{badge}{meta}</div>' if (meta or badge) else "")
+            + "</li>"
+        )
+
+    # Compteurs par tier (pour les boutons de filtre).
+    n_news = sum(1 for v in by_territory.values() for it in v if _tier(it) == "news")
+    n_off = sum(1 for v in by_territory.values() for it in v if _tier(it) == "officiel")
+    n_radar = sum(1 for v in by_territory.values() for it in v if _tier(it) == "radar")
+
+    # Navigation collante (utile surtout en 1 colonne / mobile).
     nav_pills = ""
     for terr in ordered:
         color, label = _terr_color(terr), _terr_label(terr)
         nav_pills += (
-            f'<a href="#t-{escape(terr)}" style="display:inline-block;text-decoration:none;'
-            f'font-size:13px;font-weight:700;color:{INK};background:{CARD};border:1px solid {BORDER};'
-            f'border-radius:20px;padding:6px 13px;margin:0 7px 7px 0;white-space:nowrap;">'
-            f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;'
-            f'background:{color};margin-right:7px;vertical-align:middle;"></span>{escape(label)}'
-            f'<span style="color:{MUTED};font-weight:600;">&nbsp;{len(by_territory[terr])}</span></a>'
+            f'<a class="pill" href="#t-{escape(terr)}">'
+            f'<span class="dot" style="background:{color};"></span>{escape(label)}'
+            f'<span class="c">&nbsp;{len(by_territory[terr])}</span></a>'
         )
-    nav = (
-        f'<div style="position:sticky;top:0;z-index:20;background:{BG};'
-        f'padding:12px 0 5px;margin:0 0 18px;border-bottom:1px solid {BORDER};">{nav_pills}</div>'
-    )
+    nav = f'<div class="nav">{nav_pills}</div>'
 
-    # Filtre : Tout / Officiel / Newsletters / Radar presse (toggle JS navigateur).
-    n_off = sum(1 for items in by_territory.values() for it in items if not it.get("press"))
-    n_radar = total - n_off
-    n_news = sum(1 for items in by_territory.values() for it in items if it.get("newsletter"))
+    # Filtres.
     fbtns = ""
     for key, lbl, n in [("all", "Tout", total), ("officiel", "Sources officielles", n_off),
                         ("news", "Newsletters", n_news), ("radar", "Radar presse", n_radar)]:
-        on = key == "all"
-        fbtns += (
-            f'<button type="button" data-f="{key}" onclick="vfilter(this)" '
-            f'style="font-size:13px;font-weight:700;cursor:pointer;border:1px solid {BORDER};'
-            f'border-radius:20px;padding:6px 13px;margin:0 7px 7px 0;'
-            f'background:{INK if on else CARD};color:{"#fff" if on else INK};">'
-            f'{escape(lbl)} <span style="opacity:.6;font-weight:600;">{n}</span></button>'
-        )
-    filterbar = f'<div style="margin:4px 0 14px;">{fbtns}</div>'
-    filterjs = (
-        "<script>function vfilter(b){var f=b.getAttribute('data-f');"
-        "document.querySelectorAll('[data-f]').forEach(function(x){var on=x===b;"
-        f"x.style.background=on?'{INK}':'{CARD}';x.style.color=on?'#fff':'{INK}';}});"
-        "document.querySelectorAll('li[data-type]').forEach(function(li){"
-        "var ok=(f==='all')||(f==='news'?li.getAttribute('data-news')==='1'"
-        ":li.getAttribute('data-type')===f);li.style.display=ok?'':'none';});"
-        "document.querySelectorAll('section[data-veille]').forEach(function(s){var vis=false;"
-        "s.querySelectorAll('li[data-type]').forEach(function(li){"
-        "if(li.style.display!=='none')vis=true;});s.style.display=vis?'':'none';});}</script>"
-    )
+        fbtns += (f'<button type="button" class="fbtn{" on" if key == "all" else ""}" '
+                  f'data-f="{key}" onclick="vfilter(this)">{escape(lbl)} '
+                  f'<span class="c">{n}</span></button>')
+    filterbar = f'<div class="filters">{fbtns}</div>'
 
-    sections = ""
+    # Colonnes (board) : une carte par territoire, tiers ordonnés, radar en accordéon.
+    cols = ""
     for terr in ordered:
         items = by_territory[terr]
         color, label = _terr_color(terr), _terr_label(terr)
-        rows = ""
-        for it in items:
-            title = escape(it.get("title", "(sans titre)"))
-            url = (it.get("url") or "").strip()
-            is_press_item = bool(it.get("press"))
-            if url:
-                title_html = (f'<a href="{escape(url)}" target="_blank" rel="noopener" '
-                              f'style="color:{INK};text-decoration:none;border-bottom:1px solid {ACCENT};">{title}</a>')
-            else:
-                # Radar : texte simple, pas de lien vers le journal.
-                title_html = f'<span style="color:{INK};">{title}</span>'
-            src = escape(it.get("source", ""))
-            is_newsletter = bool(it.get("newsletter"))
-            if is_press_item:
-                badge = (f'<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;'
-                         f'text-transform:uppercase;color:{MUTED};background:{BG};border:1px solid {BORDER};'
-                         f'border-radius:4px;padding:1px 6px;margin-right:7px;">Radar</span>')
-            elif is_newsletter:
-                badge = (f'<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;'
-                         f'text-transform:uppercase;color:{BRAND};background:#eef2fb;border:1px solid #c7d5ef;'
-                         f'border-radius:4px;padding:1px 6px;margin-right:7px;">Newsletter</span>')
-            else:
-                badge = ""
-            meta = " · ".join(x for x in [src, it.get("date", "")] if x)
-            dtype = "radar" if is_press_item else "officiel"
-            news_attr = ' data-news="1"' if is_newsletter else ""
-            rows += (
-                f'<li data-type="{dtype}"{news_attr} style="padding:11px 0;border-bottom:1px solid {BORDER};list-style:none;">'
-                f'<div style="font-size:15px;font-weight:600;line-height:1.4;">{title_html}</div>'
-                + (f'<div style="font-size:12px;color:{MUTED};margin-top:3px;">{badge}{meta}</div>'
-                   if (meta or badge) else "")
-                + "</li>"
-            )
-        sections += (
-            f'<section id="t-{escape(terr)}" data-veille="1" style="margin:0 0 30px;scroll-margin-top:64px;">'
-            f'<h2 style="font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;'
-            f'color:{color};margin:0 0 4px;border-left:4px solid {color};padding-left:10px;">'
-            f'{escape(label)} <span style="color:{MUTED};font-weight:600;">({len(items)})</span></h2>'
-            f'<ul style="margin:0;padding:0;">{rows}</ul></section>'
+        news = _by_date([it for it in items if _tier(it) == "news"])
+        offi = _by_date([it for it in items if _tier(it) == "officiel"])
+        radar = _by_date([it for it in items if _tier(it) == "radar"])
+        top = "".join(_li(it, "news") for it in news) + "".join(_li(it, "officiel") for it in offi)
+        top_html = (f'<ul class="items">{top}</ul>' if top
+                    else '<div class="empty">Aucune source officielle ni newsletter cette semaine.</div>')
+        radar_block = ""
+        if radar:
+            radar_html = "".join(_li(it, "radar") for it in radar)
+            radar_block = (f'<details class="radar"><summary>Radar presse '
+                           f'<span class="c">{len(radar)}</span></summary>'
+                           f'<ul class="items">{radar_html}</ul></details>')
+        cols += (
+            f'<section class="col" id="t-{escape(terr)}" style="border-top-color:{color};">'
+            f'<h2 style="color:{color};border-color:{color};">{escape(label)}'
+            f'<span class="c">{len(items)}</span></h2>'
+            f"{top_html}{radar_block}</section>"
         )
+    board = f'<div class="board">{cols}</div>'
+
     gen = f" · mis à jour le {escape(generated_at)}" if generated_at else ""
     nl_table = _newsletters_table(newsletters or [])
     return (
         '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
-        "<title>Business Sabaudo — Toute la veille</title></head>"
-        f'<body style="margin:0;background:{BG};font-family:{_FONT};color:{INK};">'
-        f'<div style="max-width:760px;margin:0 auto;padding:34px 18px 60px;">'
-        f'<div style="font-size:11px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:{ACCENT};">Observatoire économique</div>'
-        f'<div style="font-size:32px;font-weight:800;color:{BRAND};line-height:1.05;margin:6px 0 2px;">Business Sabaudo<span style="color:{ACCENT};">.</span></div>'
-        f'<div style="font-size:13px;color:{MUTED};">Savoie · Piémont · Vallée d\'Aoste · Nice · Alcotra</div>'
-        f'<h1 style="font-size:19px;font-weight:800;margin:22px 0 4px;">Toute la veille — {escape(week_label)}</h1>'
-        f'<div style="font-size:13px;color:{MUTED};margin-bottom:6px;">{total} sujets économiques captés sur l\'espace sabaudo cette semaine{gen}.</div>'
-        f'<div style="font-size:12px;color:{MUTED};margin-bottom:4px;">Les sujets marqués <strong>Radar</strong> proviennent de la presse : ils servent à ne rien manquer, sans lien vers le journal.</div>'
-        f"{filterbar}"
-        f"{nl_table}"
-        f"{nav}"
-        f"{sections}"
-        f'<div style="border-top:1px solid {BORDER};padding-top:18px;margin-top:10px;font-size:12px;color:{MUTED};">'
-        "Veille collectée et traitée automatiquement par l'Observatoire économique de Cultura Sabauda. "
-        f'<a href="https://culturasabauda.eu" style="color:{ACCENT};">culturasabauda.eu</a></div>'
-        f"{filterjs}"
-        "</div></body></html>"
+        "<title>Business Sabaudo — Toute la veille</title>"
+        f"<style>{_VEILLE_CSS}</style></head>"
+        '<body><div class="wrap">'
+        '<div class="eyebrow">Observatoire économique</div>'
+        '<div class="brand">Business Sabaudo<span>.</span></div>'
+        '<div class="sub">Savoie · Piémont · Vallée d\'Aoste · Nice · Alcotra</div>'
+        f'<h1>Toute la veille — {escape(week_label)}</h1>'
+        f'<div class="intro">{total} sujets économiques captés sur l\'espace sabaudo cette semaine{gen}.</div>'
+        '<div class="intro">En tête : <strong>newsletters</strong> et <strong>sources officielles</strong>. '
+        'La presse (<strong>Radar</strong>) est repliée par territoire : elle sert à ne rien manquer.</div>'
+        f"{filterbar}{nl_table}{nav}{board}"
+        '<div class="foot">Veille collectée et traitée automatiquement par l\'Observatoire économique '
+        'de Cultura Sabauda. <a href="https://culturasabauda.eu">culturasabauda.eu</a></div>'
+        f"{_VEILLE_JS}</div></body></html>"
     )
 
 
