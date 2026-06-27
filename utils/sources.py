@@ -173,6 +173,41 @@ def load_topic_filter(
     return off, eco
 
 
+_PERIMETER_FILE = Path(__file__).resolve().parent.parent / "config" / "perimeter_keywords.txt"
+_BROAD_FILE = Path(__file__).resolve().parent.parent / "config" / "broad_sources.txt"
+
+
+def load_perimeter_filter(path: Path | None = None):
+    """Regex des lieux du périmètre (Savoie, Piémont, VDA, Nice, Alcotra…)."""
+    return _compile_keywords(_load_keywords(path or _PERIMETER_FILE))
+
+
+def mentions_perimeter(text: str, perimeter_re) -> bool:
+    """Vrai si le texte cite un lieu du périmètre sabaudo. Sert à filtrer les sources
+    LARGES (ex. EU-Startups, pan-européen) pour ne garder que ce qui nous concerne."""
+    if perimeter_re is None:
+        return True  # pas de filtre configuré → on ne bloque rien
+    return bool(perimeter_re.search(_strip_accents(text or "").lower()))
+
+
+def load_broad_sources(path: Path | None = None) -> set[str]:
+    """Domaines des sources LARGES (non locales) à filtrer par périmètre géographique."""
+    path = path or _BROAD_FILE
+    if not path.exists():
+        return set()
+    out: set[str] = set()
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip().lower()
+        if line and not line.startswith("#"):
+            out.add(line.lstrip("."))
+    return out
+
+
+def is_broad_source(domain: str, broad: set[str]) -> bool:
+    domain = (domain or "").lower()
+    return any(domain == b or domain.endswith("." + b) for b in broad)
+
+
 def is_offtopic(title: str, offtopic_re, economic_re) -> bool:
     """Vrai si le titre de presse est HORS-SUJET : il matche un mot hors-sujet
     ET ne contient aucun mot économique (filet de sécurité). Sert à élaguer le

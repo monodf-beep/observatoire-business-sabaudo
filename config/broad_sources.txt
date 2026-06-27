@@ -1,0 +1,11 @@
+# Sources LARGES (non locales) : leurs sujets ne sont gardés QUE s'ils citent un
+# lieu du périmètre (config/perimeter_keywords.txt). Évite que des newsletters
+# pan-européennes / nationales noient la veille de contenu hors-territoire.
+#
+# Un domaine par ligne.
+
+# EU-Startups : actualité startups/financements à l'échelle européenne.
+eu-startups.com
+# BNI national (réseau d'affaires) : décommenter si trop de contenu hors-périmètre.
+# bnifrance.fr
+# bni-italia.com

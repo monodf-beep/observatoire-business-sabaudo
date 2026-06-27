@@ -1,0 +1,89 @@
+# Lieux du PÉRIMÈTRE sabaudo — sert à filtrer les sources LARGES (config/broad_sources.txt)
+# pour ne garder que les sujets qui concernent notre territoire.
+#
+# Comparaison : minuscules, sans accents, par mot entier. Un par ligne.
+
+# ---- Savoie / Haute-Savoie ----
+savoie
+haute-savoie
+savoyard
+annecy
+chambery
+albertville
+maurienne
+tarentaise
+aix-les-bains
+thonon
+annemasse
+cluses
+sallanches
+chamonix
+mont-blanc
+leman
+geneve
+grand annecy
+
+# ---- Piémont ----
+piemonte
+piedmont
+piemontese
+piemontesi
+torino
+torinese
+torinesi
+turin
+novara
+cuneo
+alessandria
+asti
+biella
+vercelli
+verbania
+ivrea
+canavese
+mirafiori
+
+# ---- Vallée d'Aoste ----
+aosta
+aoste
+valdotain
+valdotaine
+valdostano
+valdostana
+courmayeur
+saint-vincent
+chatillon
+valtournenche
+
+# ---- Nice / Côte d'Azur ----
+nice
+nizza
+nicois
+azureen
+azureenne
+sophia antipolis
+cote d'azur
+cote d azur
+alpes-maritimes
+menton
+cannes
+grasse
+antibes
+monaco
+monegasque
+var
+varois
+toulon
+
+# ---- Transfrontalier / Alpes ----
+alcotra
+alpes
+alpi
+alpin
+alpine
+transfrontalier
+transfrontaliero
+franco-italien
+franco-italienne
+sabaudo
+sabauda

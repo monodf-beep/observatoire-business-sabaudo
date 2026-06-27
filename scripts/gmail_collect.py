@@ -282,10 +282,36 @@ def _esp_host(host: str) -> bool:
     return any(e in host for e in _ESP_HOSTS)
 
 
+_URL_CACHE: dict[str, str] = {}
+_URL_CACHE_FILE = ROOT / "logs" / "url_resolve_cache.json"
+
+
+def _load_url_cache() -> None:
+    """Charge le cache des URLs déjà résolues (accélère les --force répétés)."""
+    global _URL_CACHE
+    try:
+        _URL_CACHE = json.loads(_URL_CACHE_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        _URL_CACHE = {}
+
+
+def _save_url_cache() -> None:
+    try:
+        _URL_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _URL_CACHE_FILE.write_text(json.dumps(_URL_CACHE, ensure_ascii=False), encoding="utf-8")
+    except OSError:
+        pass
+
+
 def _resolve_url(url: str, timeout: int = 5) -> str:
-    """Suit les redirections jusqu'à l'URL finale réelle. '' si échec/inaccessible."""
+    """Suit les redirections jusqu'à l'URL finale réelle. '' si échec/inaccessible.
+    Mémoïsé sur disque : une URL traceur déjà résolue n'est pas re-fetchée (y compris
+    les échecs, mis en cache comme '' — supprimer logs/url_resolve_cache.json pour réessayer)."""
     import urllib.request
 
+    if url in _URL_CACHE:
+        return _URL_CACHE[url]
+    result = ""
     try:
         req = urllib.request.Request(url, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -293,9 +319,11 @@ def _resolve_url(url: str, timeout: int = 5) -> str:
             "Accept": "text/html,application/xhtml+xml",
         })
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            return r.geturl() or ""
+            result = r.geturl() or ""
     except Exception:
-        return ""
+        result = ""
+    _URL_CACHE[url] = result
+    return result
 
 
 def _anchors(payload: dict) -> list[tuple[str, str]]:
@@ -598,6 +626,8 @@ def main() -> int:
     args = parser.parse_args()
     log.info("=== Démarrage collecte Gmail%s ===", " (--force)" if args.force else "")
 
+    _load_url_cache()  # mémoïsation des résolutions de traceurs (accélère les --force)
+
     whitelist = load_whitelist()
     if not whitelist:
         log.error("Whitelist vide : rien à collecter. Arrêt.")
@@ -653,6 +683,7 @@ def main() -> int:
             err_count += 1
             log.error("Écriture impossible (%s) : %s", out, exc)
 
+    _save_url_cache()
     log.info(
         "=== Fin collecte Gmail : %d traité(s)/maj, %d doublon(s) ignoré(s), %d erreur(s) ===",
         new_count, dup_count, err_count,

@@ -157,22 +157,37 @@ def load_latest_week_items() -> tuple[str, dict]:
 
     from utils.sources import (
         domain_of,
+        is_broad_source,
         is_newsletter_junk,
         is_offtopic,
         is_press,
         is_welcome_subject,
+        load_broad_sources,
+        load_perimeter_filter,
         load_press_domains,
         load_topic_filter,
+        mentions_perimeter,
     )
 
     import re
+    import unicodedata
+
+    def _norm_title(t: str) -> str:
+        """Signature de titre (sans accents/ponctuation) pour dédupliquer inter-canaux."""
+        t = unicodedata.normalize("NFD", t or "")
+        t = "".join(c for c in t if unicodedata.category(c) != "Mn").lower()
+        t = re.sub(r"[^a-z0-9 ]", " ", t)
+        return re.sub(r"\s+", " ", t).strip()[:80]
 
     press = load_press_domains()
     off_re, eco_re = load_topic_filter()
+    perim_re = load_perimeter_filter()
+    broad = load_broad_sources()
     weeks: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
     # Domaines expéditeurs des newsletters reçues, par semaine (« reçue cette semaine »).
     news_by_week: dict[str, set] = defaultdict(set)
-    seen: set[str] = set()
+    seen_urls: set[str] = set()
+    seen_titles: set[str] = set()
     if not INPUT_DIR.exists():
         return "", {}, set()
     for jf in INPUT_DIR.rglob("*.json"):
@@ -202,8 +217,11 @@ def load_latest_week_items() -> tuple[str, dict]:
                 continue
             # Domaine expéditeur → marque la newsletter comme « reçue cette semaine ».
             m_dom = re.search(r"@([\w.-]+)", rec.get("from", ""))
-            if m_dom:
-                news_by_week[wk].add(m_dom.group(1).lower())
+            sender_dom = m_dom.group(1).lower() if m_dom else ""
+            if sender_dom:
+                news_by_week[wk].add(sender_dom)
+            # Source LARGE (ex. EU-Startups) : on ne garde que les sujets du périmètre.
+            broad_src = is_broad_source(sender_dom, broad)
             NL_CAP = 8  # au-delà, on déborde de déchets : on plafonne par newsletter.
             for ln in (gmail_links or []):
                 if len(emitted) >= NL_CAP:
@@ -218,6 +236,9 @@ def load_latest_week_items() -> tuple[str, dict]:
                 # Pertinence : on écarte le hors-sujet (sport, faits divers, météo…).
                 if is_offtopic(text, off_re, eco_re):
                     continue
+                # Source large : exiger une mention du périmètre (sinon hors-territoire).
+                if broad_src and not mentions_perimeter(text, perim_re):
+                    continue
                 host = urlparse(u).netloc.lower()
                 if host.startswith("www."):
                     host = host[4:]
@@ -231,10 +252,11 @@ def load_latest_week_items() -> tuple[str, dict]:
                     "via": sender,
                     "newsletter": True,
                 })
-            if not emitted:
+            if not emitted and not broad_src:
                 # Aucune source exploitable : une SEULE entrée vers la newsletter entière
                 # (version web), pour que le clic mène quelque part — sauf si l'objet
-                # lui-même est hors-sujet.
+                # lui-même est hors-sujet. (Pas de repli pour les sources larges :
+                # une newsletter pan-européenne sans sujet local ne doit rien laisser.)
                 if not is_offtopic(subject, off_re, eco_re):
                     emitted.append({
                         "title": subject or "(newsletter)",
@@ -263,10 +285,18 @@ def load_latest_week_items() -> tuple[str, dict]:
             })
 
         for item in emitted:
-            key = (item.get("url") or item.get("title") or "").strip().lower()
-            if not key or key in seen:
+            url_key = (item.get("url") or "").strip().lower().split("#")[0].rstrip("/")
+            title_key = _norm_title(item.get("title", ""))
+            if not (url_key or title_key):
                 continue
-            seen.add(key)
+            # Dédup INTER-CANAUX : même URL OU même titre (RSS + newsletter + scrape
+            # peuvent pointer le même sujet sous des URL différentes).
+            if (url_key and url_key in seen_urls) or (title_key and title_key in seen_titles):
+                continue
+            if url_key:
+                seen_urls.add(url_key)
+            if title_key:
+                seen_titles.add(title_key)
             weeks[wk][terr].append(item)
     if not weeks:
         return "", {}, set()
