@@ -333,9 +333,13 @@ def build(upload: bool = False) -> int:
         except (OSError, json.JSONDecodeError):
             synthese = None
 
+    # Formulaire « proposer une source » → endpoint public de l'admin (si configuré).
+    admin_url = os.getenv("ADMIN_PUBLIC_URL", "").rstrip("/")
+    suggest_url = f"{admin_url}/suggest" if admin_url else ""
+
     generated = f"{datetime.now(timezone.utc):%d/%m/%Y}"
     html = render_veille_page(week_id, by_territory, generated_at=generated,
-                              newsletters=newsletters, synthese=synthese)
+                              newsletters=newsletters, synthese=synthese, suggest_url=suggest_url)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     DASHBOARD_PATH.write_text(html, encoding="utf-8")
     n = sum(len(v) for v in by_territory.values())

@@ -344,8 +344,35 @@ def _synthese_block(synthese: dict | None) -> str:
     )
 
 
+def _suggest_form(suggest_url: str) -> str:
+    """Formulaire public « Proposer une source » (POST vers l'admin, validé côté rédaction)."""
+    if not suggest_url:
+        return ""
+    opts = '<option value="">Territoire…</option>' + "".join(
+        f'<option value="{escape(t)}">{escape(_terr_label(t))}</option>' for t in _TERR_ORDER
+    )
+    inp = ("font-size:14px;padding:9px 11px;border:1px solid %s;border-radius:8px;"
+           "background:#fff;color:%s;" % (BORDER, INK))
+    return (
+        f'<div style="background:{CARD};border:1px solid {BORDER};border-radius:12px;padding:20px 22px;margin:24px 0 0;">'
+        f'<div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:{BRAND};margin-bottom:4px;">Proposer une source</div>'
+        f'<div style="font-size:13px;color:{MUTED};margin-bottom:12px;">Un média, une institution, un acteur économique à suivre ? Suggérez-le — la rédaction valide.</div>'
+        f'<form method="post" action="{escape(suggest_url)}">'
+        f'<div style="display:flex;flex-wrap:wrap;gap:8px;">'
+        f'<input type="url" name="url" required placeholder="https://… (lien de la source)" style="{inp}flex:2;min-width:220px;">'
+        f'<select name="territoire" style="{inp}flex:1;min-width:140px;">{opts}</select>'
+        f'<input type="text" name="nom" placeholder="Nom (optionnel)" style="{inp}flex:1;min-width:140px;">'
+        f'</div>'
+        f'<input type="text" name="note" placeholder="Pourquoi cette source ? (optionnel)" style="{inp}width:100%;margin-top:8px;">'
+        f'<button type="submit" style="margin-top:10px;background:{ACCENT};color:#fff;border:0;border-radius:8px;'
+        f'padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;">Proposer cette source</button>'
+        f'</form></div>'
+    )
+
+
 def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str = "",
-                       newsletters: list | None = None, synthese: dict | None = None) -> str:
+                       newsletters: list | None = None, synthese: dict | None = None,
+                       suggest_url: str = "") -> str:
     """Page LECTEUR « toute la veille de la semaine » : la liste COMPLÈTE des sujets
     captés, organisée par territoire avec une navigation collante pour sauter d'un
     territoire à l'autre sans scroller. Les sujets de presse sont gardés en RADAR
@@ -449,6 +476,7 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
         '<div class="intro">En tête : <strong>newsletters</strong> et <strong>sources officielles</strong>. '
         'La presse (<strong>Radar</strong>) est repliée par territoire : elle sert à ne rien manquer.</div>'
         f"{synthese_block}{filterbar}{nl_table}{nav}{board}"
+        f"{_suggest_form(suggest_url)}"
         '<div class="foot">Veille collectée et traitée automatiquement par l\'Observatoire économique '
         'de Cultura Sabauda. <a href="https://culturasabauda.eu">culturasabauda.eu</a></div>'
         f"{_VEILLE_JS}</div></body></html>"

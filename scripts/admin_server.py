@@ -25,6 +25,7 @@ import time
 from datetime import datetime, timezone
 from functools import wraps
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from flask import Flask, Response, redirect, request, url_for
@@ -198,6 +199,11 @@ _ADMIN_CSS = (
     "table.t td{padding:8px 12px 8px 0;border-bottom:1px solid #f1f3f7}"
     "summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}"
     "code{background:#f1f3f7;border-radius:5px;padding:1px 6px;font-size:12px}"
+    ".sgr{border:1px solid #e9edf3;border-radius:12px;padding:13px 15px;margin-bottom:10px;background:#fcfdfe}"
+    ".sgr .u{font-weight:700;font-size:14px;word-break:break-all;color:#2f4a78}"
+    ".sgr .m{font-size:12px;color:#6b7280;margin-top:3px}"
+    ".bsm{border:0;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;color:#fff;cursor:pointer}"
+    ".bsm.ok{background:#15803d}.bsm.no{background:#b91c1c}.bsm:hover{opacity:.92}"
     "@media(max-width:560px){.wrap{padding:28px 14px 48px}.card{padding:18px}}"
 )
 
@@ -369,6 +375,77 @@ def _pipeline_html() -> str:
     )
 
 
+SUGG_FILE = STATE_DIR / "suggestions.json"
+
+
+def _load_suggestions() -> list:
+    try:
+        return json.loads(SUGG_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def _save_suggestions(items: list) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    SUGG_FILE.write_text(json.dumps(items, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def _clean_field(value: str, limit: int = 200) -> str:
+    """Nettoie un champ proposé : retire ce qui casserait le format config (; \\n)."""
+    value = value or ""
+    for ch in (";", "\r", "\n", "\t"):
+        value = value.replace(ch, " ")
+    return value.strip()[:limit]
+
+
+def _append_source(item: dict) -> None:
+    """Approbation → ajoute la source au scraping (config/sources_a_scraper.txt)."""
+    nom = item.get("nom") or (urlparse(item["url"]).netloc.replace("www.", "") or "Source proposée")
+    terr = item.get("territoire") or "Indetermine"
+    line = f'{_clean_field(nom, 80)};{item["url"]};{_clean_field(terr, 20)};html\n'
+    with open(ROOT / "config" / "sources_a_scraper.txt", "a", encoding="utf-8") as fh:
+        fh.write(line)
+
+
+def _suggestions_html() -> str:
+    pending = [it for it in _load_suggestions() if it.get("status") == "pending"]
+    head = '<div class="sec">Sources proposées</div>'
+    if not pending:
+        return head + '<div class="note" style="margin:0;">Aucune proposition en attente.</div>'
+    rows = ""
+    for it in pending:
+        meta = " · ".join(x for x in [it.get("nom", ""), it.get("territoire", ""), it.get("note", "")] if x)
+        rows += (
+            '<div class="sgr">'
+            f'<div class="u">{_escape(it.get("url", ""))}</div>'
+            + (f'<div class="m">{_escape(meta)}</div>' if meta else "")
+            + '<div style="margin-top:10px;">'
+            f'<form method="post" action="{url_for("suggest_action", sid=it["id"], action="approve")}" style="display:inline;margin-right:8px;">'
+            '<button class="bsm ok" type="submit">✓ Valider</button></form>'
+            f'<form method="post" action="{url_for("suggest_action", sid=it["id"], action="reject")}" style="display:inline;">'
+            '<button class="bsm no" type="submit">✕ Rejeter</button></form>'
+            '</div></div>'
+        )
+    return head + rows
+
+
+_THANKS = ("<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"utf-8\">"
+           "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+           "<title>Merci</title></head><body style=\"margin:0;background:#eef2f8;"
+           "font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#16202c;\">"
+           "<div style=\"max-width:520px;margin:0 auto;padding:80px 22px;text-align:center;\">"
+           "<div style=\"font-size:30px;font-weight:800;color:#2f4a78;\">Business Sabaudo<span style=\"color:#df664f;\">.</span></div>"
+           "<div style=\"font-size:17px;margin:20px 0;line-height:1.6;\">{msg}</div>"
+           "{back}</div></body></html>")
+
+
+def _thanks(msg: str) -> str:
+    dash = os.getenv("DASHBOARD_URL", "")
+    back = (f'<a href="{dash}" style="color:#df664f;font-weight:700;text-decoration:none;">← Retour à la veille</a>'
+            if dash else "")
+    return _THANKS.format(msg=_escape(msg), back=back)
+
+
 PAGE = """<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Business Sabaudo — Admin</title><style>{css}</style></head>
@@ -379,6 +456,7 @@ PAGE = """<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
   <div class="card">{pipeline}</div>
   <div class="card">{archi}</div>
   <div class="card">{buttons}</div>
+  <div class="card">{suggest}</div>
   <div class="card">
     <div class="sec">État des traitements</div>
     <table class="t">{rows}</table>
@@ -416,7 +494,7 @@ def home():
     pipeline = _pipeline_html()
     buttons = _buttons()
     return PAGE.format(css=_ADMIN_CSS, flash=flash_html, pipeline=pipeline,
-                       archi=_archi_html(), buttons=buttons, rows=rows)
+                       archi=_archi_html(), buttons=buttons, suggest=_suggestions_html(), rows=rows)
 
 
 @app.route(BASE + "/run/<task_key>", methods=["POST"])
@@ -425,6 +503,54 @@ def run(task_key: str):
     if task_key not in TASKS:
         return redirect(url_for("home", msg="Tâche inconnue."))
     _ok, message = _launch(task_key)
+    return redirect(url_for("home", msg=message))
+
+
+@app.route(BASE + "/suggest", methods=["POST"])
+def suggest():
+    """PUBLIC (sans auth) : reçoit une proposition de source depuis la page veille."""
+    url = _clean_field(request.form.get("url", ""), 300)
+    if not url.lower().startswith("http"):
+        return _thanks("Lien invalide : il doit commencer par http(s)://."), 400
+    items = _load_suggestions()
+    pending = sum(1 for it in items if it.get("status") == "pending")
+    if pending >= 300:  # garde-fou anti-spam
+        return _thanks("Merci ! Trop de propositions en attente pour le moment.")
+    if any(it.get("url") == url and it.get("status") == "pending" for it in items):
+        return _thanks("Cette source a déjà été proposée — merci !")
+    items.append({
+        "id": str(int(datetime.now(timezone.utc).timestamp() * 1000)),
+        "url": url,
+        "nom": _clean_field(request.form.get("nom", ""), 80),
+        "territoire": _clean_field(request.form.get("territoire", ""), 20),
+        "note": _clean_field(request.form.get("note", ""), 300),
+        "status": "pending",
+        "ts": datetime.now(timezone.utc).isoformat(),
+    })
+    _save_suggestions(items)
+    log.info("Source proposée : %s", url)
+    return _thanks("Merci ! Votre proposition a été transmise à la rédaction.")
+
+
+@app.route(BASE + "/suggest/<sid>/<action>", methods=["POST"])
+@require_auth
+def suggest_action(sid: str, action: str):
+    items = _load_suggestions()
+    message = "Proposition introuvable."
+    for it in items:
+        if it.get("id") == sid and it.get("status") == "pending":
+            if action == "approve":
+                try:
+                    _append_source(it)
+                    it["status"] = "approuvée"
+                    message = f"Source ajoutée au scraping : {it['url']}"
+                except OSError as exc:
+                    message = f"Ajout impossible : {exc}"
+            else:
+                it["status"] = "rejetée"
+                message = "Proposition rejetée."
+            break
+    _save_suggestions(items)
     return redirect(url_for("home", msg=message))
 
 
