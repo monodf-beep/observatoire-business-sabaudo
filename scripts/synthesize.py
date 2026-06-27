@@ -87,6 +87,12 @@ def load_all_records() -> dict[str, dict[str, list[dict]]]:
             dt = datetime.fromisoformat(record.get("date", ""))
         except ValueError:
             continue
+        # Emails de bienvenue / confirmation : aucun contenu éco → on ne les soumet
+        # pas au modèle (économie de tokens, pas de pollution de la synthèse).
+        if record.get("source") == "gmail":
+            from utils.sources import is_welcome_subject
+            if is_welcome_subject(record.get("title", "")):
+                continue
         week = iso_week_id(dt)
         # Territoire : champ explicite (RSS) ou déduit du dossier parent (Gmail)
         territory = record.get("territoire") or _territory_from_path(json_file)

@@ -65,6 +65,58 @@ def is_blocked_image(url: str, blocked: set[str]) -> bool:
     return any(host == b or host.endswith("." + b) for b in blocked)
 
 
+# --------------------------------------------------------------------------- #
+# Filtres de QUALITÉ des newsletters (anti-déchets + emails de bienvenue)
+# --------------------------------------------------------------------------- #
+# Sujets d'emails à IGNORER entièrement : confirmations d'abonnement, bienvenue,
+# double opt-in… aucun contenu économique.
+_WELCOME_SUBJECT = (
+    "bienvenue", "benvenut", "welcome", "confirmez votre", "confirmer votre",
+    "confirme votre", "votre inscription", "inscription est valid", "inscription valid",
+    "confirm your subscription", "confirm your email", "conferma la tua",
+    "conferma l'iscrizione", "grazie per esserti", "grazie per la tua iscrizione",
+    "merci de votre inscription", "merci pour votre inscription",
+    "merci de vous etre inscrit", "double opt", "opt-in", "veuillez confirmer",
+)
+# Réseaux sociaux / liens utilitaires (texte d'ancre exact ou inclus).
+_NL_JUNK_SUBSTR = (
+    "desabonn", "unsubscribe", "telecharg", "plus d'infos", "plus d infos",
+    "en savoir plus", "voir en ligne", "voir dans le navigateur", "view online",
+    "view in browser", "poll results", "follow us", "suivez ce lien", "suivez-nous",
+    "lire la suite", "read more", "leggi tutto", "scopri di", "manage your",
+    "gerer vos", "preferences", "privacy", "cookie", "facebook", "linkedin",
+    "instagram", "twitter", "youtube", "tiktok", "whatsapp", "telegram",
+    "je contacte", "je decouvre", "je participe", "je m'informe", "je m informe",
+    "je me connecte", "je m'inscris", "nous contacter", "contactez", "mentions legales",
+)
+_NL_JUNK_EXACT = {"www", "x", "rss", "email", "e-mail", "contact", "menu", "+", "-"}
+
+
+def is_welcome_subject(subject: str) -> bool:
+    """Vrai si l'objet est un email de bienvenue/confirmation (à ignorer)."""
+    s = _strip_accents(subject or "").lower()
+    return any(w in s for w in _WELCOME_SUBJECT)
+
+
+def is_newsletter_junk(text: str) -> bool:
+    """Vrai si le texte d'un lien de newsletter est un DÉCHET (bouton, réseau social,
+    fragment), pas un titre d'article. Élimine « >> Je découvre », « Facebook », « ai »…"""
+    t = _strip_accents(text or "").lower().strip()
+    if not t or t in _NL_JUNK_EXACT:
+        return True
+    if t[0] in ">•·|→#":                  # puces / flèches de bouton
+        return True
+    if t.startswith("je "):               # CTA français « Je découvre/participe… »
+        return True
+    if any(s in t for s in _NL_JUNK_SUBSTR):
+        return True
+    words = t.split()
+    # Trop court → fragment de bannière / nom isolé sans contexte économique.
+    if len(words) < 3 and len(t) < 18:
+        return True
+    return False
+
+
 _NEWSLETTERS_FILE = Path(__file__).resolve().parent.parent / "config" / "newsletters.txt"
 
 

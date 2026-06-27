@@ -157,8 +157,10 @@ def load_latest_week_items() -> tuple[str, dict]:
 
     from utils.sources import (
         domain_of,
+        is_newsletter_junk,
         is_offtopic,
         is_press,
+        is_welcome_subject,
         load_press_domains,
         load_topic_filter,
     )
@@ -194,18 +196,26 @@ def load_latest_week_items() -> tuple[str, dict]:
         if is_gmail:
             sender = _sender_label(rec.get("from", "")) or rec.get("title", "")
             subject = rec.get("title", "")
+            # Emails de bienvenue / confirmation d'abonnement : aucun contenu éco → ignorés.
+            if is_welcome_subject(subject):
+                continue
             # Domaine expéditeur → marque la newsletter comme « reçue cette semaine ».
             m_dom = re.search(r"@([\w.-]+)", rec.get("from", ""))
             if m_dom:
                 news_by_week[wk].add(m_dom.group(1).lower())
+            NL_CAP = 8  # au-delà, on déborde de déchets : on plafonne par newsletter.
             for ln in (gmail_links or []):
+                if len(emitted) >= NL_CAP:
+                    break
                 u = (ln.get("url") or "").strip()
                 if not u:
                     continue
                 text = (ln.get("text") or "").strip()
-                if not text:
-                    # Lien sans texte d'ancre : titre non informatif (sujet répété n fois)
-                    # → skip ; si tous les liens sont vides, le fallback web_version prend le relais.
+                # Filtre anti-déchets : boutons, réseaux sociaux, fragments, « >> Je découvre ».
+                if not text or is_newsletter_junk(text):
+                    continue
+                # Pertinence : on écarte le hors-sujet (sport, faits divers, météo…).
+                if is_offtopic(text, off_re, eco_re):
                     continue
                 host = urlparse(u).netloc.lower()
                 if host.startswith("www."):
@@ -221,17 +231,19 @@ def load_latest_week_items() -> tuple[str, dict]:
                     "newsletter": True,
                 })
             if not emitted:
-                # Aucune source externe exploitable : on pointe vers la newsletter
-                # ENTIÈRE (version web « ouvrir dans le navigateur ») pour que le clic
-                # mène quand même quelque part. Sinon, texte simple (jamais de vide).
-                emitted.append({
-                    "title": subject or "(newsletter)",
-                    "url": (rec.get("web_version") or "").strip(),
-                    "source": sender,
-                    "date": date,
-                    "press": False,
-                    "via": sender,
-                })
+                # Aucune source exploitable : une SEULE entrée vers la newsletter entière
+                # (version web), pour que le clic mène quelque part — sauf si l'objet
+                # lui-même est hors-sujet.
+                if not is_offtopic(subject, off_re, eco_re):
+                    emitted.append({
+                        "title": subject or "(newsletter)",
+                        "url": (rec.get("web_version") or "").strip(),
+                        "source": sender,
+                        "date": date,
+                        "press": False,
+                        "via": sender,
+                        "newsletter": True,
+                    })
         else:
             # Presse = radar : on garde le sujet (voir si on est passé à côté) mais
             # on n'expose PAS le lien vers le journal. L'officiel reste cliquable.
