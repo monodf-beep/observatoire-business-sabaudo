@@ -537,15 +537,18 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
                     entry["image"] = photo
                     log.info("Photo trouvée pour « %s » : %s", entry.get("title", "")[:40], photo)
 
-    # Images de substitution par territoire quand l'image d'origine manque
-    # (presse sans image réutilisable, ou flux sans visuel).
-    from utils.sources import load_territory_images, pick_image
-    terr_images = load_territory_images()
-    if hero and not hero.get("image"):
-        hero["image"] = pick_image(hero["territory"], hero["title"], terr_images)
-    for it in items:
-        if not it.get("image"):
-            it["image"] = pick_image(it["territory"], it["title"], terr_images)
+    # Décision photo : « une vraie photo crédible, ou RIEN ». Quand aucune photo n'a
+    # passé la cascade (source → og:image → web + vision), on laisse l'item SANS image
+    # (rendu texte seul, propre) plutôt qu'une carte de territoire répétitive qui
+    # n'illustre rien. Pour réactiver les cartes de substitution : NEWSLETTER_FALLBACK_CARD=1.
+    if os.getenv("NEWSLETTER_FALLBACK_CARD", "0").strip() == "1":
+        from utils.sources import load_territory_images, pick_image
+        terr_images = load_territory_images()
+        if hero and not hero.get("image"):
+            hero["image"] = pick_image(hero["territory"], hero["title"], terr_images)
+        for it in items:
+            if not it.get("image"):
+                it["image"] = pick_image(it["territory"], it["title"], terr_images)
 
     # Anti-doublon : un signal ne doit pas répéter la une ni une brève déjà listée.
     if hero or items:
