@@ -244,6 +244,65 @@ def _arrow() -> str:
             'vertical-align:middle;padding:0 1px;">→</span>')
 
 
+def _chip(label: str, icon: str) -> str:
+    """Pastille « sortie » (Site public, Brevo, Drive) — sans état, juste une cible."""
+    return (
+        '<span style="display:inline-block;vertical-align:middle;background:#f3f4f6;'
+        'border:1px dashed #c3c9d2;border-radius:18px;padding:8px 12px;margin:0 2px;'
+        f'font-size:12px;font-weight:700;color:#4b5563;white-space:nowrap;">{icon}&nbsp;{label}</span>'
+    )
+
+
+# Tableau « Comment ça marche » affiché (replié) dans l'admin.
+_ARCHI_STEPS = [
+    ("1", "Collecte Gmail", "Lundi 7h", "—", "Articles des newsletters (titre + lien)"),
+    ("2", "Collecte RSS", "Quotidien 8h", "—", "Presse régionale + sources officielles"),
+    ("3", "Scraping HTML", "Quotidien 8h15", "—", "Sites sans flux RSS"),
+    ("4", "Tri IA", "Quotidien 8h30", "Haiku 4.5", "Garde/jette + réécrit les titres (caché)"),
+    ("5", "Page veille", "Mar/Jeu/Sam 9h", "—", "Publie la page publique"),
+    ("6", "Newsletter", "Vendredi 15h", "Opus + Sonnet + Haiku", "Rédige, photos, Brevo, Drive"),
+]
+_ARCHI_LLM = [
+    ("Rédaction (une, brèves)", "claude-opus-4-8", "1×/sem."),
+    ("Tri pertinence + titres", "claude-haiku-4-5", "~400/sem. · caché"),
+    ("Lien officiel + photo", "claude-sonnet-4-6", "par brève"),
+    ("Validation photo (vision)", "claude-haiku-4-5", "par photo · caché"),
+]
+
+
+def _archi_html() -> str:
+    th = 'style="text-align:left;padding:6px 12px 6px 0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:1px solid #e5e7eb;"'
+    td = 'style="padding:6px 12px 6px 0;font-size:13px;border-bottom:1px solid #f0f2f5;"'
+    steps = "".join(
+        f'<tr><td {td}><b>{n}</b></td><td {td}>{lbl}</td><td {td} >{cron}</td>'
+        f'<td {td}>{llm}</td><td {td}>{role}</td></tr>'
+        for n, lbl, cron, llm, role in _ARCHI_STEPS
+    )
+    llms = "".join(
+        f'<tr><td {td}>{role}</td><td {td}><code>{model}</code></td><td {td}>{freq}</td></tr>'
+        for role, model, freq in _ARCHI_LLM
+    )
+    return (
+        '<details>'
+        '<summary style="cursor:pointer;font-size:12px;font-weight:800;letter-spacing:1px;'
+        'text-transform:uppercase;color:#3f5f96;list-style:none;">📖 Comment ça marche</summary>'
+        '<div style="font-size:13px;color:#374151;line-height:1.6;margin:12px 0;">'
+        'Collecte multi-sources → <b>tri par IA</b> (pertinence + titres propres) → deux sorties : '
+        'la <b>page publique</b> (veille exhaustive) et la <b>newsletter</b> (sélection rédigée, '
+        'brouillon Brevo + archive Drive). Le VPS exécute le cron et héberge cette page ; '
+        'l\'envoi de la newsletter reste <b>manuel</b>.</div>'
+        '<div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#3f5f96;margin:6px 0;">Étapes</div>'
+        f'<table style="width:100%;border-collapse:collapse;"><tr><th {th}>#</th><th {th}>Étape</th>'
+        f'<th {th}>Quand</th><th {th}>LLM</th><th {th}>Rôle</th></tr>{steps}</table>'
+        '<div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#3f5f96;margin:16px 0 6px;">Les 4 LLM</div>'
+        f'<table style="width:100%;border-collapse:collapse;"><tr><th {th}>Rôle</th><th {th}>Modèle</th>'
+        f'<th {th}>Fréquence</th></tr>{llms}</table>'
+        '<div style="font-size:12px;color:#9aa3af;margin-top:12px;">Détail complet : '
+        '<code>docs/ARCHITECTURE.md</code> dans le dépôt.</div>'
+        '</details>'
+    )
+
+
 def _pipeline_html() -> str:
     busy = _running_task()
     running = {"veille": {"triage", "dashboard"},
@@ -259,21 +318,24 @@ def _pipeline_html() -> str:
     for key, label, icon, logs in _PIPELINE:
         color, st, when = state(key, logs)
         cells.append(_node(label, icon, color, st, when))
-    chain = _arrow().join(cells)
+    # Sortie de la chaîne principale : la page publique.
+    chain = _arrow().join(cells) + _arrow() + _chip("Site public", "🌍")
 
-    # Branche newsletter (part du tri / de la collecte → brouillon Brevo).
+    # Branche newsletter (part du tri → brouillon Brevo + archive Drive).
     ncolor, nst, nwhen = state("newsletter", ["admin_newsletter.log"])
     branch = (
         '<div style="margin:10px 0 0 350px;white-space:nowrap;">'
         '<span style="display:inline-block;color:#c3c9d2;font-size:18px;vertical-align:middle;">↳</span>'
-        + _node("Newsletter (Brevo)", "✉", ncolor, nst, nwhen) + "</div>"
+        + _node("Newsletter", "✉", ncolor, nst, nwhen)
+        + _arrow() + _chip("Brevo (brouillon)", "📧") + _chip("Drive (GDoc)", "📁") + "</div>"
     )
     return (
         '<div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#3f5f96;margin-bottom:12px;">Pipeline</div>'
         f'<div style="overflow-x:auto;white-space:nowrap;padding:4px 0 2px;">{chain}</div>'
         f'{branch}'
         '<div style="font-size:11px;color:#9aa3af;margin-top:12px;">Collecte (Gmail · RSS · scraping) → tri IA → page publique. '
-        'La newsletter dérive du même flux. État dérivé des journaux ; « en cours » = traitement actif.</div>'
+        'La newsletter dérive du même flux : brouillon Brevo + archive Drive. '
+        '« en cours » = traitement actif. Détails ci-dessous.</div>'
     )
 
 
@@ -287,6 +349,9 @@ PAGE = """<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
   {flash}
   <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;margin-bottom:20px;">
     {pipeline}
+  </div>
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;margin-bottom:20px;">
+    {archi}
   </div>
   <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;margin-bottom:20px;">
     {buttons}
@@ -331,7 +396,8 @@ def home():
     rows = _status_rows()
     pipeline = _pipeline_html()
     buttons = _buttons()
-    return PAGE.format(flash=flash_html, pipeline=pipeline, buttons=buttons, rows=rows)
+    return PAGE.format(flash=flash_html, pipeline=pipeline, archi=_archi_html(),
+                       buttons=buttons, rows=rows)
 
 
 @app.route(BASE + "/run/<task_key>", methods=["POST"])
