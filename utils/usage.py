@@ -16,9 +16,10 @@ ROOT = Path(__file__).resolve().parent.parent
 USAGE_FILE = ROOT / "logs" / "api_usage.jsonl"
 ALERT_FILE = ROOT / "logs" / "api_alert.json"
 
-# Indices d'un problème de CRÉDIT / FACTURATION dans un message d'erreur API.
+# Indices d'un problème d'ACCÈS API : crédit, facturation OU limite d'usage atteinte.
 _CREDIT_HINTS = ("credit", "billing", "balance", "insufficient", "quota",
-                 "payment", "exceeded", "402", "too low")
+                 "payment", "exceeded", "402", "too low", "usage limit",
+                 "usage limits", "reached your", "rate limit", "regain access")
 
 # Tarifs estimatifs (USD par million de tokens) : (entrée, sortie).
 PRICES = {

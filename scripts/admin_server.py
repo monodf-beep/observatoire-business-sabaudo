@@ -563,9 +563,9 @@ def home():
     from utils import usage
     alert = usage.get_alert()
     alert_html = (
-        f'<div class="alert">⚠ Crédit API : un problème a été détecté lors d\'un appel '
-        f'({_escape(alert.get("message", ""))[:140]}). Vérifie/recharge sur '
-        f'console.anthropic.com.</div>' if alert else "")
+        f'<div class="alert">⚠ Accès API bloqué (crédit épuisé ou limite d\'usage atteinte). '
+        f'{_escape(alert.get("message", ""))[:180]} — vérifie sur console.anthropic.com '
+        f'(Réglages → Limits / Billing).</div>' if alert else "")
     # _status_rows() réconcilie l'état des tâches terminées (running → succès/échec).
     # On l'évalue EN PREMIER pour que le pipeline et les boutons lisent un état à jour
     # (sinon : « en cours » dans le pipeline alors que le tableau affiche « succès »).
