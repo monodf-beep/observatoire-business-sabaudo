@@ -31,8 +31,10 @@ _OG_IMAGE_PATTERNS = (
 
 
 def is_enabled() -> bool:
-    """Vrai si la recherche de liens officiels est explicitement activée."""
-    return os.getenv("OFFICIAL_LINK_SEARCH", "").strip() in {"1", "true", "True", "yes"}
+    """Vrai si la recherche de liens officiels (et de leur og:image) est activée.
+    Activée par défaut : c'est le principal levier pour récupérer de vraies photos et
+    le lien précis des brèves. Mettre OFFICIAL_LINK_SEARCH=0 pour la couper."""
+    return os.getenv("OFFICIAL_LINK_SEARCH", "1").strip() not in {"0", "false", "False", "no", ""}
 
 
 def _normalize_url(url: str) -> str:

@@ -178,6 +178,11 @@ def test_images_and_dates():
     check("photo: vraie photo gardée", is_logo_image("https://news.fr/uploads/usine.jpg"), False)
     check("date: format jj/mm/aaaa", _fmt_date("2026-06-24"), "24/06/2026")
     check("date: vide si invalide", _fmt_date("xxx"), "")
+    # Requête d'illustration : garde l'acteur + mots-clés forts, retire les mots vides.
+    from utils.image_search import _query
+    q = _query("Decathlon", "Chambéry : Decathlon ferme deux magasins du centre-ville").lower()
+    check("illustration: acteur dans la requête", "decathlon" in q, True)
+    check("illustration: mot vide retiré", " du " not in f" {q} ", True)
 
 
 def test_synthese_block():

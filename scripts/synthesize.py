@@ -523,6 +523,19 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         else:
             log.warning("Aucune brève avec vraie photo : la une restera en bannière.")
 
+    # Aucune photo de source/officielle exploitable (cas de l'institutionnel, qui n'a
+    # souvent qu'un logo) : on cherche une VRAIE PHOTO libre de droits sur le web
+    # (Openverse/CC), validée par un LLM vision. Sinon → carte de territoire (ci-dessous).
+    if os.getenv("NEWSLETTER_WEB_IMAGES", "1").strip() != "0":
+        from utils import image_search
+        for entry in ([hero] if hero else []) + items:
+            if not entry.get("image"):
+                photo = image_search.illustrate(
+                    entry.get("title", ""), entry.get("source", ""), log=log)
+                if photo:
+                    entry["image"] = photo
+                    log.info("Photo web (libre de droits) : %s", photo)
+
     # Images de substitution par territoire quand l'image d'origine manque
     # (presse sans image réutilisable, ou flux sans visuel).
     from utils.sources import load_territory_images, pick_image
