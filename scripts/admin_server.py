@@ -204,6 +204,14 @@ _ADMIN_CSS = (
     ".sgr .m{font-size:12px;color:#6b7280;margin-top:3px}"
     ".bsm{border:0;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;color:#fff;cursor:pointer}"
     ".bsm.ok{background:#15803d}.bsm.no{background:#b91c1c}.bsm:hover{opacity:.92}"
+    ".dgrid{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 6px}"
+    ".dbox{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #e9edf3;"
+    "border-radius:10px;padding:9px 13px;font-size:13px;font-weight:700;color:#2f4a78;box-shadow:0 1px 4px rgba(20,32,44,.05)}"
+    ".dbox.acc{border-color:#f1c4b8;color:#c4502f;background:#fff7f4}"
+    ".dbox.mut{background:#f4f6f9;color:#52607a;font-weight:600;border-style:dashed}"
+    ".darr{color:#cbd2dc;font-weight:700;font-size:16px}"
+    ".dlbl{font-size:11px;color:#9aa3af;font-style:italic;padding:0 1px}"
+    ".dcol{display:inline-flex;flex-direction:column;gap:6px}"
     "@media(max-width:560px){.wrap{padding:28px 14px 48px}.card{padding:18px}}"
 )
 
@@ -323,39 +331,53 @@ def _archi_html() -> str:
         f'<tr><td>{role}</td><td><code>{model}</code></td><td>{freq}</td></tr>'
         for role, model, freq in _ARCHI_LLM
     )
+    flow = (
+        '<div class="dgrid">'
+        '<div class="dcol"><span class="dbox">📥 Gmail</span><span class="dbox">🗞 RSS</span>'
+        '<span class="dbox">🌐 Web</span></div>'
+        '<span class="darr">→</span><span class="dbox acc">🧠 Tri IA</span><span class="darr">→</span>'
+        '<div class="dcol"><span class="dbox">📊 Page publique</span>'
+        '<span class="dbox">✉ Newsletter <span class="dlbl">→</span> 📧 Brevo · 📁 Drive</span></div>'
+        '</div>'
+    )
+    photos = (
+        '<div class="dgrid">'
+        '<span class="dbox">Photo source</span><span class="dlbl">sinon</span><span class="darr">→</span>'
+        '<span class="dbox">og:image officielle</span><span class="dlbl">sinon</span><span class="darr">→</span>'
+        '<span class="dbox acc">Photo web <span class="dlbl">+ vision&nbsp;✓</span></span>'
+        '<span class="dlbl">sinon</span><span class="darr">→</span>'
+        '<span class="dbox mut">Carte territoire</span></div>'
+    )
+    loop = (
+        '<div class="dgrid"><span class="dbox">Sujet</span><span class="darr">→</span>'
+        '<span class="dbox">déjà jugé&nbsp;?</span><span class="dlbl">oui</span><span class="darr">→</span>'
+        '<span class="dbox mut">cache ↺ <span class="dlbl">instantané</span></span></div>'
+        '<div class="dgrid" style="padding-left:120px;"><span class="dlbl">non</span><span class="darr">→</span>'
+        '<span class="dbox acc">LLM juge 1×</span><span class="darr">→</span>'
+        '<span class="dbox mut">écrit le cache</span></div>'
+    )
     return (
         '<details><summary class="sec">📖 Comment ça marche</summary>'
-        '<div style="font-size:13px;color:#374151;line-height:1.65;margin:12px 0;">'
-        'Collecte multi-sources → <b>tri par IA</b> (pertinence + titres propres) → deux sorties : '
-        'la <b>page publique</b> (veille exhaustive) et la <b>newsletter</b> (sélection rédigée, '
-        'brouillon Brevo + archive Drive). Le VPS exécute le cron et héberge cette page ; '
-        'l\'envoi de la newsletter reste <b>manuel</b>.</div>'
-        '<div class="sec" style="margin:14px 0 8px;">Étapes</div>'
+        '<div class="sec" style="margin:14px 0 4px;">Le flux</div>'
+        f'{flow}'
+        '<div class="dlbl" style="display:block;margin-bottom:6px;">Le VPS exécute le cron et héberge la page ; '
+        'l\'envoi de la newsletter reste manuel.</div>'
+        '<div class="sec" style="margin:16px 0 8px;">Étapes</div>'
         f'<table class="t"><tr><th>#</th><th>Étape</th><th>Quand</th><th>LLM</th><th>Rôle</th></tr>{steps}</table>'
         '<div class="sec" style="margin:18px 0 8px;">Les 4 LLM</div>'
         f'<table class="t"><tr><th>Rôle</th><th>Modèle</th><th>Fréquence</th></tr>{llms}</table>'
 
-        '<div class="sec" style="margin:18px 0 8px;">Comportement des LLM (coûts, boucles)</div>'
-        '<div style="font-size:13px;color:#374151;line-height:1.7;">'
-        '<b>Pas de boucle infinie</b> : chaque sujet est jugé <b>une seule fois</b> par le tri, '
-        'puis le verdict est <b>mis en cache</b> sur disque (<code>logs/triage_cache.json</code>). '
-        'Les builds suivants relisent le cache → coût quasi nul. Idem pour la validation des '
-        'photos (<code>image_judge_cache.json</code>) et la recherche d\'illustration '
-        '(<code>image_illustration_cache.json</code>).<br>'
-        '<b>Fail-open</b> : sans clé API ou en cas d\'erreur, le LLM ne bloque rien — le sujet '
-        'est conservé tel quel. La veille n\'est jamais cassée par l\'IA.<br>'
-        '<b>Pré-filtre gratuit</b> : des mots-clés écartent l\'évident (sport, faits divers…) '
-        'AVANT le LLM, qui ne juge donc que les survivants → moins d\'appels.</div>'
+        '<div class="sec" style="margin:18px 0 8px;">Cache & boucles (pas de boucle infinie)</div>'
+        f'{loop}'
+        '<div class="dlbl" style="display:block;margin-bottom:6px;">Chaque sujet/photo est jugé '
+        '<b>une seule fois</b> puis mis en cache. <b>Fail-open</b> : sans clé API ou en cas '
+        'd\'erreur, rien n\'est bloqué (la veille n\'est jamais cassée). Un pré-filtre par mots-clés '
+        'écarte l\'évident <i>avant</i> le LLM.</div>'
 
-        '<div class="sec" style="margin:18px 0 8px;">Comment on cherche les photos</div>'
-        '<div style="font-size:13px;color:#374151;line-height:1.7;">'
-        'Pour chaque brève, on tente dans l\'ordre, en s\'arrêtant au premier succès :<br>'
-        '1. <b>Photo de la source</b> (RSS/email) si c\'est une vraie image (les logos sont écartés).<br>'
-        '2. <b>og:image de l\'article officiel</b> trouvé par recherche web (Sonnet).<br>'
-        '3. <b>Photo scrapée d\'un article web</b> : recherche web du sujet → récupère la photo '
-        'd\'un résultat → <b>validée par un LLM vision</b> (« illustre-t-elle vraiment le sujet ? »).<br>'
-        '4. <b>Carte de territoire</b> (visuel de marque) en dernier recours.<br>'
-        'Tout est mis en cache : une photo trouvée/jugée ne l\'est qu\'une fois.</div>'
+        '<div class="sec" style="margin:18px 0 8px;">Recherche des photos (cascade)</div>'
+        f'{photos}'
+        '<div class="dlbl" style="display:block;margin-bottom:6px;">On s\'arrête au premier succès ; '
+        'sinon on retombe sur la carte de territoire. Tout est mis en cache.</div>'
 
         '<div style="font-size:12px;color:#9aa3af;margin-top:14px;">Détail complet : '
         '<code>docs/ARCHITECTURE.md</code> dans le dépôt.</div></details>'
