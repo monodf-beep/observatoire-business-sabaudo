@@ -2,34 +2,36 @@
 # suivies »). Sert à savoir d'un coup d'œil à quoi on est abonné et ce qui arrive.
 #
 # Format (un par ligne) :  nom;domaine;territoire;statut
-#   - nom       : libellé lisible affiché dans le tableau
-#   - domaine   : domaine ou adresse expéditrice (sert à détecter « reçue cette semaine »)
-#   - territoire: Savoie | Piemonte | Vallee-Aoste | Nice | Alcotra
-#   - statut    : actif | attente | inactif | candidat
-#       actif    = abonnement confirmé, emails reçus
-#       attente  = inscrit, en attente du 1er envoi
-#       inactif  = pas de flux newsletter / désabonné (à réactiver si besoin)
-#       candidat = repéré, à souscrire ou à confirmer l'expéditeur exact
+#   - statut : actif | attente | inactif | candidat
+#       actif    = abonnement confirmé          attente  = inscrit, en attente du 1er envoi
+#       inactif  = pas de flux / désabonné       candidat = à souscrire / expéditeur à confirmer
 #
-# Statuts mis à jour d'après l'audit Gmail du 27/06/2026 (libellé « Observatoire —
-# Newsletters », 72 conversations). À garder cohérent avec config/whitelist_gmail.txt.
+# Mis à jour 27/06/2026 (inscriptions + audit Gmail). Cohérent avec whitelist_gmail.txt.
 
 # ===================== SAVOIE / HAUTE-SAVOIE =====================
-French Tech in the Alps;8839714.brevosend.com;Savoie;actif
-CCI Savoie;savoie.cci.fr;Savoie;actif
+French Tech in the Alps (Annecy/Chambéry/Genevois);ftalps.com;Savoie;actif
+CCI Savoie Mont Blanc;savoie.cci.fr;Savoie;actif
+CCI Haute-Savoie;haute-savoie.cci.fr;Savoie;actif
 tech&fest (écosystème tech alpin);news.tech-fest.fr;Savoie;actif
+Initiative Grand Annecy;initiative-grand-annecy.fr;Savoie;actif
+BNI France (réseau d'affaires);bnifrance.fr;Savoie;actif
+Réseau Entreprendre (national);reseau-entreprendre.org;Savoie;actif
 
 # ===================== PIÉMONT =====================
 I3P (incubateur Politecnico Torino);i3p.it;Piemonte;actif
 Camera di commercio di Torino;to.camcom.it;Piemonte;actif
 Laboratorio Chimico CCIAA Torino;lab-to.camcom.it;Piemonte;actif
+Fondazione CRT;fondazionecrt.it;Piemonte;actif
+BNI Italia (réseau d'affaires);bni-italia.com;Piemonte;actif
 Piemonte Innova (contacts humains, pas de NL);piemonteinnova.it;Piemonte;inactif
 
 # ===================== VALLÉE D'AOSTE =====================
 Pépinières VDA (Fondazione Brodolini);fondazionebrodolini.eu;Vallee-Aoste;actif
+VDA Innovation;vdainnovation.it;Vallee-Aoste;actif
 
 # ===================== NICE / ALPES-MARITIMES =====================
 CCI Nice Côte d'Azur;cote-azur.cci.fr;Nice;actif
+Invest in Côte d'Azur / Team Côte d'Azur;investincotedazur.com;Nice;actif
 
 # ===================== TRANSFRONTALIER / EUROPE =====================
 EU-Startups (financements européens);eu-startups.com;Alcotra;actif

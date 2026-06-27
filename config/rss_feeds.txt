@@ -33,6 +33,8 @@ https://www.finpiemonte.it/rss.xml;Piemonte
 https://www.fondazionecrt.it/feed/;Piemonte
 # Radar éco (Google News, locale IT)
 https://news.google.com/rss/search?q=economia+Piemonte+impresa+OR+startup&hl=it&gl=IT&ceid=IT:it;Piemonte
+# Institutionnel : Torino Social Impact (écosystème impact économique) — flux vérifié 27/06
+https://www.torinosocialimpact.it/feed/;Piemonte
 # Radar presse régionale
 https://www.quotidianopiemontese.it/feed/;Piemonte
 
@@ -57,6 +59,8 @@ https://www.sophia-antipolis.fr/feed/;Nice
 https://www.telecom-valley.fr/feed/;Nice
 # Radar éco (Google News)
 https://news.google.com/rss/search?q=%C3%A9conomie+Nice+OR+Menton+OR+%22Sophia+Antipolis%22+OR+%22Universit%C3%A9+C%C3%B4te+d%27Azur%22+-Cannes+-Grasse&hl=fr&gl=FR&ceid=FR:fr;Nice
+# Institutionnel : UPE 06 (Union pour l'entreprise des Alpes-Maritimes) — flux vérifié 27/06
+https://www.upe06.com/feed/;Nice
 # Radar presse : Nice-Matin rubrique Économie (contenu complet)
 https://www.nicematin.com/economie/rss;Nice
 

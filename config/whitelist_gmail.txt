@@ -5,46 +5,57 @@
 #   - territoire : Savoie | Piemonte | Vallee-Aoste | Nice | Alcotra  (sans accents/espaces)
 #
 # IMPORTANT : pas de commentaire en fin de ligne (le « ; » sépare motif et territoire).
-# Les lignes vides et celles commençant par # sont ignorées.
 #
-# ✅ = expéditeur confirmé (email réellement reçu — audit Gmail 27/06/2026)
-# ⛔ = désactivé volontairement (voir motif)
-#
-# Source de l'audit : libellé Gmail « Observatoire — Newsletters » (72 conversations,
-# 30 derniers jours) — adresses expéditrices relevées une à une.
+# ✅ = confirmé (email reçu)   ⏳ = inscrit, en attente du 1er envoi / validation CAPTCHA
+# ⛔ = désactivé volontairement
+# Source : audits Gmail (libellé « Observatoire — Newsletters ») + inscriptions 27/06/2026.
 
 # ===================== SAVOIE / HAUTE-SAVOIE =====================
-# ✅ French Tech in the Alps (routé via Brevo — contact@ / chambery@ / fta.genevois@)
+# ✅ French Tech in the Alps — routage Brevo + domaine direct (Annecy/Chambéry/Genevois)
 8839714.brevosend.com;Savoie
-# ✅ CCI Savoie (info@savoie.cci.fr)
+ftalps.com;Savoie
+# ✅ CCI Savoie Mont Blanc
 savoie.cci.fr;Savoie
-# ✅ tech&fest — écosystème tech alpin (sigrid@news.tech-fest.fr)
+# ✅ CCI Haute-Savoie
+haute-savoie.cci.fr;Savoie
+# ✅ tech&fest — écosystème tech alpin
 news.tech-fest.fr;Savoie
+# ✅ Initiative Grand Annecy
+initiative-grand-annecy.fr;Savoie
+# ✅ BNI France (newsletter nationale du réseau d'affaires)
+bnifrance.fr;Savoie
+# ✅ Réseau Entreprendre (newsletter nationale — CAPTCHA validé)
+reseau-entreprendre.org;Savoie
 
 # ===================== PIÉMONT =====================
 # ✅ I3P — adresses de newsletter uniquement (le domaine entier captait des humains)
 newsletter@i3p.it;Piemonte
 comunicazione@i3p.it;Piemonte
-# ✅ Camera di commercio di Torino (cciaato-noreply@to.camcom.it)
+# ✅ Camera di commercio di Torino + Laboratorio Chimico (événements éco)
 to.camcom.it;Piemonte
-# ✅ Laboratorio Chimico — CCIAA Torino : invitations/événements éco (eventi@lab-to.camcom.it)
 lab-to.camcom.it;Piemonte
-# ⛔ Piemonte Innova : DÉSACTIVÉ — l'adresse ne porte que des emails de contacts
-# humains (projet ALIVE : silvana.sanfeliu@, alessandra.buffa@), pas de newsletter.
+# ✅ Fondazione CRT
+fondazionecrt.it;Piemonte
+# ✅ BNI Italia (newsletter nationale — CAPTCHA validé)
+bni-italia.com;Piemonte
+# ⛔ Piemonte Innova : adresses = contacts humains (projet ALIVE), pas de newsletter.
 # piemonteinnova.it;Piemonte
 
 # ===================== VALLÉE D'AOSTE =====================
-# ✅ Pépinières VDA — Fondazione Brodolini (pepinieres@fondazionebrodolini.eu)
+# ✅ Pépinières VDA — Fondazione Brodolini (deux domaines d'envoi possibles)
 fondazionebrodolini.eu;Vallee-Aoste
+pepinieresvda.eu;Vallee-Aoste
+# ✅ VDA Innovation
+vdainnovation.it;Vallee-Aoste
 
 # ===================== NICE / ALPES-MARITIMES =====================
-# ✅ CCI Nice Côte d'Azur (newsletter@cote-azur.cci.fr)
+# ✅ CCI Nice Côte d'Azur
 cote-azur.cci.fr;Nice
+# ✅ Invest in Côte d'Azur / Team Côte d'Azur
+investincotedazur.com;Nice
 
 # ===================== TRANSFRONTALIER / EUROPE =====================
-# ✅ EU-Startups — financements/actu startups européennes (thomas.ohr@eu-startups.com)
-# Périmètre large (pan-européen) : rangé en Alcotra. À surveiller (pertinence locale).
+# ✅ EU-Startups (pan-européen — à surveiller pour la pertinence locale)
 eu-startups.com;Alcotra
-# ⛔ Interreg Alcotra : aucun email reçu (audit 27/06/2026). À réactiver après
-# (re)souscription et confirmation de l'expéditeur réel.
+# ⛔ Interreg Alcotra : aucun email reçu — réactiver après confirmation de l'expéditeur.
 # interreg-alcotra.eu;Alcotra

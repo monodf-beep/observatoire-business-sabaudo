@@ -1,0 +1,51 @@
+# Sources SANS newsletter email — backlog de scraping (cartographie Franck, 27/06/2026).
+#
+# But : ne rien perdre. Ces acteurs n'ont pas de newsletter exploitable, mais ils
+# publient de l'actualité économique. On les couvre selon leur « type » :
+#
+#   rss      = un flux RSS existe et a été VÉRIFIÉ → déjà ajouté à config/rss_feeds.txt
+#   html     = pas de RSS, page d'actualité publique → nécessite un module de scraping
+#              HTML (à construire : récupérer la page, extraire titres+liens d'articles)
+#   membres  = contenu réservé aux adhérents → non scrapable publiquement
+#   hors     = hors périmètre (tourisme pur, etc.)
+#
+# Format :  nom;url;territoire;type
+#
+# Note technique : le pipeline ne sait aujourd'hui lire que du RSS (scripts/rss_collect.py).
+# Les lignes « html » sont la spec d'un futur scripts/html_scrape.py (un extracteur par
+# site, ou générique via les balises <article>/<h2><a>). À prioriser selon l'intérêt.
+
+# ===================== SAVOIE / HAUTE-SAVOIE =====================
+Réseau Entreprendre Haute-Savoie;https://www.reseau-entreprendre.org/haute-savoie/;Savoie;html
+Grand Annecy Économie;https://www.grandannecy.fr/economie;Savoie;html
+Territoire d'Industrie;https://www.territoiresdindustrie.gouv.fr/;Savoie;html
+BGE Haute-Savoie;https://www.bge-cotedazur.fr/;Savoie;html
+
+# ===================== NICE / PACA / ALPES-MARITIMES =====================
+UPE 06 (Union pour l'entreprise 06);https://www.upe06.com/feed/;Nice;rss
+Réseau Entreprendre Côte d'Azur;https://www.reseau-entreprendre.org/cote-d-azur/;Nice;html
+Nice Start(s)Up / Hub Innovation;https://www.nicecotedazur.org/hub-innovation;Nice;html
+Emerging Business Factory;https://ebf.org/;Nice;html
+BGE Côte d'Azur;https://www.bge-cotedazur.fr/;Nice;html
+Sophia Antipolis Innovation Camp;https://www.sophia-antipolis.fr/;Nice;html
+BA06 (Business Angels Côte d'Azur);https://www.ba06.fr/;Nice;membres
+
+# ===================== PIÉMONT (TORINO) =====================
+Torino Social Impact;https://www.torinosocialimpact.it/feed/;Piemonte;rss
+Confindustria / Unione Industriale Torino;https://www.ui.torino.it/;Piemonte;membres
+Stratosferica;https://www.stratosferica.it/;Piemonte;html
+OGR Torino (Officine Grandi Riparazioni);https://www.ogrtorino.it/;Piemonte;html
+BNI Piemonte Nord;https://www.bni-piemontenord.it/;Piemonte;html
+BNI Piemonte Sud;https://www.bni-piemontesud.it/;Piemonte;html
+BNI Torino Nord Est;https://www.bni-torinonordest.it/;Piemonte;html
+BNI Torino Sud Ovest;https://www.bni-torinosudovest.it/;Piemonte;html
+
+# ===================== VALLÉE D'AOSTE =====================
+Confindustria VdA / AVI Servizi;https://www.confindustriavda.it/;Vallee-Aoste;html
+Start Cup Piemonte Valle d'Aosta;https://www.startcup.it/;Vallee-Aoste;html
+Région VdA — développement économique;https://www.regione.vda.it/;Vallee-Aoste;html
+BNI Piemonte Nord e VdA;https://www.bni-piemontenord.it/;Vallee-Aoste;html
+Fondation Grand Paradis (tourisme);https://www.grand-paradis.it/;Vallee-Aoste;hors
+
+# ===================== ALCOTRA / TRANSFRONTALIER =====================
+ANCI / Régions transfrontalières;https://www.anci.it/;Alcotra;html
