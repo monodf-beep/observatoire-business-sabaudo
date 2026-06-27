@@ -531,10 +531,11 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         for entry in ([hero] if hero else []) + items:
             if not entry.get("image"):
                 photo = image_search.illustrate(
-                    entry.get("title", ""), entry.get("source", ""), log=log)
+                    entry.get("title", ""), entry.get("source", ""),
+                    summary=entry.get("summary", ""), log=log)
                 if photo:
                     entry["image"] = photo
-                    log.info("Photo web (libre de droits) : %s", photo)
+                    log.info("Photo trouvée pour « %s » : %s", entry.get("title", "")[:40], photo)
 
     # Images de substitution par territoire quand l'image d'origine manque
     # (presse sans image réutilisable, ou flux sans visuel).

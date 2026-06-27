@@ -163,7 +163,7 @@ _ADMIN_CSS = (
     "*{box-sizing:border-box}"
     "body{margin:0;background:linear-gradient(180deg,#eef2f8,#e6eaf1);min-height:100vh;"
     "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#16202c}"
-    ".wrap{max-width:780px;margin:0 auto;padding:42px 22px 64px}"
+    ".wrap{max-width:1180px;margin:0 auto;padding:42px 28px 64px}"
     ".eyebrow{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#df664f}"
     ".h1{font-size:30px;font-weight:800;color:#2f4a78;letter-spacing:-.3px;margin:5px 0 26px}"
     ".h1 b{color:#df664f;font-weight:800}"

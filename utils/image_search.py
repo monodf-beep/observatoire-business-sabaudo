@@ -27,6 +27,7 @@ from utils.sources import is_logo_image
 ROOT = Path(__file__).resolve().parent.parent
 _SEARCH_CACHE = ROOT / "logs" / "image_search_cache.json"
 _JUDGE_CACHE = ROOT / "logs" / "image_judge_cache.json"
+_ILLUS_CACHE = ROOT / "logs" / "image_illustration_cache.json"
 _OPENVERSE = "https://api.openverse.org/v1/images/"
 _UA = "ObservatoireBusinessSabaudo/1.0 (+https://culturasabauda.eu)"
 _DEFAULT_JUDGE_MODEL = "claude-haiku-4-5"
@@ -153,17 +154,58 @@ def judge_image(image_url: str, title: str, *, model: str | None = None, log=Non
     return verdict
 
 
-def illustrate(title: str, actor: str = "", *, judge: bool = True, model: str | None = None,
-               log=None) -> str:
-    """Trouve (et valide) une photo libre de droits pour une brève. '' si rien de bon."""
+_SOCIAL = ("facebook", "twitter", "x.com", "instagram", "youtube", "youtu.be",
+           "linkedin", "pinterest", "tiktok")
+
+
+def find_illustration(title: str, summary: str = "", *, model: str | None = None, log=None) -> str:
+    """SCRAPE une vraie photo du web : recherche des articles sur le sujet, récupère
+    la photo (og:image) d'un résultat pertinent, la valide par vision. '' si rien."""
+    from utils import official_search
+
+    search_model = os.getenv("OFFICIAL_SEARCH_MODEL", "claude-sonnet-4-6")
+    query = (f"{title}. {summary}").strip()
+    urls = official_search.web_search_urls(query, search_model)
+    judge_model = os.getenv("IMAGE_JUDGE_MODEL", _DEFAULT_JUDGE_MODEL)
+    for u in urls:
+        host = urllib.parse.urlparse(u).netloc.lower()
+        if any(s in host for s in _SOCIAL):
+            continue
+        final, html, status = official_search.fetch_page(u)
+        if status != "ok" or not html:
+            continue
+        og = official_search.og_image_from_html(html, final)
+        if not og or is_logo_image(og):
+            continue
+        if judge_image(og, title, model=judge_model, log=log):
+            if log:
+                log.info("Photo web (article) pour « %s » : %s", title[:40], og)
+            return og
+    return ""
+
+
+def illustrate(title: str, actor: str = "", *, summary: str = "", judge: bool = True,
+               model: str | None = None, log=None) -> str:
+    """Trouve une photo pour une brève, MISE EN CACHE par titre. Ordre :
+    1) photo libre de droits (Openverse/CC) ; 2) photo scrapée d'un article web (validée
+    par vision). '' si rien de convaincant → carte de territoire en amont."""
     if os.getenv("NEWSLETTER_WEB_IMAGES", "1").strip() == "0":
         return ""
-    url = search_photo(_query(actor, title), log=log)
-    if not url:
-        return ""
+    key = _query(actor, title) or (title or "")[:80]
+    cache = _load(_ILLUS_CACHE)
+    if key in cache:
+        return cache[key]
+
     do_judge = judge and os.getenv("NEWSLETTER_IMAGE_JUDGE", "1").strip() != "0"
-    if do_judge and not judge_image(url, title, model=model, log=log):
-        if log:
-            log.info("Photo rejetée par le juge vision : %s", url)
-        return ""
-    return url
+    result = ""
+    # 1. Banque libre de droits (gratuit, rare sur l'hyper-local).
+    cc = search_photo(_query(actor, title), log=log)
+    if cc and (not do_judge or judge_image(cc, title, model=model, log=log)):
+        result = cc
+    # 2. Scraping d'une vraie photo d'article via recherche web (le vrai levier local).
+    if not result:
+        result = find_illustration(title, summary, model=model, log=log)
+
+    cache[key] = result
+    _save(_ILLUS_CACHE, cache)
+    return result

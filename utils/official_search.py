@@ -127,6 +127,42 @@ def _text_of(blocks) -> str:
     )
 
 
+def web_search_urls(query: str, model: str, api_key: str | None = None,
+                    max_results: int = 8) -> list[str]:
+    """Recherche web GÉNÉRALE (non restreinte) → URLs des pages/résultats pertinents.
+    Sert à trouver une page d'actualité illustrant un sujet (pour en extraire la photo)."""
+    api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+    if not api_key or not query.strip():
+        return []
+    try:
+        import anthropic
+    except ImportError:
+        return []
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model=model, max_tokens=512, tools=[_WEB_SEARCH_TOOL],
+            messages=[{"role": "user", "content": (
+                f"Recherche sur le web des articles de presse récents illustrant ce sujet : "
+                f"{query}. Cite les pages les plus pertinentes (presse régionale, actualité).")}],
+        )
+    except Exception as exc:
+        log.warning("Recherche web (illustration) impossible : %s", exc)
+        return []
+
+    urls, seen = [], set()
+    for block in (message.content or []):
+        if getattr(block, "type", "") != "web_search_tool_result":
+            continue
+        for res in getattr(block, "content", None) or []:
+            u = getattr(res, "url", "") or (res.get("url", "") if isinstance(res, dict) else "")
+            u = _normalize_url(u)
+            if u and u not in seen:
+                seen.add(u)
+                urls.append(u)
+    return urls[:max_results]
+
+
 def find_article_url(actor: str, title: str, summary: str, domain: str,
                      model: str, api_key: str | None = None) -> str:
     """Retrouve l'URL de l'article officiel sur `domain` traitant du sujet, ou ''."""
