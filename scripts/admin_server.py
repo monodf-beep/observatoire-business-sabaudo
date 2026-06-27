@@ -220,6 +220,30 @@ _ADMIN_CSS = (
 _TINT = {"#15803d": "#dcfce7", "#b91c1c": "#fee2e2", "#b45309": "#fef3c7", "#9aa3af": "#f1f3f7"}
 
 
+def _failure_reason(key: str) -> str:
+    """Raison lisible d'un échec, extraite du journal de la tâche (logs/admin_<key>.log)."""
+    import re
+
+    try:
+        tail = (STATE_DIR / f"admin_{key}.log").read_text(encoding="utf-8", errors="replace")[-5000:]
+    except OSError:
+        return ""
+    low = tail.lower()
+    if "usage limit" in low or "regain access" in low:
+        m = re.search(r"regain access on ([0-9:\- ]+UTC)", tail)
+        return "Limite d'usage API atteinte" + (f" (débloquée le {m.group(1)})" if m else "")
+    if "credit balance" in low or "too low" in low:
+        return "Crédit API épuisé — recharger sur console.anthropic.com"
+    if "anthropic_api_key non" in low or "api_key non définie" in low:
+        return "Clé API absente du .env"
+    if "connexion à l'api" in low:
+        return "API injoignable (réseau / proxy)"
+    for line in reversed(tail.splitlines()):
+        if "| ERROR" in line or "Erreur" in line:
+            return line.split("|")[-1].strip()[:130]
+    return ""
+
+
 def _status_rows() -> str:
     state = _load_state()
     rows = ""
@@ -249,8 +273,11 @@ def _status_rows() -> str:
         color = {"running": "#b45309", "succès": "#15803d"}.get(status, "#6b7280")
         if status.startswith("échec"):
             color = "#b91c1c"
+        reason = _failure_reason(key) if status.startswith("échec") else ""
+        reason_html = (f'<div style="font-size:12px;color:#b91c1c;font-weight:600;margin-top:3px;">'
+                       f'↳ {_escape(reason)}</div>' if reason else "")
         rows += (
-            f'<tr><td style="font-weight:600;">{task["label"]}</td>'
+            f'<tr><td style="font-weight:600;">{task["label"]}{reason_html}</td>'
             f'<td style="color:{color};font-weight:800;">{status}</td>'
             f'<td style="color:#9aa3af;">{when}</td></tr>'
         )
