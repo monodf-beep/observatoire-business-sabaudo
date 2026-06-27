@@ -360,6 +360,16 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         if is_blocked_image(entry.get("image", ""), blocked_img):
             log.info("Image proscrite ignorée (%s) : %s", entry.get("title", "")[:50], entry["image"])
             entry["image"] = ""
+
+    # Politique d'images : par défaut on N'UTILISE PAS les images scrappées des
+    # sources (og:image, image d'email). Sur les sources institutionnelles ce sont
+    # presque toujours des LOGOS / blasons / bannières (Banca d'Italia, blason VDA,
+    # ministère, QR codes du tunnel…) — hors-sujet et disgracieux. On bascule donc
+    # sur les cartes de marque par territoire (propres, cohérentes). Pour réactiver
+    # les vraies photos des sources : NEWSLETTER_SOURCE_IMAGES=1 dans .env.
+    if os.getenv("NEWSLETTER_SOURCE_IMAGES", "0").strip() != "1":
+        for entry in ([hero] if hero else []) + items:
+            entry["image"] = ""
     signaux = []
     for s in parsed.get("signaux", []):
         rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None

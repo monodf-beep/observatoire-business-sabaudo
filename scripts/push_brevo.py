@@ -101,6 +101,23 @@ def create_from_data(data: dict, force: bool = False) -> int | None:
         log.info("HTML local écrit : %s", out_html)
     except OSError as exc:
         log.warning("Écriture HTML locale impossible : %s", exc)
+
+    # Boucle de vérification AUTOMATIQUE : on contrôle le HTML exact avant de créer
+    # le brouillon (tirets cadratins, images de presse, liens traceurs/journaux…).
+    # Non bloquant — le brouillon reste un brouillon, validé manuellement — mais les
+    # problèmes apparaissent clairement dans le journal admin.
+    try:
+        from scripts.check_newsletter import check as _check_nl
+
+        problems = [(lvl, lbl, ex) for lvl, lbl, ex in _check_nl(html) if lvl == "ERREUR"]
+        if problems:
+            log.warning("⚠ Vérification newsletter : %d problème(s) bloquant(s) détecté(s) :", len(problems))
+            for _lvl, lbl, ex in problems:
+                log.warning("   ✗ %s%s", lbl, (" — ex. " + ex[0][:80]) if ex else "")
+        else:
+            log.info("✓ Vérification newsletter : aucun problème bloquant.")
+    except Exception as exc:  # le contrôle ne doit jamais casser la génération
+        log.warning("Vérification newsletter non effectuée : %s", exc)
     name = f"Business Sabaudo — {data.get('week_label', '')}".strip(" —")
 
     try:
