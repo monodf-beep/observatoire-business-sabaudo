@@ -51,10 +51,18 @@ TASKS = {
         "note": "Force la création d'un brouillon Brevo (même semaine creuse). "
                 "Consomme du crédit API — aucun envoi automatique.",
     },
+    "veille_ia": {
+        "label": "Trier la veille par IA, puis rafraîchir",
+        "argv": ["bash", "-lc", f"'{PY}' scripts/triage.py && '{PY}' scripts/build_dashboard.py"],
+        "note": "Juge chaque sujet (pertinence économique) et nettoie les titres via IA, "
+                "PUIS republie la page. Consomme du crédit API (seuls les NOUVEAUX sujets "
+                "sont jugés — le reste est en cache).",
+    },
     "veille": {
         "label": "Rafraîchir la page « toute la veille »",
         "argv": [PY, "scripts/build_dashboard.py"],
-        "note": "Gratuit (pas d'IA) : republie la page publique à partir de la veille collectée.",
+        "note": "Gratuit (pas d'IA) : republie la page à partir de la veille déjà triée. "
+                "À utiliser après « Trier par IA » ou après un changement de configuration.",
     },
 }
 
@@ -192,14 +200,99 @@ def _status_rows() -> str:
     return rows
 
 
+def _log_state(*names: str) -> tuple[str, str, str]:
+    """(quand, couleur, statut) d'une étape, d'après le plus récent de ses journaux."""
+    best = None
+    for n in names:
+        p = STATE_DIR / n
+        if p.exists():
+            m = p.stat().st_mtime
+            if best is None or m > best[1]:
+                best = (p, m)
+    if best is None:
+        return ("jamais", "#9aa3af", "—")
+    p, m = best
+    when = datetime.fromtimestamp(m, timezone.utc).strftime("%d/%m %H:%M")
+    try:
+        tail = p.read_text(encoding="utf-8", errors="replace")[-3000:].lower()
+    except OSError:
+        tail = ""
+    if "traceback (most recent call last)" in tail:
+        return (when, "#b91c1c", "erreur")
+    return (when, "#15803d", "ok")
+
+
+# Étapes du pipeline (clé, libellé, icône, journaux candidats).
+_PIPELINE = [
+    ("gmail", "Collecte Gmail", "📥", ["cron_gmail.log", "admin_newsletter.log"]),
+    ("rss", "Collecte RSS", "🗞", ["cron_rss.log"]),
+    ("scrape", "Scraping HTML", "🌐", ["cron_scrape.log"]),
+    ("triage", "Tri IA", "🧠", ["cron_triage.log", "admin_veille_ia.log"]),
+    ("dashboard", "Page veille", "📊", ["cron_dashboard.log", "admin_veille.log", "admin_veille_ia.log"]),
+]
+
+
+def _node(label: str, icon: str, color: str, status: str, when: str) -> str:
+    return (
+        '<div style="display:inline-block;vertical-align:middle;width:106px;text-align:center;'
+        f'background:#fff;border:1px solid #e5e7eb;border-top:3px solid {color};border-radius:10px;'
+        'padding:10px 6px;white-space:normal;">'
+        f'<div style="font-size:20px;line-height:1;">{icon}</div>'
+        f'<div style="font-size:12px;font-weight:700;margin:5px 0 3px;color:#16202c;">{label}</div>'
+        f'<div style="font-size:10px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:{color};">{status}</div>'
+        f'<div style="font-size:10px;color:#9aa3af;margin-top:2px;">{when}</div></div>'
+    )
+
+
+def _arrow() -> str:
+    return ('<span style="display:inline-block;color:#c3c9d2;font-size:20px;font-weight:700;'
+            'vertical-align:middle;padding:0 1px;">→</span>')
+
+
+def _pipeline_html() -> str:
+    busy = _running_task()
+    running = {"veille_ia": {"triage", "dashboard"}, "veille": {"dashboard"},
+               "newsletter": {"newsletter"}}.get(busy, set())
+
+    def state(key, logs):
+        if key in running:
+            return ("#b45309", "en cours", "…")
+        when, color, st = _log_state(*logs)
+        return (color, st, when)
+
+    cells = []
+    for key, label, icon, logs in _PIPELINE:
+        color, st, when = state(key, logs)
+        cells.append(_node(label, icon, color, st, when))
+    chain = _arrow().join(cells)
+
+    # Branche newsletter (part du tri / de la collecte → brouillon Brevo).
+    ncolor, nst, nwhen = state("newsletter", ["admin_newsletter.log"])
+    branch = (
+        '<div style="margin:10px 0 0 350px;white-space:nowrap;">'
+        '<span style="display:inline-block;color:#c3c9d2;font-size:18px;vertical-align:middle;">↳</span>'
+        + _node("Newsletter (Brevo)", "✉", ncolor, nst, nwhen) + "</div>"
+    )
+    return (
+        '<div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#3f5f96;margin-bottom:12px;">Pipeline</div>'
+        f'<div style="overflow-x:auto;white-space:nowrap;padding:4px 0 2px;">{chain}</div>'
+        f'{branch}'
+        '<div style="font-size:11px;color:#9aa3af;margin-top:12px;">Collecte (Gmail · RSS · scraping) → tri IA → page publique. '
+        'La newsletter dérive du même flux. État dérivé des journaux ; « en cours » = traitement actif.</div>'
+    )
+
+
 PAGE = """<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Business Sabaudo — Admin</title></head>
 <body style="margin:0;background:#eef1f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#16202c;">
-<div style="max-width:620px;margin:0 auto;padding:38px 20px;">
+<div style="max-width:720px;margin:0 auto;padding:38px 20px;">
   <div style="font-size:11px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:#df664f;">Espace privé</div>
   <div style="font-size:30px;font-weight:800;color:#3f5f96;margin:4px 0 22px;">Business Sabaudo<span style="color:#df664f;">.</span> Admin</div>
   {flash}
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;margin-bottom:20px;">
+    {pipeline}
+  </div>
   <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;margin-bottom:20px;">
     {buttons}
   </div>
@@ -237,7 +330,8 @@ def home():
     flash_html = (f'<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;'
                   f'border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:14px;">{_escape(flash)}</div>'
                   if flash else "")
-    return PAGE.format(flash=flash_html, buttons=_buttons(), rows=_status_rows())
+    return PAGE.format(flash=flash_html, pipeline=_pipeline_html(),
+                       buttons=_buttons(), rows=_status_rows())
 
 
 @app.route(BASE + "/run/<task_key>", methods=["POST"])
