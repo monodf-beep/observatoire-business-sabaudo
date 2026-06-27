@@ -323,9 +323,19 @@ def build(upload: bool = False) -> int:
         dom = nl["domaine"]
         nl["recue"] = any(dom in h or h in dom for h in news_hits)
 
+    # Encart « Synthèse de la semaine » : relit la une + signaux que la newsletter a
+    # rédigés pour CETTE semaine (aucun appel IA en plus). Absent si pas de synthèse.
+    synthese = None
+    synth_path = OUTPUT_DIR / f"{week_id}.json"
+    if synth_path.exists():
+        try:
+            synthese = json.loads(synth_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            synthese = None
+
     generated = f"{datetime.now(timezone.utc):%d/%m/%Y}"
     html = render_veille_page(week_id, by_territory, generated_at=generated,
-                              newsletters=newsletters)
+                              newsletters=newsletters, synthese=synthese)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     DASHBOARD_PATH.write_text(html, encoding="utf-8")
     n = sum(len(v) for v in by_territory.values())

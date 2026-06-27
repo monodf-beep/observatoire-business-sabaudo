@@ -285,8 +285,67 @@ _VEILLE_JS = (
 )
 
 
+def _synthese_block(synthese: dict | None) -> str:
+    """Encart éditorial « Synthèse de la semaine » : la une + les signaux que la
+    newsletter a déjà rédigés (relus depuis son JSON — aucun appel IA en plus)."""
+    if not synthese:
+        return ""
+    hero = synthese.get("hero") or {}
+    signaux = synthese.get("signaux") or []
+    if not hero and not signaux:
+        return ""
+
+    # Une.
+    hero_html = ""
+    if hero.get("title"):
+        terr = hero.get("territory", "")
+        title = escape(hero["title"])
+        url = (hero.get("url") or "").strip()
+        title_html = (f'<a href="{escape(url)}" target="_blank" rel="noopener" '
+                      f'style="color:{INK};text-decoration:none;border-bottom:2px solid {ACCENT};">{title}</a>'
+                      if url else title)
+        hero_html = (
+            (f'<div style="margin-bottom:8px;">{_tag(terr)}</div>' if terr else "")
+            + f'<div style="font-size:19px;font-weight:800;line-height:1.3;color:{INK};margin-bottom:7px;">{title_html}</div>'
+            + (f'<div style="font-size:14px;color:#374151;line-height:1.6;">{escape(hero.get("summary",""))}</div>'
+               if hero.get("summary") else "")
+        )
+
+    # Signaux.
+    sig_rows = ""
+    for s in signaux[:6]:
+        if not s.get("title"):
+            continue
+        terr = s.get("territory", "")
+        color, label = _terr_color(terr), _terr_label(terr)
+        url = (s.get("url") or "").strip()
+        txt = escape(s["title"])
+        txt = (f'<a href="{escape(url)}" target="_blank" rel="noopener" '
+               f'style="color:{INK};text-decoration:none;border-bottom:1px solid {ACCENT};">{txt}</a>'
+               if url else txt)
+        sig_rows += (
+            f'<tr><td style="padding:7px 0;border-bottom:1px solid {BORDER};">'
+            f'<span style="font-size:11px;font-weight:700;color:{color};background:#eef2f7;'
+            f'padding:2px 9px;border-radius:20px;margin-right:8px;white-space:nowrap;">{escape(label)}</span>{txt}</td></tr>'
+        )
+    sig_html = (
+        f'<div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;'
+        f'color:{BRAND};margin:18px 0 8px;">Signaux de la semaine</div>'
+        f'<table style="width:100%;border-collapse:collapse;font-size:14px;">{sig_rows}</table>'
+        if sig_rows else ""
+    )
+
+    return (
+        f'<div style="background:{CARD};border:1px solid {BORDER};border-left:4px solid {ACCENT};'
+        f'border-radius:12px;padding:20px 22px;margin:0 0 22px;">'
+        f'<div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;'
+        f'color:{ACCENT};margin-bottom:10px;">Synthèse de la semaine</div>'
+        f'{hero_html}{sig_html}</div>'
+    )
+
+
 def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str = "",
-                       newsletters: list | None = None) -> str:
+                       newsletters: list | None = None, synthese: dict | None = None) -> str:
     """Page LECTEUR « toute la veille de la semaine » : la liste COMPLÈTE des sujets
     captés, organisée par territoire avec une navigation collante pour sauter d'un
     territoire à l'autre sans scroller. Les sujets de presse sont gardés en RADAR
@@ -375,6 +434,7 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
 
     gen = f" · mis à jour le {escape(generated_at)}" if generated_at else ""
     nl_table = _newsletters_table(newsletters or [])
+    synthese_block = _synthese_block(synthese)
     return (
         '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
@@ -388,7 +448,7 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
         f'<div class="intro">{total} sujets économiques captés sur l\'espace sabaudo cette semaine{gen}.</div>'
         '<div class="intro">En tête : <strong>newsletters</strong> et <strong>sources officielles</strong>. '
         'La presse (<strong>Radar</strong>) est repliée par territoire : elle sert à ne rien manquer.</div>'
-        f"{filterbar}{nl_table}{nav}{board}"
+        f"{synthese_block}{filterbar}{nl_table}{nav}{board}"
         '<div class="foot">Veille collectée et traitée automatiquement par l\'Observatoire économique '
         'de Cultura Sabauda. <a href="https://culturasabauda.eu">culturasabauda.eu</a></div>'
         f"{_VEILLE_JS}</div></body></html>"

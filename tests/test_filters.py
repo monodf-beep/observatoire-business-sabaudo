@@ -170,9 +170,20 @@ def test_triage():
     check("triage: parse invalide -> None", _parse_json_array("pas de json"), None)
 
 
+def test_synthese_block():
+    from utils.dashboard import _synthese_block
+    check("synthèse: vide si pas de données", _synthese_block(None), "")
+    block = _synthese_block({"hero": {"title": "Sommet franco-italien", "summary": "...", "territory": "Nice"},
+                             "signaux": [{"title": "273 M€ pour la VDA", "territory": "Vallee-Aoste", "url": ""}]})
+    check("synthèse: une rendue", "Sommet franco-italien" in block, True)
+    check("synthèse: signal rendu", "273 M€ pour la VDA" in block, True)
+    check("synthèse: libellé section", "Synthèse de la semaine" in block, True)
+
+
 def main() -> int:
     for fn in (test_offtopic, test_newsletter_junk, test_welcome, test_blocked_image,
-               test_press, test_perimeter, test_extract_articles, test_no_emdash, test_triage):
+               test_press, test_perimeter, test_extract_articles, test_no_emdash, test_triage,
+               test_synthese_block):
         print(f"• {fn.__name__}")
         fn()
     print(f"\n{_PASS} réussi(s), {_FAIL} échoué(s).")
