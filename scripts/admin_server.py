@@ -158,6 +158,52 @@ def _shquote(s: str) -> str:
     return shlex.quote(s)
 
 
+_ADMIN_CSS = (
+    "*{box-sizing:border-box}"
+    "body{margin:0;background:linear-gradient(180deg,#eef2f8,#e6eaf1);min-height:100vh;"
+    "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#16202c}"
+    ".wrap{max-width:780px;margin:0 auto;padding:42px 22px 64px}"
+    ".eyebrow{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#df664f}"
+    ".h1{font-size:30px;font-weight:800;color:#2f4a78;letter-spacing:-.3px;margin:5px 0 26px}"
+    ".h1 b{color:#df664f;font-weight:800}"
+    ".card{background:#fff;border:1px solid #e9edf3;border-radius:16px;padding:24px;margin-bottom:18px;"
+    "box-shadow:0 1px 2px rgba(20,32,44,.04),0 8px 24px rgba(20,32,44,.05)}"
+    ".sec{font-size:11px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:#3f5f96;margin-bottom:14px}"
+    ".flash{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:13px 16px;"
+    "margin-bottom:18px;font-size:14px;font-weight:600}"
+    ".flow{overflow-x:auto;white-space:nowrap;padding:4px 0 8px;margin:0 -4px}"
+    ".node{display:inline-block;vertical-align:middle;width:114px;text-align:center;background:#fff;"
+    "border:1px solid #e9edf3;border-radius:14px;padding:13px 8px;box-shadow:0 2px 10px rgba(20,32,44,.07)}"
+    ".node .ic{font-size:22px;line-height:1}"
+    ".node .nm{font-size:12px;font-weight:700;margin:7px 0 7px;color:#16202c}"
+    ".node .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;"
+    "border-radius:20px;padding:2px 10px}"
+    ".node .wh{font-size:10px;color:#9aa3af;margin-top:6px}"
+    ".arrow{display:inline-block;color:#cbd2dc;font-size:18px;font-weight:700;vertical-align:middle;padding:0 3px}"
+    ".chip{display:inline-block;vertical-align:middle;background:#f4f6f9;border:1px dashed #cbd2dc;border-radius:20px;"
+    "padding:10px 14px;margin:0 3px;font-size:12px;font-weight:700;color:#52607a}"
+    ".legend{font-size:11px;color:#9aa3af;margin-top:14px;line-height:1.6}"
+    ".btn{display:block;width:100%;border:0;border-radius:12px;padding:15px 22px;font-size:15px;font-weight:700;"
+    "color:#fff;background:linear-gradient(135deg,#4a6aa5,#3f5f96);cursor:pointer;"
+    "box-shadow:0 5px 16px rgba(63,95,150,.28);transition:transform .08s ease,box-shadow .08s ease}"
+    ".btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(63,95,150,.34)}"
+    ".btn.alt{background:linear-gradient(135deg,#e3795f,#d4664c);box-shadow:0 5px 16px rgba(212,102,76,.28)}"
+    ".btn.alt:hover{box-shadow:0 8px 20px rgba(212,102,76,.34)}"
+    ".btn:disabled{background:#aeb6c2;box-shadow:none;cursor:not-allowed;transform:none}"
+    ".note{font-size:12px;color:#6b7280;margin:8px 2px 18px;line-height:1.55}"
+    ".busy{font-size:13px;color:#b45309;font-weight:700;margin-bottom:16px}"
+    "table.t{width:100%;border-collapse:collapse;font-size:13px}"
+    "table.t th{text-align:left;padding:7px 12px 7px 0;font-size:10px;text-transform:uppercase;"
+    "letter-spacing:.6px;color:#9aa3af;border-bottom:1px solid #e9edf3;font-weight:800}"
+    "table.t td{padding:8px 12px 8px 0;border-bottom:1px solid #f1f3f7}"
+    "summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}"
+    "code{background:#f1f3f7;border-radius:5px;padding:1px 6px;font-size:12px}"
+    "@media(max-width:560px){.wrap{padding:28px 14px 48px}.card{padding:18px}}"
+)
+
+_TINT = {"#15803d": "#dcfce7", "#b91c1c": "#fee2e2", "#b45309": "#fef3c7", "#9aa3af": "#f1f3f7"}
+
+
 def _status_rows() -> str:
     state = _load_state()
     rows = ""
@@ -188,9 +234,9 @@ def _status_rows() -> str:
         if status.startswith("échec"):
             color = "#b91c1c"
         rows += (
-            f'<tr><td style="padding:8px 14px 8px 0;font-weight:600;">{task["label"]}</td>'
-            f'<td style="padding:8px 14px 8px 0;color:{color};font-weight:700;">{status}</td>'
-            f'<td style="padding:8px 0;color:#6b7280;">{when}</td></tr>'
+            f'<tr><td style="font-weight:600;">{task["label"]}</td>'
+            f'<td style="color:{color};font-weight:800;">{status}</td>'
+            f'<td style="color:#9aa3af;">{when}</td></tr>'
         )
     return rows
 
@@ -228,29 +274,21 @@ _PIPELINE = [
 
 
 def _node(label: str, icon: str, color: str, status: str, when: str) -> str:
+    tint = _TINT.get(color, "#f1f3f7")
     return (
-        '<div style="display:inline-block;vertical-align:middle;width:106px;text-align:center;'
-        f'background:#fff;border:1px solid #e5e7eb;border-top:3px solid {color};border-radius:10px;'
-        'padding:10px 6px;white-space:normal;">'
-        f'<div style="font-size:20px;line-height:1;">{icon}</div>'
-        f'<div style="font-size:12px;font-weight:700;margin:5px 0 3px;color:#16202c;">{label}</div>'
-        f'<div style="font-size:10px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:{color};">{status}</div>'
-        f'<div style="font-size:10px;color:#9aa3af;margin-top:2px;">{when}</div></div>'
+        f'<div class="node"><div class="ic">{icon}</div><div class="nm">{label}</div>'
+        f'<div class="st" style="color:{color};background:{tint};">{status}</div>'
+        f'<div class="wh">{when}</div></div>'
     )
 
 
 def _arrow() -> str:
-    return ('<span style="display:inline-block;color:#c3c9d2;font-size:20px;font-weight:700;'
-            'vertical-align:middle;padding:0 1px;">→</span>')
+    return '<span class="arrow">→</span>'
 
 
 def _chip(label: str, icon: str) -> str:
     """Pastille « sortie » (Site public, Brevo, Drive) — sans état, juste une cible."""
-    return (
-        '<span style="display:inline-block;vertical-align:middle;background:#f3f4f6;'
-        'border:1px dashed #c3c9d2;border-radius:18px;padding:8px 12px;margin:0 2px;'
-        f'font-size:12px;font-weight:700;color:#4b5563;white-space:nowrap;">{icon}&nbsp;{label}</span>'
-    )
+    return f'<span class="chip">{icon}&nbsp;{label}</span>'
 
 
 # Tableau « Comment ça marche » affiché (replié) dans l'admin.
@@ -271,35 +309,27 @@ _ARCHI_LLM = [
 
 
 def _archi_html() -> str:
-    th = 'style="text-align:left;padding:6px 12px 6px 0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:1px solid #e5e7eb;"'
-    td = 'style="padding:6px 12px 6px 0;font-size:13px;border-bottom:1px solid #f0f2f5;"'
     steps = "".join(
-        f'<tr><td {td}><b>{n}</b></td><td {td}>{lbl}</td><td {td} >{cron}</td>'
-        f'<td {td}>{llm}</td><td {td}>{role}</td></tr>'
+        f'<tr><td><b>{n}</b></td><td>{lbl}</td><td>{cron}</td><td>{llm}</td><td>{role}</td></tr>'
         for n, lbl, cron, llm, role in _ARCHI_STEPS
     )
     llms = "".join(
-        f'<tr><td {td}>{role}</td><td {td}><code>{model}</code></td><td {td}>{freq}</td></tr>'
+        f'<tr><td>{role}</td><td><code>{model}</code></td><td>{freq}</td></tr>'
         for role, model, freq in _ARCHI_LLM
     )
     return (
-        '<details>'
-        '<summary style="cursor:pointer;font-size:12px;font-weight:800;letter-spacing:1px;'
-        'text-transform:uppercase;color:#3f5f96;list-style:none;">📖 Comment ça marche</summary>'
-        '<div style="font-size:13px;color:#374151;line-height:1.6;margin:12px 0;">'
+        '<details><summary class="sec">📖 Comment ça marche</summary>'
+        '<div style="font-size:13px;color:#374151;line-height:1.65;margin:12px 0;">'
         'Collecte multi-sources → <b>tri par IA</b> (pertinence + titres propres) → deux sorties : '
         'la <b>page publique</b> (veille exhaustive) et la <b>newsletter</b> (sélection rédigée, '
         'brouillon Brevo + archive Drive). Le VPS exécute le cron et héberge cette page ; '
         'l\'envoi de la newsletter reste <b>manuel</b>.</div>'
-        '<div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#3f5f96;margin:6px 0;">Étapes</div>'
-        f'<table style="width:100%;border-collapse:collapse;"><tr><th {th}>#</th><th {th}>Étape</th>'
-        f'<th {th}>Quand</th><th {th}>LLM</th><th {th}>Rôle</th></tr>{steps}</table>'
-        '<div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#3f5f96;margin:16px 0 6px;">Les 4 LLM</div>'
-        f'<table style="width:100%;border-collapse:collapse;"><tr><th {th}>Rôle</th><th {th}>Modèle</th>'
-        f'<th {th}>Fréquence</th></tr>{llms}</table>'
+        '<div class="sec" style="margin:14px 0 8px;">Étapes</div>'
+        f'<table class="t"><tr><th>#</th><th>Étape</th><th>Quand</th><th>LLM</th><th>Rôle</th></tr>{steps}</table>'
+        '<div class="sec" style="margin:18px 0 8px;">Les 4 LLM</div>'
+        f'<table class="t"><tr><th>Rôle</th><th>Modèle</th><th>Fréquence</th></tr>{llms}</table>'
         '<div style="font-size:12px;color:#9aa3af;margin-top:12px;">Détail complet : '
-        '<code>docs/ARCHITECTURE.md</code> dans le dépôt.</div>'
-        '</details>'
+        '<code>docs/ARCHITECTURE.md</code> dans le dépôt.</div></details>'
     )
 
 
@@ -324,16 +354,16 @@ def _pipeline_html() -> str:
     # Branche newsletter (part du tri → brouillon Brevo + archive Drive).
     ncolor, nst, nwhen = state("newsletter", ["admin_newsletter.log"])
     branch = (
-        '<div style="margin:10px 0 0 350px;white-space:nowrap;">'
-        '<span style="display:inline-block;color:#c3c9d2;font-size:18px;vertical-align:middle;">↳</span>'
+        '<div class="flow" style="margin-top:10px;padding-left:356px;">'
+        '<span class="arrow">↳</span>'
         + _node("Newsletter", "✉", ncolor, nst, nwhen)
         + _arrow() + _chip("Brevo (brouillon)", "📧") + _chip("Drive (GDoc)", "📁") + "</div>"
     )
     return (
-        '<div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#3f5f96;margin-bottom:12px;">Pipeline</div>'
-        f'<div style="overflow-x:auto;white-space:nowrap;padding:4px 0 2px;">{chain}</div>'
+        '<div class="sec">Pipeline</div>'
+        f'<div class="flow">{chain}</div>'
         f'{branch}'
-        '<div style="font-size:11px;color:#9aa3af;margin-top:12px;">Collecte (Gmail · RSS · scraping) → tri IA → page publique. '
+        '<div class="legend">Collecte (Gmail · RSS · scraping) → tri IA → page publique. '
         'La newsletter dérive du même flux : brouillon Brevo + archive Drive. '
         '« en cours » = traitement actif. Détails ci-dessous.</div>'
     )
@@ -341,25 +371,18 @@ def _pipeline_html() -> str:
 
 PAGE = """<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Business Sabaudo — Admin</title></head>
-<body style="margin:0;background:#eef1f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#16202c;">
-<div style="max-width:720px;margin:0 auto;padding:38px 20px;">
-  <div style="font-size:11px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:#df664f;">Espace privé</div>
-  <div style="font-size:30px;font-weight:800;color:#3f5f96;margin:4px 0 22px;">Business Sabaudo<span style="color:#df664f;">.</span> Admin</div>
+<title>Business Sabaudo — Admin</title><style>{css}</style></head>
+<body><div class="wrap">
+  <div class="eyebrow">Espace privé</div>
+  <div class="h1">Business Sabaudo<b>.</b> Admin</div>
   {flash}
-  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;margin-bottom:20px;">
-    {pipeline}
-  </div>
-  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;margin-bottom:20px;">
-    {archi}
-  </div>
-  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;margin-bottom:20px;">
-    {buttons}
-  </div>
-  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;">
-    <div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#3f5f96;margin-bottom:10px;">État des traitements</div>
-    <table style="width:100%;font-size:14px;border-collapse:collapse;">{rows}</table>
-    <div style="font-size:12px;color:#6b7280;margin-top:12px;">Recharge la page pour rafraîchir l'état. Les journaux détaillés sont dans <code>logs/admin_*.log</code>.</div>
+  <div class="card">{pipeline}</div>
+  <div class="card">{archi}</div>
+  <div class="card">{buttons}</div>
+  <div class="card">
+    <div class="sec">État des traitements</div>
+    <table class="t">{rows}</table>
+    <div class="note" style="margin:12px 0 0;">Recharge la page pour rafraîchir l'état. Journaux : <code>logs/admin_*.log</code>.</div>
   </div>
 </div></body></html>"""
 
@@ -369,17 +392,15 @@ def _buttons() -> str:
     html = ""
     for key, task in TASKS.items():
         disabled = "disabled" if busy else ""
-        bg = "#9aa3af" if busy else "#3f5f96"
+        cls = "btn alt" if key == "newsletter" else "btn"
         html += (
-            f'<form method="post" action="{url_for("run", task_key=key)}" style="margin:0 0 14px;">'
-            f'<button type="submit" {disabled} style="background:{bg};color:#fff;border:0;'
-            f'border-radius:8px;padding:13px 22px;font-size:15px;font-weight:700;cursor:pointer;width:100%;">'
-            f'{task["label"]}</button>'
-            f'<div style="font-size:12px;color:#6b7280;margin-top:6px;">{task["note"]}</div></form>'
+            f'<form method="post" action="{url_for("run", task_key=key)}" style="margin:0;">'
+            f'<button type="submit" class="{cls}" {disabled}>{task["label"]}</button>'
+            f'<div class="note">{task["note"]}</div></form>'
         )
     if busy:
-        html = ('<div style="font-size:13px;color:#b45309;font-weight:700;margin-bottom:14px;">'
-                'Un traitement est en cours — les boutons sont temporairement désactivés.</div>') + html
+        html = ('<div class="busy">Un traitement est en cours — les boutons sont '
+                'temporairement désactivés.</div>') + html
     return html
 
 
@@ -387,17 +408,15 @@ def _buttons() -> str:
 @require_auth
 def home():
     flash = request.args.get("msg", "")
-    flash_html = (f'<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;'
-                  f'border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:14px;">{_escape(flash)}</div>'
-                  if flash else "")
+    flash_html = f'<div class="flash">{_escape(flash)}</div>' if flash else ""
     # _status_rows() réconcilie l'état des tâches terminées (running → succès/échec).
     # On l'évalue EN PREMIER pour que le pipeline et les boutons lisent un état à jour
     # (sinon : « en cours » dans le pipeline alors que le tableau affiche « succès »).
     rows = _status_rows()
     pipeline = _pipeline_html()
     buttons = _buttons()
-    return PAGE.format(flash=flash_html, pipeline=pipeline, archi=_archi_html(),
-                       buttons=buttons, rows=rows)
+    return PAGE.format(css=_ADMIN_CSS, flash=flash_html, pipeline=pipeline,
+                       archi=_archi_html(), buttons=buttons, rows=rows)
 
 
 @app.route(BASE + "/run/<task_key>", methods=["POST"])
