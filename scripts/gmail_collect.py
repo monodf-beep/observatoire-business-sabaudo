@@ -455,6 +455,9 @@ def main() -> int:
                              "et la résolution des liens sur les newsletters existantes).")
     parser.add_argument("--lookback", type=int, default=None,
                         help="Fenêtre de collecte en jours (défaut : GMAIL_LOOKBACK_DAYS ou 8).")
+    parser.add_argument("--debug-links", action="store_true",
+                        help="DIAGNOSTIC : pour chaque email, affiche TOUS les liens bruts "
+                             "(href + texte/alt) et lesquels sont retenus. N'écrit rien.")
     args = parser.parse_args()
     log.info("=== Démarrage collecte Gmail%s ===", " (--force)" if args.force else "")
 
@@ -481,6 +484,22 @@ def main() -> int:
         if msg is None:
             err_count += 1
             continue
+
+        # Mode diagnostic : on montre tout ce que voit l'extracteur, sans rien écrire.
+        if args.debug_links:
+            payload = msg.get("payload", {})
+            subject = _header(payload.get("headers", []), "Subject")
+            sender = _header(payload.get("headers", []), "From")
+            raw = _anchors(payload)
+            kept = extract_links(payload, resolve=False)
+            print(f"\n=== {sender} | {subject[:70]} ===")
+            print(f"  {len(raw)} lien(s) brut(s), {len(kept)} retenu(s) (sans résolution ESP) :")
+            for href, text in raw:
+                host = urlparse(href).netloc.lower().removeprefix("www.")
+                tag = "ESP" if _esp_host(host) else ("vide" if _is_generic_anchor(text) else "ok")
+                print(f"    [{tag:4}] {text[:55]!r:58} -> {href[:70]}")
+            continue
+
         record = parse_message(msg)
         territory = match_territory(record["from"], whitelist)
         out = output_path(record, territory)
