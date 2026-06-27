@@ -72,6 +72,10 @@ def iso_week_id(dt: datetime) -> str:
 
 def load_all_records() -> dict[str, dict[str, list[dict]]]:
     """Charge tous les enregistrements, groupés par semaine ISO puis territoire."""
+    from utils.sources import is_welcome_subject
+    from utils.triage import item_key, load_cache
+
+    triage_cache = load_cache()
     weeks: dict[str, dict[str, list[dict]]] = defaultdict(lambda: defaultdict(list))
     if not INPUT_DIR.exists():
         log.warning("Dossier de veille brute absent : %s", INPUT_DIR)
@@ -90,8 +94,13 @@ def load_all_records() -> dict[str, dict[str, list[dict]]]:
         # Emails de bienvenue / confirmation : aucun contenu éco → on ne les soumet
         # pas au modèle (économie de tokens, pas de pollution de la synthèse).
         if record.get("source") == "gmail":
-            from utils.sources import is_welcome_subject
             if is_welcome_subject(record.get("title", "")):
+                continue
+        else:
+            # RSS / scraping : un sujet jugé hors-sujet par le tri LLM n'est pas soumis
+            # au modèle (la une se nourrit ainsi de la même veille triée que la page).
+            verdict = triage_cache.get(item_key(record.get("link", ""), record.get("title", "")))
+            if verdict is not None and not verdict.get("keep", True):
                 continue
         week = iso_week_id(dt)
         # Territoire : champ explicite (RSS) ou déduit du dossier parent (Gmail)

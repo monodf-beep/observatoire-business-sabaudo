@@ -47,22 +47,17 @@ BASE = os.getenv("ADMIN_BASE_PATH", "").rstrip("/")
 TASKS = {
     "newsletter": {
         "label": "Générer la newsletter (brouillon Brevo)",
-        "argv": [PY, "scripts/synthesize.py", "--upload", "--brevo", "--force"],
-        "note": "Force la création d'un brouillon Brevo (même semaine creuse). "
-                "Consomme du crédit API — aucun envoi automatique.",
-    },
-    "veille_ia": {
-        "label": "Trier la veille par IA, puis rafraîchir",
-        "argv": ["bash", "-lc", f"'{PY}' scripts/triage.py && '{PY}' scripts/build_dashboard.py"],
-        "note": "Juge chaque sujet (pertinence économique) et nettoie les titres via IA, "
-                "PUIS republie la page. Consomme du crédit API (seuls les NOUVEAUX sujets "
-                "sont jugés — le reste est en cache).",
+        "argv": ["bash", "-lc",
+                 f"'{PY}' scripts/triage.py && '{PY}' scripts/synthesize.py --upload --brevo --force"],
+        "note": "Tri IA (automatique) puis création d'un brouillon Brevo. Consomme du "
+                "crédit API — aucun envoi automatique.",
     },
     "veille": {
         "label": "Rafraîchir la page « toute la veille »",
-        "argv": [PY, "scripts/build_dashboard.py"],
-        "note": "Gratuit (pas d'IA) : republie la page à partir de la veille déjà triée. "
-                "À utiliser après « Trier par IA » ou après un changement de configuration.",
+        "argv": ["bash", "-lc", f"'{PY}' scripts/triage.py && '{PY}' scripts/build_dashboard.py"],
+        "note": "Tri IA (automatique) — pertinence + titres propres — puis republication. "
+                "Les sujets déjà jugés sont en cache (gratuit) ; seuls les NOUVEAUX "
+                "consomment un peu de crédit.",
     },
 }
 
@@ -251,8 +246,8 @@ def _arrow() -> str:
 
 def _pipeline_html() -> str:
     busy = _running_task()
-    running = {"veille_ia": {"triage", "dashboard"}, "veille": {"dashboard"},
-               "newsletter": {"newsletter"}}.get(busy, set())
+    running = {"veille": {"triage", "dashboard"},
+               "newsletter": {"triage", "newsletter"}}.get(busy, set())
 
     def state(key, logs):
         if key in running:
@@ -330,8 +325,13 @@ def home():
     flash_html = (f'<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;'
                   f'border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:14px;">{_escape(flash)}</div>'
                   if flash else "")
-    return PAGE.format(flash=flash_html, pipeline=_pipeline_html(),
-                       buttons=_buttons(), rows=_status_rows())
+    # _status_rows() réconcilie l'état des tâches terminées (running → succès/échec).
+    # On l'évalue EN PREMIER pour que le pipeline et les boutons lisent un état à jour
+    # (sinon : « en cours » dans le pipeline alors que le tableau affiche « succès »).
+    rows = _status_rows()
+    pipeline = _pipeline_html()
+    buttons = _buttons()
+    return PAGE.format(flash=flash_html, pipeline=pipeline, buttons=buttons, rows=rows)
 
 
 @app.route(BASE + "/run/<task_key>", methods=["POST"])
