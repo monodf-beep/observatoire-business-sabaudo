@@ -65,6 +65,29 @@ def is_blocked_image(url: str, blocked: set[str]) -> bool:
     return any(host == b or host.endswith("." + b) for b in blocked)
 
 
+_NEWSLETTERS_FILE = Path(__file__).resolve().parent.parent / "config" / "newsletters.txt"
+
+
+def load_newsletters(path: Path | None = None) -> list[dict]:
+    """Charge le registre des newsletters suivies : [{nom, domaine, territoire, statut}]."""
+    path = path or _NEWSLETTERS_FILE
+    if not path.exists():
+        return []
+    out: list[dict] = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = [p.strip() for p in line.split(";")]
+        if len(parts) < 4:
+            continue
+        nom, domaine, territoire, statut = parts[0], parts[1], parts[2], parts[3].lower()
+        if nom and domaine:
+            out.append({"nom": nom, "domaine": domaine.lower(),
+                        "territoire": territoire, "statut": statut})
+    return out
+
+
 _OFFTOPIC_FILE = Path(__file__).resolve().parent.parent / "config" / "offtopic_keywords.txt"
 _ECONOMIC_FILE = Path(__file__).resolve().parent.parent / "config" / "economic_keywords.txt"
 

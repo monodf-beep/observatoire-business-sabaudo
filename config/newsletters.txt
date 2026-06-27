@@ -1,0 +1,34 @@
+# Registre des NEWSLETTERS suivies — affiché dans le tableau de bord (« Newsletters
+# suivies »). Sert à savoir d'un coup d'œil à quoi on est abonné et ce qui arrive.
+#
+# Format (un par ligne) :  nom;domaine;territoire;statut
+#   - nom       : libellé lisible affiché dans le tableau
+#   - domaine   : domaine ou adresse expéditrice (sert à détecter « reçue cette semaine »)
+#   - territoire: Savoie | Piemonte | Vallee-Aoste | Nice | Alcotra
+#   - statut    : actif | attente | inactif | candidat
+#       actif    = abonnement confirmé, emails reçus
+#       attente  = inscrit, en attente du 1er envoi
+#       inactif  = pas de flux newsletter / désabonné (à réactiver si besoin)
+#       candidat = repéré, à souscrire ou à confirmer l'expéditeur exact
+#
+# ⚠ À garder cohérent avec config/whitelist_gmail.txt (qui pilote la collecte).
+
+# ===================== SAVOIE / HAUTE-SAVOIE =====================
+French Tech in the Alps;8839714.brevosend.com;Savoie;actif
+CCI Savoie;savoie.cci.fr;Savoie;candidat
+tech&fest (écosystème tech alpin);tech-fest;Savoie;candidat
+
+# ===================== PIÉMONT =====================
+I3P (incubateur Politecnico Torino);i3p.it;Piemonte;actif
+Camera di commercio di Torino;to.camcom.it;Piemonte;actif
+Piemonte Innova;piemonteinnova.it;Piemonte;inactif
+
+# ===================== VALLÉE D'AOSTE =====================
+Pépinières VDA (Fondazione Brodolini);fondazionebrodolini.eu;Vallee-Aoste;attente
+
+# ===================== NICE / ALPES-MARITIMES =====================
+CCI Nice Côte d'Azur;cote-azur.cci.fr;Nice;attente
+
+# ===================== TRANSFRONTALIER ALCOTRA =====================
+Interreg Alcotra;interreg-alcotra.eu;Alcotra;inactif
+EU-Startups (financements européens);eu-startups.com;Alcotra;candidat

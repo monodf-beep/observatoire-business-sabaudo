@@ -163,12 +163,16 @@ def load_latest_week_items() -> tuple[str, dict]:
         load_topic_filter,
     )
 
+    import re
+
     press = load_press_domains()
     off_re, eco_re = load_topic_filter()
     weeks: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
+    # Domaines expéditeurs des newsletters reçues, par semaine (« reçue cette semaine »).
+    news_by_week: dict[str, set] = defaultdict(set)
     seen: set[str] = set()
     if not INPUT_DIR.exists():
-        return "", {}
+        return "", {}, set()
     for jf in INPUT_DIR.rglob("*.json"):
         try:
             rec = json.loads(jf.read_text(encoding="utf-8"))
@@ -190,6 +194,10 @@ def load_latest_week_items() -> tuple[str, dict]:
         if is_gmail:
             sender = _sender_label(rec.get("from", "")) or rec.get("title", "")
             subject = rec.get("title", "")
+            # Domaine expéditeur → marque la newsletter comme « reçue cette semaine ».
+            m_dom = re.search(r"@([\w.-]+)", rec.get("from", ""))
+            if m_dom:
+                news_by_week[wk].add(m_dom.group(1).lower())
             for ln in (gmail_links or []):
                 u = (ln.get("url") or "").strip()
                 if not u:
@@ -248,21 +256,29 @@ def load_latest_week_items() -> tuple[str, dict]:
             seen.add(key)
             weeks[wk][terr].append(item)
     if not weeks:
-        return "", {}
+        return "", {}, set()
     latest = sorted(weeks)[-1]
-    return latest, weeks[latest]
+    return latest, weeks[latest], news_by_week[latest]
 
 
 def build(upload: bool = False) -> int:
     """Génère la page « toute la veille » (et la dépose si upload). Réutilisable
     depuis synthesize.py (mise à jour à chaque run)."""
-    week_id, by_territory = load_latest_week_items()
+    week_id, by_territory, news_hits = load_latest_week_items()
     if not by_territory:
         log.warning("Aucune donnée de veille (%s). Page non générée.", INPUT_DIR)
         return 0
 
+    from utils.sources import load_newsletters
+    newsletters = load_newsletters()
+    # « reçue cette semaine » si un domaine reçu correspond au domaine du registre.
+    for nl in newsletters:
+        dom = nl["domaine"]
+        nl["recue"] = any(dom in h or h in dom for h in news_hits)
+
     generated = f"{datetime.now(timezone.utc):%d/%m/%Y}"
-    html = render_veille_page(week_id, by_territory, generated_at=generated)
+    html = render_veille_page(week_id, by_territory, generated_at=generated,
+                              newsletters=newsletters)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     DASHBOARD_PATH.write_text(html, encoding="utf-8")
     n = sum(len(v) for v in by_territory.values())

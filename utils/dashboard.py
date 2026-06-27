@@ -171,8 +171,58 @@ def _latest_block(week_id: str, data: dict) -> str:
 
 _TERR_ORDER = ["Savoie", "Piemonte", "Vallee-Aoste", "Nice", "Alcotra"]
 
+# Statuts des newsletters : libellé + couleur de pastille.
+_NL_STATUS = {
+    "actif": ("Abonné", "#15803d", "#dcfce7"),
+    "attente": ("En attente du 1er envoi", "#b45309", "#fef3c7"),
+    "inactif": ("Inactif", "#6b7280", "#f3f4f6"),
+    "candidat": ("À souscrire", "#3f5f96", "#e8eefb"),
+}
 
-def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str = "") -> str:
+
+def _newsletters_table(newsletters: list) -> str:
+    """Section repliable « Newsletters suivies » : à quoi on est abonné + reçu cette semaine."""
+    if not newsletters:
+        return ""
+    order = {"actif": 0, "attente": 1, "candidat": 2, "inactif": 3}
+    nls = sorted(newsletters, key=lambda n: (order.get(n.get("statut"), 9), n.get("nom", "")))
+    n_actif = sum(1 for n in nls if n.get("statut") == "actif")
+    n_attente = sum(1 for n in nls if n.get("statut") == "attente")
+    rows = ""
+    for nl in nls:
+        statut = nl.get("statut", "")
+        label, color, bg = _NL_STATUS.get(statut, ("—", MUTED, BG))
+        terr = _terr_label(nl.get("territoire", ""))
+        recue = nl.get("recue")
+        if statut == "actif":
+            week = ('<span style="color:#15803d;font-weight:700;">● reçue</span>'
+                    if recue else '<span style="color:#9aa3af;">○ rien cette semaine</span>')
+        else:
+            week = f'<span style="color:#9aa3af;">—</span>'
+        badge = (f'<span style="display:inline-block;font-size:11px;font-weight:700;color:{color};'
+                 f'background:{bg};border-radius:20px;padding:2px 10px;white-space:nowrap;">{label}</span>')
+        rows += (
+            f'<tr style="border-bottom:1px solid {BORDER};">'
+            f'<td style="padding:9px 12px 9px 0;font-weight:600;color:{INK};">{escape(nl.get("nom",""))}</td>'
+            f'<td style="padding:9px 12px 9px 0;color:{MUTED};font-size:13px;white-space:nowrap;">{escape(terr)}</td>'
+            f'<td style="padding:9px 12px 9px 0;">{badge}</td>'
+            f'<td style="padding:9px 0;font-size:13px;">{week}</td>'
+            "</tr>"
+        )
+    return (
+        f'<details style="background:{CARD};border:1px solid {BORDER};border-radius:12px;'
+        f'padding:6px 18px;margin:0 0 20px;">'
+        f'<summary style="cursor:pointer;font-size:13px;font-weight:800;color:{BRAND};'
+        f'padding:10px 0;list-style:none;">📬 Newsletters suivies '
+        f'<span style="color:{MUTED};font-weight:600;">— {n_actif} abonné·e·s, {n_attente} en attente</span></summary>'
+        f'<table style="width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 12px;">{rows}</table>'
+        f'<div style="font-size:12px;color:{MUTED};padding-bottom:8px;">« ● reçue » = au moins un email capté cette '
+        "semaine. Pour ajouter une newsletter : s'abonner, puis l'inscrire dans la collecte.</div></details>"
+    )
+
+
+def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str = "",
+                       newsletters: list | None = None) -> str:
     """Page LECTEUR « toute la veille de la semaine » : la liste COMPLÈTE des sujets
     captés, organisée par territoire avec une navigation collante pour sauter d'un
     territoire à l'autre sans scroller. Les sujets de presse sont gardés en RADAR
@@ -272,6 +322,7 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
             f'<ul style="margin:0;padding:0;">{rows}</ul></section>'
         )
     gen = f" · mis à jour le {escape(generated_at)}" if generated_at else ""
+    nl_table = _newsletters_table(newsletters or [])
     return (
         '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
@@ -285,6 +336,7 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
         f'<div style="font-size:13px;color:{MUTED};margin-bottom:6px;">{total} sujets économiques captés sur l\'espace sabaudo cette semaine{gen}.</div>'
         f'<div style="font-size:12px;color:{MUTED};margin-bottom:4px;">Les sujets marqués <strong>Radar</strong> proviennent de la presse : ils servent à ne rien manquer, sans lien vers le journal.</div>'
         f"{filterbar}"
+        f"{nl_table}"
         f"{nav}"
         f"{sections}"
         f'<div style="border-top:1px solid {BORDER};padding-top:18px;margin-top:10px;font-size:12px;color:{MUTED};">'
