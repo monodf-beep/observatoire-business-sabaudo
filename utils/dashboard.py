@@ -199,12 +199,13 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
         f'padding:12px 0 5px;margin:0 0 18px;border-bottom:1px solid {BORDER};">{nav_pills}</div>'
     )
 
-    # Filtre : Tout / Sources officielles / Radar presse (toggle JS côté navigateur).
+    # Filtre : Tout / Officiel / Newsletters / Radar presse (toggle JS navigateur).
     n_off = sum(1 for items in by_territory.values() for it in items if not it.get("press"))
     n_radar = total - n_off
+    n_news = sum(1 for items in by_territory.values() for it in items if it.get("newsletter"))
     fbtns = ""
     for key, lbl, n in [("all", "Tout", total), ("officiel", "Sources officielles", n_off),
-                        ("radar", "Radar presse", n_radar)]:
+                        ("news", "Newsletters", n_news), ("radar", "Radar presse", n_radar)]:
         on = key == "all"
         fbtns += (
             f'<button type="button" data-f="{key}" onclick="vfilter(this)" '
@@ -219,7 +220,8 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
         "document.querySelectorAll('[data-f]').forEach(function(x){var on=x===b;"
         f"x.style.background=on?'{INK}':'{CARD}';x.style.color=on?'#fff':'{INK}';}});"
         "document.querySelectorAll('li[data-type]').forEach(function(li){"
-        "li.style.display=(f==='all'||li.getAttribute('data-type')===f)?'':'none';});"
+        "var ok=(f==='all')||(f==='news'?li.getAttribute('data-news')==='1'"
+        ":li.getAttribute('data-type')===f);li.style.display=ok?'':'none';});"
         "document.querySelectorAll('section[data-veille]').forEach(function(s){var vis=false;"
         "s.querySelectorAll('li[data-type]').forEach(function(li){"
         "if(li.style.display!=='none')vis=true;});s.style.display=vis?'':'none';});}</script>"
@@ -254,8 +256,9 @@ def render_veille_page(week_label: str, by_territory: dict, *, generated_at: str
                 badge = ""
             meta = " · ".join(x for x in [src, it.get("date", "")] if x)
             dtype = "radar" if is_press_item else "officiel"
+            news_attr = ' data-news="1"' if is_newsletter else ""
             rows += (
-                f'<li data-type="{dtype}" style="padding:11px 0;border-bottom:1px solid {BORDER};list-style:none;">'
+                f'<li data-type="{dtype}"{news_attr} style="padding:11px 0;border-bottom:1px solid {BORDER};list-style:none;">'
                 f'<div style="font-size:15px;font-weight:600;line-height:1.4;">{title_html}</div>'
                 + (f'<div style="font-size:12px;color:{MUTED};margin-top:3px;">{badge}{meta}</div>'
                    if (meta or badge) else "")
