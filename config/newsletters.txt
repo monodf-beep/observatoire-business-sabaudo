@@ -11,24 +11,26 @@
 #       inactif  = pas de flux newsletter / désabonné (à réactiver si besoin)
 #       candidat = repéré, à souscrire ou à confirmer l'expéditeur exact
 #
-# ⚠ À garder cohérent avec config/whitelist_gmail.txt (qui pilote la collecte).
+# Statuts mis à jour d'après l'audit Gmail du 27/06/2026 (libellé « Observatoire —
+# Newsletters », 72 conversations). À garder cohérent avec config/whitelist_gmail.txt.
 
 # ===================== SAVOIE / HAUTE-SAVOIE =====================
 French Tech in the Alps;8839714.brevosend.com;Savoie;actif
-CCI Savoie;savoie.cci.fr;Savoie;candidat
-tech&fest (écosystème tech alpin);tech-fest;Savoie;candidat
+CCI Savoie;savoie.cci.fr;Savoie;actif
+tech&fest (écosystème tech alpin);news.tech-fest.fr;Savoie;actif
 
 # ===================== PIÉMONT =====================
 I3P (incubateur Politecnico Torino);i3p.it;Piemonte;actif
 Camera di commercio di Torino;to.camcom.it;Piemonte;actif
-Piemonte Innova;piemonteinnova.it;Piemonte;inactif
+Laboratorio Chimico CCIAA Torino;lab-to.camcom.it;Piemonte;actif
+Piemonte Innova (contacts humains, pas de NL);piemonteinnova.it;Piemonte;inactif
 
 # ===================== VALLÉE D'AOSTE =====================
-Pépinières VDA (Fondazione Brodolini);fondazionebrodolini.eu;Vallee-Aoste;attente
+Pépinières VDA (Fondazione Brodolini);fondazionebrodolini.eu;Vallee-Aoste;actif
 
 # ===================== NICE / ALPES-MARITIMES =====================
-CCI Nice Côte d'Azur;cote-azur.cci.fr;Nice;attente
+CCI Nice Côte d'Azur;cote-azur.cci.fr;Nice;actif
 
-# ===================== TRANSFRONTALIER ALCOTRA =====================
+# ===================== TRANSFRONTALIER / EUROPE =====================
+EU-Startups (financements européens);eu-startups.com;Alcotra;actif
 Interreg Alcotra;interreg-alcotra.eu;Alcotra;inactif
-EU-Startups (financements européens);eu-startups.com;Alcotra;candidat

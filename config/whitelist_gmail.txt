@@ -7,46 +7,44 @@
 # IMPORTANT : pas de commentaire en fin de ligne (le « ; » sépare motif et territoire).
 # Les lignes vides et celles commençant par # sont ignorées.
 #
-# ✅ = expéditeur confirmé (email réellement reçu sur la boîte de collecte)
-# ⏳ = abonnement à finaliser → réactiver la ligne une fois l'expéditeur confirmé
+# ✅ = expéditeur confirmé (email réellement reçu — audit Gmail 27/06/2026)
+# ⛔ = désactivé volontairement (voir motif)
+#
+# Source de l'audit : libellé Gmail « Observatoire — Newsletters » (72 conversations,
+# 30 derniers jours) — adresses expéditrices relevées une à une.
 
 # ===================== SAVOIE / HAUTE-SAVOIE =====================
-# ✅ French Tech in the Alps (envoi routé via Brevo)
-fta.genevois.francais@8839714.brevosend.com;Savoie
-# ⏳ CCI Savoie — inscription à confirmer (compte requis), expéditeur non encore connu
-# @savoie.cci.fr;Savoie
-# (Savoie Mont Blanc : page d'inscription introuvable — non inscrit)
+# ✅ French Tech in the Alps (routé via Brevo — contact@ / chambery@ / fta.genevois@)
+8839714.brevosend.com;Savoie
+# ✅ CCI Savoie (info@savoie.cci.fr)
+savoie.cci.fr;Savoie
+# ✅ tech&fest — écosystème tech alpin (sigrid@news.tech-fest.fr)
+news.tech-fest.fr;Savoie
 
 # ===================== PIÉMONT =====================
-# ✅ I3P — adresses de newsletter uniquement (le domaine entier captait des emails humains)
+# ✅ I3P — adresses de newsletter uniquement (le domaine entier captait des humains)
 newsletter@i3p.it;Piemonte
 comunicazione@i3p.it;Piemonte
-# ✅ Camera di commercio di Torino (double opt-in confirmé)
+# ✅ Camera di commercio di Torino (cciaato-noreply@to.camcom.it)
 to.camcom.it;Piemonte
-# ⛔ Piemonte Innova : DÉSACTIVÉ — audit 17/06/2026, aucun flux newsletter, le
-# domaine ne captait que des emails de contacts humains (projet ALIVE). À réactiver
-# UNIQUEMENT avec une adresse de newsletter dédiée une fois l'abonnement souscrit.
+# ✅ Laboratorio Chimico — CCIAA Torino : invitations/événements éco (eventi@lab-to.camcom.it)
+lab-to.camcom.it;Piemonte
+# ⛔ Piemonte Innova : DÉSACTIVÉ — l'adresse ne porte que des emails de contacts
+# humains (projet ALIVE : silvana.sanfeliu@, alessandra.buffa@), pas de newsletter.
 # piemonteinnova.it;Piemonte
 
 # ===================== VALLÉE D'AOSTE =====================
-# ⏳ Pépinières VDA (Fondazione Brodolini) — inscription du 02/06, en attente du 1er
-# envoi (cadence sans doute mensuelle). Capté dès qu'une newsletter arrivera.
-pepinieres@fondazionebrodolini.eu;Vallee-Aoste
+# ✅ Pépinières VDA — Fondazione Brodolini (pepinieres@fondazionebrodolini.eu)
+fondazionebrodolini.eu;Vallee-Aoste
 
 # ===================== NICE / ALPES-MARITIMES =====================
-# ⏳ CCI Nice Côte d'Azur — inscription du 02/06, en attente du 1er envoi.
-newsletter@cote-azur.cci.fr;Nice
+# ✅ CCI Nice Côte d'Azur (newsletter@cote-azur.cci.fr)
+cote-azur.cci.fr;Nice
 
-# ===================== TRANSFRONTALIER ALCOTRA =====================
-# ❌ Interreg Alcotra : audit 17/06/2026 — ZÉRO email reçu, abonnement non confirmé
-# ou inexistant. À (re)souscrire sur le site, puis confirmer l'expéditeur réel.
+# ===================== TRANSFRONTALIER / EUROPE =====================
+# ✅ EU-Startups — financements/actu startups européennes (thomas.ohr@eu-startups.com)
+# Périmètre large (pan-européen) : rangé en Alcotra. À surveiller (pertinence locale).
+eu-startups.com;Alcotra
+# ⛔ Interreg Alcotra : aucun email reçu (audit 27/06/2026). À réactiver après
+# (re)souscription et confirmation de l'expéditeur réel.
 # interreg-alcotra.eu;Alcotra
-
-# ===================== CANDIDATS « BONUS » (audit 17/06/2026) =====================
-# Newsletters institutionnelles éco/innovation repérées dans la boîte mais pas encore
-# whitelistées. Décommenter en remplaçant par l'ADRESSE EXPÉDITRICE EXACTE (à relever
-# sur un email reçu), sinon la capture ne matchera pas.
-# tech&fest (écosystème tech alpin, Grenoble) → Savoie
-# <adresse-expediteur-techfest>;Savoie
-# EU-Startups (financements startups européens) → périmètre à trancher (Alcotra ?)
-# newsletter@eu-startups.com;Alcotra
