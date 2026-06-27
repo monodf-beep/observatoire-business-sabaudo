@@ -51,6 +51,24 @@ def load_blocked_image_domains(path: Path | None = None) -> set[str]:
     return domains
 
 
+# Motifs d'URL trahissant un LOGO / blason / icône (pas une vraie photo de sujet).
+_LOGO_TOKENS = (
+    "logo", "sprite", "icon", "favicon", "placeholder", "default", "avatar",
+    "blason", "stemma", "flag", "banner", "/badge", "header", "footer", "/ui/",
+    "wordmark", "brandmark", "emblem", "crest",
+)
+
+
+def is_logo_image(url: str) -> bool:
+    """Vrai si l'URL ressemble à un logo / blason / icône (à écarter), pas une photo."""
+    u = (url or "").lower()
+    if not u:
+        return False
+    if u.endswith(".svg"):
+        return True
+    return any(t in u for t in _LOGO_TOKENS)
+
+
 def is_blocked_image(url: str, blocked: set[str]) -> bool:
     """Vrai si l'URL d'image provient d'un hôte proscrit (presse/agrégateur).
 

@@ -51,6 +51,15 @@ def _tag(territory: str) -> str:
     )
 
 
+def _fmt_date(value: str) -> str:
+    """'2026-06-24' -> '24/06/2026'. '' si non parsable."""
+    try:
+        y, m, d = value[:10].split("-")
+        return f"{d}/{m}/{y}"
+    except (ValueError, AttributeError):
+        return ""
+
+
 def _source(item: dict, size: int = 18) -> str:
     name = escape(item.get("source", ""))
     dom = item.get("domain")
@@ -60,7 +69,10 @@ def _source(item: dict, size: int = 18) -> str:
             f'<img src="{favicon(dom)}" width="{size}" height="{size}" alt="" '
             f'style="border-radius:4px;vertical-align:middle;border:0;">&nbsp;'
         )
-    return f'<span style="color:{MUTED};font-size:12px;font-weight:600;vertical-align:middle;">{icon}{name}</span>'
+    date = _fmt_date(item.get("date", ""))
+    suffix = f'&nbsp;·&nbsp;{date}' if date else ""
+    return (f'<span style="color:{MUTED};font-size:12px;font-weight:600;'
+            f'vertical-align:middle;">{icon}{name}{suffix}</span>')
 
 
 def _title(it: dict) -> str:

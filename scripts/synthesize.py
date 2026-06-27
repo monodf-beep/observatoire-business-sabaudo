@@ -347,6 +347,7 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
         "title": entry.get("titre") or rec.get("title", ""),
         "summary": entry.get("resume", ""),
         "territory": _pick_territory(entry.get("territoire"), rec),
+        "date": (rec.get("date") or "")[:10],
     }
     if is_press(domain, press):
         # Radar : on garde l'info, on retire tout ce qui crédite/promeut le journal.
@@ -408,15 +409,17 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
             log.info("Image proscrite ignorée (%s) : %s", entry.get("title", "")[:50], entry["image"])
             entry["image"] = ""
 
-    # Politique d'images : par défaut on N'UTILISE PAS les images d'og:image / d'email
-    # des sources institutionnelles — ce sont presque toujours des LOGOS / blasons /
-    # bannières (Banca d'Italia, blason VDA, ministère, QR du tunnel…). EXCEPTION : les
-    # photos VÉRIFIÉES par le scraper HTML (image_ok) — vraies vignettes d'articles —
-    # restent autorisées. Pour réactiver TOUTES les images de source : NEWSLETTER_SOURCE_IMAGES=1.
-    if os.getenv("NEWSLETTER_SOURCE_IMAGES", "0").strip() != "1":
-        for entry in ([hero] if hero else []) + items:
-            if not entry.get("image_ok"):
-                entry["image"] = ""
+    # Politique d'images : on autorise les VRAIES PHOTOS de source, mais on écarte les
+    # LOGOS / blasons / bannières (Banca d'Italia, blason VDA, ministère…) repérés au
+    # motif d'URL. Les photos vérifiées par le scraper (image_ok) passent toujours.
+    # Champ vidé → la carte de territoire prend le relais. NEWSLETTER_SOURCE_IMAGES=0
+    # pour revenir au comportement « cartes uniquement ».
+    from utils.sources import is_logo_image
+    allow_images = os.getenv("NEWSLETTER_SOURCE_IMAGES", "1").strip() != "0"
+    for entry in ([hero] if hero else []) + items:
+        img = entry.get("image", "")
+        if img and not entry.get("image_ok") and (not allow_images or is_logo_image(img)):
+            entry["image"] = ""
     signaux = []
     for s in parsed.get("signaux", []):
         rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None
@@ -488,8 +491,9 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
             log.info("Lien officiel trouvé : %s", final_url)
             # Vraie photo du sujet : og:image de la page (repli bannière plus bas).
             if html and not entry.get("image"):
+                from utils.sources import is_logo_image
                 og = official_search.og_image_from_html(html, final_url)
-                if og and not is_blocked_image(og, blocked_img):
+                if og and not is_blocked_image(og, blocked_img) and not is_logo_image(og):
                     entry["image"] = og
                     log.info("Image officielle (og:image) : %s", og)
     # On retire le champ technique avant sérialisation/rendu.

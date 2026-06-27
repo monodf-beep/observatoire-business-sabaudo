@@ -170,6 +170,16 @@ def test_triage():
     check("triage: parse invalide -> None", _parse_json_array("pas de json"), None)
 
 
+def test_images_and_dates():
+    from utils.sources import is_logo_image
+    from utils.newsletter_variants import _fmt_date
+    check("logo: stemma écarté", is_logo_image("https://regione.vda.it/stemma.png"), True)
+    check("logo: .svg écarté", is_logo_image("https://x.fr/pic.svg"), True)
+    check("photo: vraie photo gardée", is_logo_image("https://news.fr/uploads/usine.jpg"), False)
+    check("date: format jj/mm/aaaa", _fmt_date("2026-06-24"), "24/06/2026")
+    check("date: vide si invalide", _fmt_date("xxx"), "")
+
+
 def test_synthese_block():
     from utils.dashboard import _synthese_block
     check("synthèse: vide si pas de données", _synthese_block(None), "")
@@ -183,7 +193,7 @@ def test_synthese_block():
 def main() -> int:
     for fn in (test_offtopic, test_newsletter_junk, test_welcome, test_blocked_image,
                test_press, test_perimeter, test_extract_articles, test_no_emdash, test_triage,
-               test_synthese_block):
+               test_images_and_dates, test_synthese_block):
         print(f"• {fn.__name__}")
         fn()
     print(f"\n{_PASS} réussi(s), {_FAIL} échoué(s).")
