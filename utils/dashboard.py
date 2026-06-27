@@ -311,10 +311,12 @@ def _synthese_block(synthese: dict | None) -> str:
                if hero.get("summary") else "")
         )
 
-    # Signaux.
+    # Signaux — on retire ceux qui répètent la une (même sujet).
+    from utils.sources import same_story
+    hero_title = hero.get("title", "")
     sig_rows = ""
-    for s in signaux[:6]:
-        if not s.get("title"):
+    for s in signaux[:8]:
+        if not s.get("title") or (hero_title and same_story(s["title"], hero_title)):
             continue
         terr = s.get("territory", "")
         color, label = _terr_color(terr), _terr_label(terr)
@@ -354,9 +356,10 @@ def _suggest_form(suggest_url: str) -> str:
     inp = ("font-size:14px;padding:9px 11px;border:1px solid %s;border-radius:8px;"
            "background:#fff;color:%s;" % (BORDER, INK))
     return (
-        f'<div style="background:{CARD};border:1px solid {BORDER};border-radius:12px;padding:20px 22px;margin:24px 0 0;">'
-        f'<div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:{BRAND};margin-bottom:4px;">Proposer une source</div>'
-        f'<div style="font-size:13px;color:{MUTED};margin-bottom:12px;">Un média, une institution, un acteur économique à suivre ? Suggérez-le — la rédaction valide.</div>'
+        f'<div style="background:#fbfcfe;border:1px solid {BORDER};border-left:4px solid {ACCENT};border-radius:12px;padding:22px 24px;margin:28px 0 0;">'
+        f'<div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:{ACCENT};margin-bottom:6px;">Construisons cette veille ensemble</div>'
+        f'<div style="font-size:14px;color:{INK};line-height:1.6;margin-bottom:14px;">Cet observatoire est <strong>collaboratif</strong> : il se nourrit des sources que vous connaissez. '
+        f'Un média, une institution, un acteur économique du territoire à suivre ? <strong>Proposez-le</strong> — la rédaction le vérifie et l\'ajoute à la veille.</div>'
         f'<form method="post" action="{escape(suggest_url)}">'
         f'<div style="display:flex;flex-wrap:wrap;gap:8px;">'
         f'<input type="url" name="url" required placeholder="https://… (lien de la source)" style="{inp}flex:2;min-width:220px;">'

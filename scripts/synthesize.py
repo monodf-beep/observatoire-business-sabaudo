@@ -547,6 +547,14 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
         if not it.get("image"):
             it["image"] = pick_image(it["territory"], it["title"], terr_images)
 
+    # Anti-doublon : un signal ne doit pas répéter la une ni une brève déjà listée.
+    if hero or items:
+        from utils.sources import same_story
+
+        refs = [e.get("title", "") for e in ([hero] if hero else []) + items if e.get("title")]
+        signaux = [s for s in signaux
+                   if not any(same_story(s.get("title", ""), r) for r in refs)]
+
     # Charte : aucun tiret cadratin dans les textes rédigés (titres, résumés, objet…).
     for entry in ([hero] if hero else []) + items + signaux:
         if entry.get("title"):

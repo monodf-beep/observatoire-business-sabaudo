@@ -59,6 +59,66 @@ _LOGO_TOKENS = (
 )
 
 
+# Préfixes/clés de paramètres de TRAÇAGE à retirer des URLs (emailing, pub, analytics).
+_TRACKING_KEYS = (
+    "utm_", "mc_", "pk_", "mtm_", "hsa_", "_hs", "vero_", "ck_", "oly_", "spm",
+    "gclid", "fbclid", "msclkid", "igshid", "mkt_tok", "ref_src", "ref", "source",
+    "sendethic", "wt_mc", "trk", "cmpid", "ncid",
+)
+
+
+_STORY_PLACES = {
+    "savoie", "haute", "piemonte", "piedmont", "piemontese", "torino", "turin", "aoste",
+    "aosta", "valdotaine", "valdostano", "vallee", "nice", "nizza", "alcotra", "alpes",
+    "alpine", "provence", "azur", "monaco", "france", "italie", "europe", "europeen",
+    "europeens", "region", "regionale",
+}
+_STORY_STOP = {
+    "pour", "avec", "dans", "les", "des", "une", "sur", "par", "plus", "leur", "cette",
+    "leurs", "entre", "vers", "sans", "sous", "cet", "ces", "qui", "que", "son", "ses",
+}
+
+
+def same_story(a: str, b: str) -> bool:
+    """Vrai si deux titres décrivent le MÊME sujet (pour ne pas répéter la une dans les
+    signaux). Repère un NOM PROPRE distinctif partagé (RareEarth, EIC, Mont-Blanc…) ou
+    un fort recouvrement de mots significatifs — en ignorant les noms de lieux."""
+    import re
+
+    def words(s: str) -> list[str]:
+        return re.findall(r"[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'-]+", s or "")
+
+    def sig(s: str) -> set:
+        return {_strip_accents(w).lower() for w in words(s)
+                if len(w) >= 4 and _strip_accents(w).lower() not in _STORY_STOP}
+
+    # Noms propres distinctifs : majuscule INTERNE (RareEarth, EIC, Mont-Blanc).
+    def proper(s: str) -> set:
+        return {_strip_accents(w).lower() for w in words(s) if any(c.isupper() for c in w[1:])}
+
+    shared_proper = (proper(a) & proper(b)) - _STORY_PLACES - _STORY_STOP
+    if shared_proper:
+        return True
+    return len((sig(a) & sig(b)) - _STORY_PLACES) >= 3
+
+
+def strip_tracking(url: str) -> str:
+    """Retire les paramètres de traçage (utm_*, fbclid, mc_*, …) d'une URL.
+    Garde les paramètres « utiles » (id d'article, page…). '' reste ''."""
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+    if not url or "?" not in url:
+        return url
+    try:
+        parts = urlsplit(url)
+        kept = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True)
+                if not any(k.lower().startswith(t) or k.lower() == t for t in _TRACKING_KEYS)]
+        return urlunsplit((parts.scheme, parts.netloc, parts.path,
+                           urlencode(kept), parts.fragment))
+    except Exception:
+        return url
+
+
 def is_logo_image(url: str) -> bool:
     """Vrai si l'URL ressemble à un logo / blason / icône (à écarter), pas une photo."""
     u = (url or "").lower()

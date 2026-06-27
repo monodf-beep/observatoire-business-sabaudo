@@ -334,7 +334,30 @@ def _archi_html() -> str:
         f'<table class="t"><tr><th>#</th><th>Étape</th><th>Quand</th><th>LLM</th><th>Rôle</th></tr>{steps}</table>'
         '<div class="sec" style="margin:18px 0 8px;">Les 4 LLM</div>'
         f'<table class="t"><tr><th>Rôle</th><th>Modèle</th><th>Fréquence</th></tr>{llms}</table>'
-        '<div style="font-size:12px;color:#9aa3af;margin-top:12px;">Détail complet : '
+
+        '<div class="sec" style="margin:18px 0 8px;">Comportement des LLM (coûts, boucles)</div>'
+        '<div style="font-size:13px;color:#374151;line-height:1.7;">'
+        '<b>Pas de boucle infinie</b> : chaque sujet est jugé <b>une seule fois</b> par le tri, '
+        'puis le verdict est <b>mis en cache</b> sur disque (<code>logs/triage_cache.json</code>). '
+        'Les builds suivants relisent le cache → coût quasi nul. Idem pour la validation des '
+        'photos (<code>image_judge_cache.json</code>) et la recherche d\'illustration '
+        '(<code>image_illustration_cache.json</code>).<br>'
+        '<b>Fail-open</b> : sans clé API ou en cas d\'erreur, le LLM ne bloque rien — le sujet '
+        'est conservé tel quel. La veille n\'est jamais cassée par l\'IA.<br>'
+        '<b>Pré-filtre gratuit</b> : des mots-clés écartent l\'évident (sport, faits divers…) '
+        'AVANT le LLM, qui ne juge donc que les survivants → moins d\'appels.</div>'
+
+        '<div class="sec" style="margin:18px 0 8px;">Comment on cherche les photos</div>'
+        '<div style="font-size:13px;color:#374151;line-height:1.7;">'
+        'Pour chaque brève, on tente dans l\'ordre, en s\'arrêtant au premier succès :<br>'
+        '1. <b>Photo de la source</b> (RSS/email) si c\'est une vraie image (les logos sont écartés).<br>'
+        '2. <b>og:image de l\'article officiel</b> trouvé par recherche web (Sonnet).<br>'
+        '3. <b>Photo scrapée d\'un article web</b> : recherche web du sujet → récupère la photo '
+        'd\'un résultat → <b>validée par un LLM vision</b> (« illustre-t-elle vraiment le sujet ? »).<br>'
+        '4. <b>Carte de territoire</b> (visuel de marque) en dernier recours.<br>'
+        'Tout est mis en cache : une photo trouvée/jugée ne l\'est qu\'une fois.</div>'
+
+        '<div style="font-size:12px;color:#9aa3af;margin-top:14px;">Détail complet : '
         '<code>docs/ARCHITECTURE.md</code> dans le dépôt.</div></details>'
     )
 

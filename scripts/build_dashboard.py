@@ -175,6 +175,7 @@ def load_latest_week_items(apply_triage: bool = True) -> tuple[str, dict]:
         load_press_domains,
         load_topic_filter,
         mentions_perimeter,
+        strip_tracking,
     )
 
     import re
@@ -253,7 +254,7 @@ def load_latest_week_items(apply_triage: bool = True) -> tuple[str, dict]:
                 link_press = is_press(host, press)
                 emitted.append({
                     "title": text[:200],
-                    "url": "" if link_press else u,
+                    "url": "" if link_press else strip_tracking(u),
                     "source": sender,
                     "date": date,
                     "press": link_press,
@@ -275,7 +276,7 @@ def load_latest_week_items(apply_triage: bool = True) -> tuple[str, dict]:
                 continue
             emitted.append({
                 "title": title,
-                "url": "" if from_press else rec.get("link", ""),
+                "url": "" if from_press else strip_tracking(rec.get("link", "")),
                 "source": rec.get("feed_title") or rec.get("from", "") or "",
                 "date": date,
                 "press": from_press,
