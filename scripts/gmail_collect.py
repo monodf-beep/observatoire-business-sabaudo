@@ -224,8 +224,35 @@ def _header(headers: list[dict], name: str) -> str:
     return ""
 
 
-_A_RE = re.compile(r'<a\b[^>]*?href=["\']([^"\']+)["\'][^>]*?>(.*?)</a>', re.I | re.S)
+_A_RE = re.compile(r"<a\b([^>]*)>(.*?)</a>", re.I | re.S)
+_HREF_RE = re.compile(r'href=["\']([^"\']+)["\']', re.I)
+_ATTR_TITLE_RE = re.compile(r'\btitle=["\']([^"\']+)["\']', re.I)
+_IMG_ALT_RE = re.compile(r'<img[^>]*\balt=["\']([^"\']+)["\']', re.I)
 _TAG_RE = re.compile(r"<[^>]+>")
+# Libellés d'appel à l'action SANS valeur de titre : on les traite comme vides et on
+# va chercher le vrai titre dans l'alt de l'image ou le title= du lien (cartes-images,
+# boutons « Leggi » des newsletters).
+_GENERIC_CTA = {
+    "leggi", "leggi tutto", "leggi di piu", "leggi l'articolo", "scopri",
+    "scopri di piu", "scopri come", "per saperne di piu", "approfondisci",
+    "continua", "continua a leggere", "vai", "vai al sito", "clicca", "clicca qui",
+    "read more", "read", "more", "details", "view", "vedi", "vedi di piu",
+    "en savoir plus", "lire la suite", "lire", "voir plus", "voir", "cliquez ici",
+    "decouvrir", "plus d'infos", "iscriviti", "registrati", "partecipa",
+}
+
+
+def _strip_accents_lower(text: str) -> str:
+    import unicodedata
+
+    norm = unicodedata.normalize("NFD", text or "")
+    return "".join(c for c in norm if unicodedata.category(c) != "Mn").lower().strip()
+
+
+def _is_generic_anchor(text: str) -> bool:
+    """Vrai si le texte d'ancre est vide ou un simple appel à l'action sans titre."""
+    norm = _strip_accents_lower(text)
+    return not norm or norm in _GENERIC_CTA
 # Liens utilitaires / réseaux sociaux à ÉCARTER d'office.
 _LINK_SKIP = (
     "unsubscribe", "desabon", "désabon", "optout", "opt-out", "/preferences",
@@ -286,10 +313,25 @@ def _anchors(payload: dict) -> list[tuple[str, str]]:
     walk(payload)
     out: list[tuple[str, str]] = []
     for m in _A_RE.finditer("\n".join(htmls)):
-        href = m.group(1).strip()
-        if href.lower().startswith("http"):
-            text = clean_text(_TAG_RE.sub(" ", m.group(2))).strip()
-            out.append((href, text))
+        attrs, inner = m.group(1), m.group(2)
+        hm = _HREF_RE.search(attrs)
+        if not hm:
+            continue
+        href = hm.group(1).strip()
+        if not href.lower().startswith("http"):
+            continue
+        text = clean_text(_TAG_RE.sub(" ", inner)).strip()
+        if _is_generic_anchor(text):
+            # Carte-image ou bouton « Leggi » : le titre est dans l'alt de l'image
+            # ou le title= du lien. On récupère le meilleur candidat non générique.
+            alt = _IMG_ALT_RE.search(inner)
+            ttl = _ATTR_TITLE_RE.search(attrs)
+            for cand in (alt.group(1) if alt else "", ttl.group(1) if ttl else ""):
+                cand = clean_text(cand).strip()
+                if cand and not _is_generic_anchor(cand):
+                    text = cand
+                    break
+        out.append((href, text))
     return out
 
 
@@ -315,6 +357,10 @@ def extract_links(payload: dict, *, resolve: bool = True, cap: int = 40) -> list
     for href, text in _anchors(payload):
         low = href.lower()
         if any(s in low for s in _LINK_SKIP) or _WEB_VERSION_RE.search(text):
+            continue
+        # Lien sans titre exploitable (bouton « Leggi tutto » résiduel) : inutile à
+        # afficher et souvent doublon de la carte-article au-dessus → on écarte.
+        if _is_generic_anchor(text):
             continue
         final = href
         host = urlparse(href).netloc.lower().removeprefix("www.")
