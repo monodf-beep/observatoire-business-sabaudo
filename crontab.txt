@@ -13,6 +13,9 @@ PY=/home/user/observatoire-business-sabaudo/.venv/bin/python
 # Collecte RSS — tous les jours à 08h00
 0 8 * * * cd $PROJECT && $PY scripts/rss_collect.py >> logs/cron_rss.log 2>&1
 
+# Scraping HTML des sources sans flux RSS — tous les jours à 08h15 (après le RSS).
+15 8 * * * cd $PROJECT && $PY scripts/html_scrape.py >> logs/cron_scrape.log 2>&1
+
 # Page « toute la veille » — rafraîchie MARDI, JEUDI, SAMEDI à 09h00.
 # Aucun appel IA (gratuit) : on relit la veille déjà collectée et on republie la
 # page publique. C'est la mise à jour 3x/semaine du radar lecteur.

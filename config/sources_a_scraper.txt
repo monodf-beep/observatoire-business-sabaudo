@@ -25,7 +25,8 @@ BGE Haute-Savoie;https://www.bge-cotedazur.fr/;Savoie;html
 UPE 06 (Union pour l'entreprise 06);https://www.upe06.com/feed/;Nice;rss
 Réseau Entreprendre Côte d'Azur;https://www.reseau-entreprendre.org/cote-d-azur/;Nice;html
 Nice Start(s)Up / Hub Innovation;https://www.nicecotedazur.org/hub-innovation;Nice;html
-Emerging Business Factory;https://ebf.org/;Nice;html
+# ebf.org = European Baptist Federation (mauvais site !). EBF Monaco = à confirmer.
+Emerging Business Factory;https://www.ebf.mc/;Nice;hors
 BGE Côte d'Azur;https://www.bge-cotedazur.fr/;Nice;html
 Sophia Antipolis Innovation Camp;https://www.sophia-antipolis.fr/;Nice;html
 BA06 (Business Angels Côte d'Azur);https://www.ba06.fr/;Nice;membres

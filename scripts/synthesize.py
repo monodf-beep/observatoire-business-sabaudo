@@ -315,6 +315,9 @@ def _enrich(entry: dict, registry: dict[int, dict], press: set[str],
         base.update({
             "url": rec.get("link", ""),
             "image": rec.get("image", ""),
+            # Image VÉRIFIÉE par le scraper HTML (vraie photo, pas un logo) → seule
+            # autorisée dans la newsletter quand les images de source sont coupées.
+            "image_ok": bool(rec.get("image_ok")),
             "domain": domain,
             "source": entry.get("acteur") or source_label(rec),
         })
@@ -361,15 +364,15 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
             log.info("Image proscrite ignorée (%s) : %s", entry.get("title", "")[:50], entry["image"])
             entry["image"] = ""
 
-    # Politique d'images : par défaut on N'UTILISE PAS les images scrappées des
-    # sources (og:image, image d'email). Sur les sources institutionnelles ce sont
-    # presque toujours des LOGOS / blasons / bannières (Banca d'Italia, blason VDA,
-    # ministère, QR codes du tunnel…) — hors-sujet et disgracieux. On bascule donc
-    # sur les cartes de marque par territoire (propres, cohérentes). Pour réactiver
-    # les vraies photos des sources : NEWSLETTER_SOURCE_IMAGES=1 dans .env.
+    # Politique d'images : par défaut on N'UTILISE PAS les images d'og:image / d'email
+    # des sources institutionnelles — ce sont presque toujours des LOGOS / blasons /
+    # bannières (Banca d'Italia, blason VDA, ministère, QR du tunnel…). EXCEPTION : les
+    # photos VÉRIFIÉES par le scraper HTML (image_ok) — vraies vignettes d'articles —
+    # restent autorisées. Pour réactiver TOUTES les images de source : NEWSLETTER_SOURCE_IMAGES=1.
     if os.getenv("NEWSLETTER_SOURCE_IMAGES", "0").strip() != "1":
         for entry in ([hero] if hero else []) + items:
-            entry["image"] = ""
+            if not entry.get("image_ok"):
+                entry["image"] = ""
     signaux = []
     for s in parsed.get("signaux", []):
         rec = registry.get(int(s["id"])) if str(s.get("id", "")).strip().isdigit() else None
@@ -448,6 +451,7 @@ def build_email_data(parsed: dict, registry: dict[int, dict], week_label: str,
     # On retire le champ technique avant sérialisation/rendu.
     for entry in ([hero] if hero else []) + items:
         entry.pop("_official_domain", None)
+        entry.pop("image_ok", None)
 
     # Garde-fou QUALITÉ : la une doit porter une VRAIE photo du sujet (pas une
     # bannière, pas un visuel générique type logo/social). Si la une choisie par le
