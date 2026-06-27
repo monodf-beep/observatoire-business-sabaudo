@@ -191,7 +191,8 @@ def load_latest_week_items() -> tuple[str, dict]:
         # (les liens qu'il cite) au lieu d'un bloc opaque. C'est ce qui fait enfin
         # remonter l'info institutionnelle dans la veille (et pas que la presse RSS).
         is_gmail = rec.get("source") == "gmail"
-        gmail_links = rec.get("links") if is_gmail else None
+        # « articles » (titre apparié au heading précédent) prime sur « links » brut.
+        gmail_links = (rec.get("articles") or rec.get("links")) if is_gmail else None
         emitted: list[dict] = []
         if is_gmail:
             sender = _sender_label(rec.get("from", "")) or rec.get("title", "")

@@ -21,6 +21,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -383,6 +384,141 @@ def extract_links(payload: dict, *, resolve: bool = True, cap: int = 40) -> list
     return out
 
 
+def _html_body(payload: dict) -> str:
+    htmls: list[str] = []
+
+    def walk(part: dict) -> None:
+        body = part.get("body", {})
+        data = body.get("data")
+        if part.get("parts"):
+            for sub in part["parts"]:
+                walk(sub)
+        elif data and part.get("mimeType") == "text/html":
+            htmls.append(_decode_part(data))
+
+    walk(payload)
+    return "\n".join(htmls)
+
+
+class _LinearDoc(HTMLParser):
+    """Flux LINÉAIRE du corps HTML : textes et liens dans l'ordre du document.
+    Sert à apparier chaque lien d'article au TITRE qui le précède (cas des
+    newsletters où le lien n'est qu'un bouton « Je découvre » / « Plus d'infos »)."""
+
+    _HEAD_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6", "strong", "b"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.events: list[tuple] = []      # ('htext'|'text', s) | ('link', href, anchor)
+        self._a: dict | None = None
+        self._skip = 0                     # profondeur dans <style>/<script>
+        self._head = 0                     # profondeur dans un titre (h1-6/strong/b)
+
+    def handle_starttag(self, tag: str, attrs: list) -> None:
+        if tag in ("style", "script"):
+            self._skip += 1
+        elif tag == "a":
+            self._a = {"href": dict(attrs).get("href", "") or "", "text": []}
+        elif tag in self._HEAD_TAGS:
+            self._head += 1
+
+    def handle_data(self, data: str) -> None:
+        if self._skip:
+            return
+        if self._a is not None:
+            self._a["text"].append(data)
+        elif data.strip():
+            self.events.append(("htext" if self._head else "text", data))
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("style", "script") and self._skip:
+            self._skip -= 1
+        elif tag in self._HEAD_TAGS and self._head:
+            self._head -= 1
+        elif tag == "a" and self._a is not None:
+            self.events.append(("link", self._a["href"], " ".join(self._a["text"])))
+            self._a = None
+
+
+def _looks_title(text: str) -> bool:
+    """Vrai si un segment de texte ressemble à un TITRE d'article (heading, phrase)."""
+    t = clean_text(text).strip()
+    return len(t) >= 20 and len(t.split()) >= 4 and not _is_generic_anchor(t)
+
+
+def extract_articles(payload: dict, *, resolve: bool = True, cap: int = 12) -> list[dict]:
+    """ARTICLES d'une newsletter : chaque lien de contenu apparié à SON titre.
+
+    Le titre est le texte du lien s'il est explicite ; sinon (bouton « Je découvre »,
+    « Plus d'infos »…) c'est le TITRE/heading qui précède le lien dans le corps. C'est
+    ce qui permet d'extraire les vrais sujets des newsletters type CCI, et pas juste
+    l'objet de l'email. Résout les traceurs ESP, déduplique par URL et par titre.
+    """
+    from utils.sources import is_newsletter_junk
+
+    doc = _LinearDoc()
+    try:
+        doc.feed(_html_body(payload))
+    except Exception:
+        return []
+
+    out: list[dict] = []
+    seen_u: set[str] = set()
+    seen_t: set[str] = set()
+    last_head = ""   # dernier TITRE (h1-6/strong) vu — prioritaire
+    last_para = ""   # dernier paragraphe « titre-like » vu — repli
+    budget = cap * 3  # nb max de résolutions ESP
+    for ev in doc.events:
+        if ev[0] in ("htext", "text"):
+            t = clean_text(ev[1]).strip()
+            if t and _looks_title(t) and not is_newsletter_junk(t):
+                if ev[0] == "htext":
+                    last_head = t[:180]
+                else:
+                    last_para = t[:180]
+            continue
+        href, atext = ev[1], clean_text(ev[2]).strip()
+        if not href.lower().startswith("http") or _WEB_VERSION_RE.search(atext):
+            continue
+        # Titre : ancre si exploitable, sinon le HEADING précédent, sinon le paragraphe.
+        if atext and not is_newsletter_junk(atext) and (len(atext.split()) >= 4 or len(atext) >= 22):
+            title = atext
+        elif last_head:
+            title = last_head
+        elif last_para:
+            title = last_para
+        else:
+            continue
+        # Déballage du traceur ESP (réutilise la logique de extract_links).
+        final = href
+        low = href.lower()
+        if any(s in low for s in _LINK_SKIP):
+            continue
+        host = urlparse(href).netloc.lower().removeprefix("www.")
+        if _esp_host(host):
+            if not resolve or budget <= 0:
+                continue
+            budget -= 1
+            real = _resolve_url(href)
+            if not real:
+                continue
+            final = real
+            if _esp_host(urlparse(final).netloc.lower().removeprefix("www.")):
+                continue
+        nu = final.lower().split("#")[0].rstrip("/")
+        nt = title.lower()
+        if nu in seen_u or nt in seen_t:
+            last_head = last_para = ""
+            continue
+        seen_u.add(nu)
+        seen_t.add(nt)
+        out.append({"url": final, "text": title[:200]})
+        last_head = last_para = ""  # consommés : le prochain lien cherche un nouveau titre
+        if len(out) >= cap:
+            break
+    return out
+
+
 def parse_message(msg: dict) -> dict:
     payload = msg.get("payload", {})
     headers = payload.get("headers", [])
@@ -415,6 +551,7 @@ def parse_message(msg: dict) -> dict:
         "title": subject,
         "body": extract_body(payload),
         "image": extract_image(payload),
+        "articles": extract_articles(payload),
         "links": extract_links(payload),
         "web_version": extract_web_version(payload),
         "collected_at": datetime.now(timezone.utc).isoformat(),
