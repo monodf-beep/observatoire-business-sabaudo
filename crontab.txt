@@ -16,6 +16,10 @@ PY=/home/user/observatoire-business-sabaudo/.venv/bin/python
 # Scraping HTML des sources sans flux RSS — tous les jours à 08h15 (après le RSS).
 15 8 * * * cd $PROJECT && $PY scripts/html_scrape.py >> logs/cron_scrape.log 2>&1
 
+# Tri LLM (pertinence + nettoyage des titres) — tous les jours à 08h30, avant le build.
+# Ne juge que les NOUVEAUX éléments (cache logs/triage_cache.json) → coût quasi nul.
+30 8 * * * cd $PROJECT && $PY scripts/triage.py >> logs/cron_triage.log 2>&1
+
 # Page « toute la veille » — rafraîchie MARDI, JEUDI, SAMEDI à 09h00.
 # Aucun appel IA (gratuit) : on relit la veille déjà collectée et on republie la
 # page publique. C'est la mise à jour 3x/semaine du radar lecteur.

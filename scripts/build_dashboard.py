@@ -148,12 +148,20 @@ def _sender_label(frm: str) -> str:
     return m2.group(1) if m2 else frm
 
 
-def load_latest_week_items() -> tuple[str, dict]:
+def load_latest_week_items(apply_triage: bool = True) -> tuple[str, dict]:
     """Lit TOUTE la veille brute (01_Veille_brute), garde la semaine ISO la plus
     récente, et renvoie (libellé semaine, {territoire: [items]}). Items dédupliqués
-    par URL/titre. C'est la matière de la page lecteur « toute la veille »."""
+    par URL/titre. C'est la matière de la page lecteur « toute la veille ».
+
+    apply_triage : applique les verdicts du tri LLM (logs/triage_cache.json) — jette
+    les éléments jugés hors-sujet et nettoie les titres. Fail-open (pas de verdict →
+    on garde). Mettre False pour récupérer TOUS les items (utilisé par scripts/triage.py)."""
     from collections import defaultdict
     from urllib.parse import urlparse
+
+    from utils.triage import item_key, load_cache
+
+    triage_cache = load_cache() if apply_triage else {}
 
     from utils.sources import (
         domain_of,
@@ -274,6 +282,13 @@ def load_latest_week_items() -> tuple[str, dict]:
             })
 
         for item in emitted:
+            # Tri LLM : verdict en cache (fail-open). Jette le hors-sujet, nettoie le titre.
+            verdict = triage_cache.get(item_key(item.get("url", ""), item.get("title", "")))
+            if verdict is not None:
+                if not verdict.get("keep", True):
+                    continue
+                if verdict.get("title"):
+                    item["title"] = verdict["title"]
             url_key = (item.get("url") or "").strip().lower().split("#")[0].rstrip("/")
             title_key = _norm_title(item.get("title", ""))
             if not (url_key or title_key):

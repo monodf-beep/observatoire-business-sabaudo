@@ -159,9 +159,20 @@ def test_no_emdash():
     check("tiret demi-cadratin retiré", "–" in _no_emdash("A – B"), False)
 
 
+def test_triage():
+    from utils.triage import item_key, _parse_json_array
+    # Clé stable : pilotée par l'URL (titre ignoré si URL présente), insensible au "/".
+    check("triage: clé stable sur URL",
+          item_key("https://x.fr/a/", "Titre X") == item_key("https://x.fr/a", "Autre"), True)
+    # Parsing JSON robuste (fences markdown + texte autour).
+    arr = _parse_json_array('Voici:\n```json\n[{"i":0,"keep":true,"titre":"Net"}]\n```')
+    check("triage: parse JSON tolérant", arr == [{"i": 0, "keep": True, "titre": "Net"}], True)
+    check("triage: parse invalide -> None", _parse_json_array("pas de json"), None)
+
+
 def main() -> int:
     for fn in (test_offtopic, test_newsletter_junk, test_welcome, test_blocked_image,
-               test_press, test_perimeter, test_extract_articles, test_no_emdash):
+               test_press, test_perimeter, test_extract_articles, test_no_emdash, test_triage):
         print(f"• {fn.__name__}")
         fn()
     print(f"\n{_PASS} réussi(s), {_FAIL} échoué(s).")
