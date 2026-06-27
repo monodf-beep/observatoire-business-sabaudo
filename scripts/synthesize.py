@@ -128,12 +128,41 @@ def _territory_from_path(json_file: Path) -> str:
     return parts[2] if len(parts) == 3 else "Indetermine"
 
 
+def _priority(rec: dict, press: set[str]) -> tuple[int, str]:
+    """Clé de tri d'un enregistrement : institutionnel D'ABORD, presse en dernier.
+    0 = newsletter (gmail), 1 = source officielle (RSS/scrape non-presse), 2 = presse.
+    À rang égal, le plus récent d'abord."""
+    from utils.sources import domain_of, is_press
+
+    if rec.get("source") == "gmail":
+        rank = 0
+    elif is_press(domain_of(rec), press):
+        rank = 2
+    else:
+        rank = 1
+    return (rank, "0" if not rec.get("date") else _neg_date(rec.get("date", "")))
+
+
+def _neg_date(d: str) -> str:
+    """Tri décroissant sur une date ISO via complément (le plus récent en premier)."""
+    return "".join(chr(0x10FFFF - ord(c)) if c.isdigit() else c for c in d)
+
+
 def build_registry(by_territory: dict[str, list[dict]]) -> dict[int, dict]:
-    """Numérote chaque enregistrement de la semaine (id stable -> enregistrement)."""
+    """Numérote chaque enregistrement de la semaine (id stable -> enregistrement).
+
+    PRIORISATION : on garde les MAX_ITEMS_PER_TERRITORY items en mettant le contenu
+    INSTITUTIONNEL en tête (newsletters puis sources officielles), la presse radar
+    seulement pour combler. Sans ça, les 40 items gardés étaient arbitraires (ordre
+    du système de fichiers) et la newsletter se nourrissait surtout de presse."""
+    from utils.sources import load_press_domains
+
+    press = load_press_domains()
     registry: dict[int, dict] = {}
     next_id = 1
     for territory in sorted(by_territory):
-        for rec in by_territory[territory][:MAX_ITEMS_PER_TERRITORY]:
+        ordered = sorted(by_territory[territory], key=lambda r: _priority(r, press))
+        for rec in ordered[:MAX_ITEMS_PER_TERRITORY]:
             registry[next_id] = rec
             next_id += 1
     return registry
