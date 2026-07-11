@@ -53,9 +53,65 @@ ensuite Claude Code (bootstrap du repo).
 
 ---
 
-## 2. Ce que l'OBSERVATOIRE peut emprunter à l'Agenda (analyse inverse)
+## 2. Ce que l'OBSERVATOIRE peut emprunter à l'Agenda (analyse du VRAI repo `monodf-beep/evenements`)
 
-Le design de l'Agenda a de bonnes idées que l'Observatoire n'a pas. Par priorité :
+Le repo `evenements` est **plus abouti** que l'Observatoire sur plusieurs points. Il a
+déjà **repris** de l'Observatoire (`usage.py`, `sources.py`, `same_story`, `gmail_collect`,
+`newsletter_variants`, les `config/*.txt`) et **ajouté** des briques qu'on doit reprendre.
+Par priorité :
+
+### ⭐ `utils/score_memory.py` — BOUCLE D'APPRENTISSAGE (le meilleur emprunt) — PRIORITÉ HAUTE
+- Franck corrige un score dans le backoffice → la correction est enregistrée
+  (`data/score_feedback.jsonl`) avec les traits de l'item → l'évaluateur relit ces
+  corrections et les **injecte comme exemples de calibrage** dans son prompt
+  (`calibration_block()`). Au fil du temps, l'IA « note comme Franck ».
+- **Pour l'Observatoire** : le tri deviendrait apprenant — Franck ajuste quelques
+  verdicts, le triage s'aligne sur son goût éditorial. Portable presque tel quel.
+
+### ⭐ `utils/advisor.py` — « voici ce que TU dois faire » — PRIORITÉ HAUTE
+- Traduit l'état de la base en **actions humaines prioritaires** (valider N, sourcer une
+  tête d'affiche, compléter une photo/date, territoire vide…). Ne montre QUE ce qui
+  n'est pas automatique. Bien meilleur qu'un simple tableau d'état.
+- **Pour l'Observatoire** : l'admin passerait de « voici l'état » à « voici tes 3 actions ».
+
+### 🥇 Tri = SCORE 0-10 + catégorie + justification (au lieu de garder/jeter) — PRIORITÉ HAUTE
+- `scripts/evaluator.py` note 0-10, catégorise, justifie, et **route** (≥7 / 4-6 / <4).
+  Il gère déjà proprement le sentinel `API_ERROR → reste 'pending'` (jamais rejeté sur
+  panne API) et instrumente `usage.record_message`.
+- **Pour l'Observatoire** : classement (la une = meilleur score), transparence
+  (justification affichable), seuils réglables. Rentable vite.
+
+### 🥈 SQLite comme socle (schéma riche) — PRIORITÉ HAUTE (refactor)
+- Table `events_raw` avec `statut`, `duplicate_of`, `wp_post_id_cs`, `date_event_start/end`,
+  `recurring`, `image_source`… Dédup native, requêtes, statuts. Fin des JSON éparpillés.
+
+### 🥉 `utils/completeness.py` — PORTE QUALITÉ + auto-complétion — PRIORITÉ MOYENNE
+- Un item ne « part » que s'il a TOUS ses champs obligatoires ; sinon il reste « à
+  compléter » et des agents (`dates_web`, `venues_web`, `images_web`) le complètent.
+- **Pour l'Observatoire** : une porte qualité avant la une/newsletter (titre + lien +
+  date + source crédible), avec complétion auto sinon.
+
+### 📜 `docs/LLM_OU_CODE.md` — DOCTRINE partagée — À ADOPTER TOUT DE SUITE (gratuit)
+- Règle : **code par défaut**, LLM seulement pour langage/jugement/génération, **hybride**
+  (pré-filtre code → LLM sur le résidu) pour borner la facture et « dégrader proprement
+  sans LLM quand le quota est épuisé ». Explicitement marqué « voué à cultura-core ».
+- **Pour l'Observatoire** : à copier tel quel — c'est exactement la leçon de l'incident
+  de limite d'usage. Cadre toutes les futures décisions.
+
+### Autres emprunts concrets
+- **Modèle** : l'évaluateur utilise `claude-sonnet-5` (plus récent que notre `sonnet-4-6`) → aligner.
+- **`utils/slack.py`** : notifie Franck des items à compléter (ops).
+- **`scripts/dedupe.py`** (228 l.) : dédup multi-source qui étend notre `same_story` (territoire + dates + choix de la meilleure source) → on peut reprendre l'extension.
+
+### ⛔ À NE PAS reprendre
+- Le schéma « événement » (date/lieu/billetterie), le SEO/press-kits, la publication
+  WordPress : trop spécifiques à l'agenda.
+
+---
+
+### (Note) L'analyse initiale ci-dessous était basée sur le brief ; le repo réel la confirme et va plus loin.
+
+
 
 ### 🥇 Score 0-10 + justification (au lieu de garder/jeter binaire) — PRIORITÉ HAUTE
 - **Agenda** : chaque item reçoit `score` (0-10), `categorie`, `justification` (1 phrase), avec bifurcation 3 niveaux.
