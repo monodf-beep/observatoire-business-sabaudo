@@ -206,6 +206,13 @@ _ADMIN_CSS = (
     ".sgr .m{font-size:12px;color:#6b7280;margin-top:3px}"
     ".bsm{border:0;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;color:#fff;cursor:pointer}"
     ".bsm.ok{background:#15803d}.bsm.no{background:#b91c1c}.bsm:hover{opacity:.92}"
+    ".adv{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-radius:10px;"
+    "margin-bottom:8px;font-size:13px;line-height:1.5}"
+    ".adv .ic{font-size:17px}"
+    ".adv .d{color:#6b7280;margin-top:2px}"
+    ".adv.valider{background:#eff6ff;border:1px solid #bfdbfe}"
+    ".adv.sourcer{background:#fff7ed;border:1px solid #fed7aa}"
+    ".adv.lancer{background:#f5f3ff;border:1px solid #ddd6fe}"
     ".dgrid{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 6px}"
     ".dbox{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #e9edf3;"
     "border-radius:10px;padding:9px 13px;font-size:13px;font-weight:700;color:#2f4a78;box-shadow:0 1px 4px rgba(20,32,44,.05)}"
@@ -481,6 +488,25 @@ def _append_source(item: dict) -> None:
         fh.write(line)
 
 
+def _advisor_html() -> str:
+    """Carte « À faire » : actions humaines prioritaires (inspiré de l'agrégateur)."""
+    from utils import advisor
+
+    pending = sum(1 for it in _load_suggestions() if it.get("status") == "pending")
+    msgs = advisor.advise(pending_suggestions=pending)
+    if not msgs:
+        return ('<div class="sec">À faire</div>'
+                '<div class="note" style="margin:0;">Rien à signaler — tout est à jour. 👌</div>')
+    rows = ""
+    for m in msgs:
+        rows += (
+            f'<div class="adv {m["level"]}"><div class="ic">{m["icon"]}</div>'
+            f'<div><b>{_escape(m["title"])}</b>'
+            f'<div class="d">{_escape(m["detail"])}</div></div></div>'
+        )
+    return '<div class="sec">À faire</div>' + rows
+
+
 def _api_costs_html() -> str:
     from utils import usage
 
@@ -552,6 +578,7 @@ PAGE = """<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
   <div class="eyebrow">Espace privé</div>
   <div class="h1">Business Sabaudo<b>.</b> Admin</div>
   {alert}{flash}
+  <div class="card">{advisor}</div>
   <div class="card">{pipeline}</div>
   <div class="card">{costs}</div>
   <div class="card">{archi}</div>
@@ -599,7 +626,8 @@ def home():
     rows = _status_rows()
     pipeline = _pipeline_html()
     buttons = _buttons()
-    return PAGE.format(css=_ADMIN_CSS, alert=alert_html, flash=flash_html, pipeline=pipeline,
+    return PAGE.format(css=_ADMIN_CSS, alert=alert_html, flash=flash_html,
+                       advisor=_advisor_html(), pipeline=pipeline,
                        costs=_api_costs_html(), archi=_archi_html(), buttons=buttons,
                        suggest=_suggestions_html(), rows=rows)
 

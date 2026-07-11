@@ -346,6 +346,26 @@ def build(upload: bool = False) -> int:
     n = sum(len(v) for v in by_territory.values())
     log.info("Page « toute la veille » écrite : %s (%s, %d sujets).", DASHBOARD_PATH, week_id, n)
 
+    # Résumé léger pour l'advisor de l'admin (« voici ce que tu dois faire »).
+    try:
+        tiers = {"news": 0, "officiel": 0, "radar": 0}
+        for items in by_territory.values():
+            for it in items:
+                tiers["radar" if it.get("press") else ("news" if it.get("newsletter") else "officiel")] += 1
+        summary = {
+            "week": week_id,
+            "total": n,
+            "terr_counts": {t: len(v) for t, v in by_territory.items()},
+            "tier_counts": tiers,
+            "news_hits": sorted(news_hits),
+            "generated": generated,
+        }
+        (ROOT / "logs").mkdir(parents=True, exist_ok=True)
+        (ROOT / "logs" / "veille_summary.json").write_text(
+            json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
+    except Exception as exc:
+        log.warning("Résumé veille non écrit : %s", exc)
+
     # Publication publique (FTP vers l'hébergement web) — page culturasabauda.eu.
     publish_ftp(DASHBOARD_PATH)
 
