@@ -10,6 +10,8 @@ Pour chaque ligne :
   - acces_url   → si format RSS/Atom : le contenu doit contenir <rss, <feed ou <rdf ;
                   si format API      : la réponse doit être du JSON ou du XML.
 Un 403 / 429 est classé « bloqué » (anti-robot), pas « mort » : à vérifier à la main.
+Un délai dépassé / erreur réseau est classé « injoignable » (retenté une fois) : souvent
+passager ou propre au réseau d'où l'on teste. Seul un vrai refus HTTP (404, 410…) = « mort ».
 
 Sortie : rapport lisible + logs/sources_health.json (lu par l'admin plus tard).
 Code retour 0 si aucune source morte, 1 sinon.
@@ -49,16 +51,26 @@ def load_registry(path: Path = REGISTRY) -> list[dict]:
 
 def _fetch(url: str) -> tuple[str, int, bytes, str]:
     """Renvoie (statut, code HTTP, début du contenu, content-type).
-    statut ∈ {ok, bloque, mort}."""
+    statut ∈ {ok, bloque, mort, injoignable}."""
+    for attempt in (1, 2):
+        res = _fetch_once(url)
+        if res[0] != "injoignable":
+            break
+    return res
+
+
+def _fetch_once(url: str) -> tuple[str, int, bytes, str]:
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=_TIMEOUT, context=ssl.create_default_context()) as r:
             return "ok", r.status, r.read(_READ), r.headers.get("Content-Type", "")
     except urllib.error.HTTPError as exc:
+        if exc.code == 405:  # « méthode non permise » : l'adresse existe (ex. API TED, en POST)
+            return "ok", 405, b"{}", "application/json"
         status = "bloque" if exc.code in (401, 403, 429, 503) else "mort"
         return status, exc.code, b"", ""
     except Exception as exc:  # DNS, TLS, délai…
-        return "mort", 0, str(exc).encode()[:200], ""
+        return "injoignable", 0, str(exc).encode()[:200], ""
 
 
 def _looks_feed(body: bytes) -> bool:
@@ -95,7 +107,8 @@ def check_row(row: dict) -> dict:
     # Verdict global : la source est utilisable si son point d'accès (ou, à défaut,
     # sa page) répond correctement.
     key = res["acces_statut"] or res["url_statut"]
-    res["verdict"] = {"ok": "ok", "bloque": "bloque", "invalide": "a_corriger"}.get(key, "mort")
+    res["verdict"] = {"ok": "ok", "bloque": "bloque", "invalide": "a_corriger",
+                      "injoignable": "injoignable"}.get(key, "mort")
     if res["acces_statut"] in ("mort", "invalide") and res["url_statut"] == "ok":
         res["verdict"] = "a_corriger"  # le site vit, le flux/l'API a bougé
     return res
@@ -120,6 +133,7 @@ def main() -> int:
         by.setdefault(r["verdict"], []).append(r)
     print(f"Registre : {len(results)} sources contrôlées")
     for verdict, label in (("ok", "✅ OK"), ("bloque", "🛡  Bloqué (anti-robot, à vérifier à la main)"),
+                           ("injoignable", "⏳ Injoignable (délai / réseau, à retester)"),
                            ("a_corriger", "🔧 À corriger (site vivant, accès cassé)"), ("mort", "❌ Mort")):
         items = by.get(verdict, [])
         print(f"\n{label} : {len(items)}")

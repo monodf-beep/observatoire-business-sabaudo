@@ -35,6 +35,8 @@ observatoire-business-sabaudo/
 
 ## Guides
 
+- 🧭 **[docs/DOCTRINE_OBSERVATOIRE.md](docs/DOCTRINE_OBSERVATOIRE.md)** — la doctrine : mission, public, règles éditoriales, sources, échanges, plan d'action. **À lire en premier.**
+- 📚 **[docs/SOURCES_OBSERVATOIRE.md](docs/SOURCES_OBSERVATOIRE.md)** — le tableau des sources officielles/structurées (registre machine : `config/sources_registry.csv`).
 - 🔑 **[docs/SETUP_GOOGLE_OAUTH.md](docs/SETUP_GOOGLE_OAUTH.md)** — donner les droits Gmail + Drive (pas-à-pas, non technique).
 - 🚀 **[docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md)** — où faire tourner l'outil et comment l'installer.
 - 🟣 **[docs/DEPLOIEMENT_HOSTINGER.md](docs/DEPLOIEMENT_HOSTINGER.md)** — déploiement clé en main sur un VPS Hostinger.

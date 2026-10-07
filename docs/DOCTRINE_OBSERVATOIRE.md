@@ -26,6 +26,15 @@ Deux piliers, à poids égal :
 Un observatoire qui informe sans relier n'est qu'une revue de presse. Un réseau qui
 relie sans informer n'a rien à dire. On construit les deux ensemble.
 
+### Décisions de cadrage (Franck, 7 octobre 2026)
+
+| Question | Décision |
+|---|---|
+| Place de l'actualité savoyarde | **Équilibre 50/50** entre versant français et versant italien |
+| Réciprocité | **Bilingue FR/IT dès maintenant** : l'Observatoire sert aussi les entrepreneurs piémontais, valdôtains et niçois |
+| Échanges | **Tous les dispositifs pertinents** : annonces, mise en relation, rencontres co-organisées, annuaire, à monter dans l'ordre de l'escalier (§ 8) |
+| Secteurs | **Priorité tech et innovation** (périmètre French Tech, pépinières, pôles d'innovation piémontais) |
+
 ## 2. Pourquoi ce recadrage
 
 | Constat (octobre 2026) | Conséquence |
@@ -146,8 +155,6 @@ chambres et de réseaux).
 
 ## 8. Pilier « Relier »
 
-> Section complétée avec le benchmark des dispositifs transfrontaliers (voir plus bas, § 8.2).
-
 ### 8.1 L'escalier des échanges
 
 On monte une marche quand la précédente fonctionne. Chaque marche s'appuie sur l'audience
@@ -160,9 +167,89 @@ créée par la précédente.
 | **2** | **Rencontres co-organisées** : webinaire mensuel « Règles du jeu », rendez-vous d'affaires (B2B) avec Enterprise Europe Network et les chambres de commerce, présence sur les salons | Co-organise avec un partenaire institutionnel | Annonce, inscriptions, relances, compte rendu |
 | **3** | **Annuaire et bourse d'opportunités** : fiches d'acteurs bilingues et opportunités ouvertes avec échéances | Anime et modère | Base de données, pages publiques, alertes |
 
-### 8.2 Benchmark et partenaires
+### 8.2 Ce que nous apprennent les autres dispositifs transfrontaliers
 
-*(à compléter : résultats du benchmark en cours)*
+Benchmark d'octobre 2026 : Øresund, Rhin supérieur (Infobest), Grande Région, Eurodistrict
+Strasbourg-Ortenau, Mission opérationnelle transfrontalière (MOT), Enterprise Europe Network,
+CCI France Italie, Forum d'affaires France-Italie, Espace Mont-Blanc, GECT Alpes-Méditerranée.
+
+**Ce qui marche**
+1. **Le réglementaire d'abord.** Le premier besoin d'un entrepreneur qui veut travailler de
+   l'autre côté porte sur la TVA, le détachement de salariés et le statut de société, avant
+   même le carnet d'adresses. C'est ce qui fait durer les guichets bilingues (Øresunddirekt
+   depuis 25 ans, Infobest).
+2. **Se placer au moment de la recherche de partenaire.** Les petits fonds qui imposent un
+   partenaire de chaque côté, comme les microprojets Alcotra de 25 à 75 k€, créent des
+   binômes. L'observatoire doit être là quand on cherche ce partenaire.
+3. **L'intermédiation, pas l'annuaire public.** Le modèle de l'EEN fonctionne : profil
+   anonymisé, expression d'intérêt, conseiller qui filtre. Il protège les entreprises et
+   élimine le spam.
+4. **Le rendez-vous d'affaires greffé sur un grand événement** fonctionne mieux qu'un
+   événement autonome. Le forum Monaco–Ligurie a produit 50 rendez-vous avec 15 entreprises
+   bien ciblées.
+5. **Les communautés qui durent** sont thématiques, adossées à une institution et rythmées par
+   des rencontres physiques (clubs de la CCI France Italie, ItaliaClub de la chambre italienne
+   de Lyon).
+
+**Ce qui échoue**
+1. **Pas de suivi après les rencontres** : au Forum France-Italie 2026, il y a eu environ
+   1 rendez-vous pour 4,5 inscrits, et personne ne sait ce qui a été signé ensuite. Une
+   relance automatique un mois après coûte presque rien et comble ce trou.
+2. **Le monolinguisme** : un dispositif qui ne parle qu'à un versant ne fait pas d'échange.
+   Cela confirme le choix du bilinguisme dès maintenant.
+3. **La gouvernance sans opérateur** : l'Espace Mont-Blanc et le GECT Alpes-Méditerranée
+   apportent une caution politique, mais peu de services concrets aux PME. C'est une place
+   à prendre.
+4. **Les communautés en ligne lancées trop tôt** meurent faute d'animation ou deviennent des
+   panneaux publicitaires. Pas de groupe avant une audience engagée (300 membres environ).
+5. **Les plateformes financées par un projet européen** disparaissent à la fin du
+   financement. Un service automatisé, adossé à des partenaires pérennes, dure plus longtemps.
+6. **Promettre l'inaccessible** : beaucoup de bandi italiens et d'aides françaises sont
+   réservés aux entreprises établies sur place. D'où un **badge d'éligibilité** sur chaque
+   opportunité : « ouvert aux entreprises de l'autre versant » ou « nécessite une implantation
+   ou un partenaire local ».
+
+### 8.3 Les dispositifs retenus, par ordre de rentabilité
+
+| # | Dispositif | Effort | Impact | Version minimale |
+|---|---|:-:|:-:|---|
+| 1 | **Édition italienne miroir** | faible | fort | Générée par l'IA à partir des brèves déjà triées, avec une page /it et une inscription IT |
+| 2 | **« Partenaires recherchés »** à partir de la base de partenariats de l'EEN (POD) | faible | fort | 3 à 5 profils italiens résumés en français (et l'inverse en italien), lien « exprimer un intérêt via l'EEN » |
+| 3 | **Agenda des rendez-vous d'affaires FR-IT** | faible | fort | Bloc fixe dans la newsletter + page agenda exportable en calendrier. Priorité aux événements avec rendez-vous préprogrammés |
+| 4 | **« Bandi décodés »** : appels italiens résumés en FR, aides françaises en IT | faible | fort | 2 ou 3 fiches par semaine avec le badge d'éligibilité |
+| 5 | **Marchés publics de l'autre côté** (TED, ANAC, BOAMP) | faible | moyen | « 3 appels d'offres à saisir » par semaine, avec un appel à former des groupements transfrontaliers |
+| 6 | **« Signalez un obstacle transfrontalier »** | faible | moyen | Formulaire, « Top 5 des obstacles » trimestriel transmis à la MOT et au Comité du Traité du Quirinal |
+| 7 | **Relais des microprojets Alcotra** et recherches de partenaires de projets européens | faible | moyen | Encart seulement quand un appel est ouvert |
+| 8 | **Bourse « On cherche / On propose »** | moyen | fort | Une annonce par semaine, mise en relation à la main, sans e-mail public (double accord) ; automatisation au-delà de 3 par semaine |
+| 9 | **Fiches pratiques « Passer les Alpes »** | moyen | fort | 6 fiches pour démarrer (TVA, facture électronique italienne, détachement, SRL / SAS, recruter un frontalier, répondre à un marché italien), chacune terminée par « Pour aller plus loin : [partenaire] » |
+| 10 | **Guichet « À qui m'adresser ? »** | faible | moyen | 5 demandes par semaine au plus, réponse sous 72 h, orientation vers le bon organisme ; FAQ anonymisée qui nourrit les fiches |
+| 11 | **Portrait « De l'autre côté / Dall'altra parte »** | moyen | moyen | Un toutes les deux semaines, candidats proposés par les incubateurs partenaires |
+| 12 | **Webinaires co-organisés** | moyen | moyen | Relayer en co-branding ceux des chambres ; en produire un par trimestre au plus |
+| 13 | **Rencontres « Sabaudo » en marge des grands rendez-vous** | moyen | moyen | Deux par an au plus, toujours greffées sur un événement existant, avec trombinoscope des participants envoyé avant |
+| 14 | **Baromètre trimestriel des échanges transalpins** | moyen | moyen | Une question par numéro, consolidée chaque trimestre, idéalement cosignée par une chambre |
+| 15 | **Annuaire bilingue des « passeurs »** | moyen | moyen | 25 à 30 organismes publics et consulaires d'abord, les experts privés ensuite |
+| 16 | **Communauté en ligne** | moyen | faible | Seulement après les dispositifs 1, 2, 3 et 8, et sur un thème précis |
+| 17 | **Missions et visites croisées** | élevé | moyen | Proposer un thème par an à un partenaire, qui porte la logistique |
+| 18 | **Talents bilingues** (stages, VIE, doubles diplômes) | élevé | moyen | Rubrique mensuelle de 2 ou 3 offres |
+
+**Deux règles d'or** : on n'organise **jamais seul** un événement, et la mise en relation
+qualifiée est confiée aux organismes qui en ont le mandat (EEN, chambres binationales).
+L'observatoire repère, traduit, oriente et relance.
+
+### 8.4 Les partenaires naturels
+
+| Partenaire | Rôle pour l'Observatoire |
+|---|---|
+| **EEN ALPS** (CCIAA Torino, Unioncamere Piemonte) et **EEN Auvergne-Rhône-Alpes** | Base de partenariats, rendez-vous d'affaires, mise en relation qualifiée de part et d'autre |
+| **Chambre de commerce italienne de Lyon** (compétente pour la Savoie), **de Nice Sophia Antipolis**, **de Marseille**, et **CCI France Italie** | Clubs d'affaires, événements, relais des deux éditions |
+| **Ceipiemonte** (agence d'internationalisation du Piémont) | Rendez-vous d'affaires, missions, contrepartie piémontaise |
+| **Chambre valdôtaine des entreprises** | Interlocuteur consulaire bilingue, relais naturel de l'édition IT |
+| **Business France / Team France Export** | Forum d'affaires France-Italie, rencontres acheteurs |
+| **Monaco Chambre de Commerce** (ex-Monaco Economic Board) | Forums Monaco–Italie, rendez-vous d'affaires |
+| **MOT** et programme **b-solutions** | Remontée des obstacles transfrontaliers |
+| **Interreg ALCOTRA**, **Espace Mont-Blanc**, **GECT Alpes-Méditerranée**, **EUSALP** | Financement de coopérations, caution institutionnelle |
+| **Écosystèmes innovation** : French Tech Alpes et Côte d'Azur, Sistema Poli / Piemonte Innova, EXPAND (pôle d'innovation numérique Piémont et Vallée d'Aoste), I3P, Pépinières de la Vallée d'Aoste, Savoie Technolac, MonacoTech | Cœur de cible : candidats aux portraits, relais des appels, co-organisation |
+| **Université franco-italienne** | Talents bilingues |
 
 ## 9. Les produits
 
@@ -192,7 +279,84 @@ créée par la précédente.
 
 ## 11. Plan d'action
 
-*(voir § 11 complété ci-dessous après le tableau des sources)*
+Chaque phase a un **critère de sortie** : on ne passe pas à la suivante tant qu'il n'est pas
+atteint.
+
+### Phase 0 — Cadrage (octobre 2026) ✅
+
+- Doctrine (ce document).
+- Inventaire des sources : 448 sources officielles ou structurées vérifiées, dont un socle de 64
+  ([SOURCES_OBSERVATOIRE.md](SOURCES_OBSERVATOIRE.md), `config/sources_registry.csv`).
+- Contrôle de santé du registre (`scripts/check_sources.py`).
+
+*Sortie : Franck valide la doctrine.*
+
+### Phase 1 — Le socle officiel (3 semaines)
+
+1. **Le registre pilote la collecte** : les flux RSS du socle sont lus directement depuis
+   `sources_registry.csv`, et les anciens fichiers de configuration deviennent des vues
+   générées.
+2. **Quatre collecteurs officiels**, du plus rentable au moins rentable :
+   - **TED** pour les avis de marchés européens localisés au Piémont, en Vallée d'Aoste, en
+     Savoie, en Haute-Savoie et dans les Alpes-Maritimes ;
+   - **BOAMP** pour les marchés publics de la Savoie, de la Haute-Savoie et des
+     Alpes-Maritimes ;
+   - **Aides-territoires et le référentiel des appels de l'UE**, filtrés sur l'innovation ;
+   - **Gazzetta Ufficiale et ANAC**, filtrés sur le Piémont et la Vallée d'Aoste.
+3. **Une fiche d'information enrichie** : rubrique, secteur, échéance, montant, badge
+   d'éligibilité, langue d'origine.
+4. **Le tri IA v2** reprend mot pour mot les 6 règles du § 5 et attribue une note de 0 à 10,
+   une justification et une rubrique.
+5. **La mesure du bruit par source** est affichée dans l'admin.
+6. **Le registre et les « opportunités »** passent dans une petite base SQLite. Les
+   échéances, les annonces et les mises en relation l'exigent.
+
+*Sortie : au moins 60 % des informations viennent des niveaux 1 et 2, et au moins
+10 opportunités datées par semaine.*
+
+### Phase 2 — Le bilingue et la newsletter v2 (3 semaines)
+
+1. Génération FR et IT de chaque brève, avec deux listes Brevo (brouillon validé par Franck,
+   comme aujourd'hui).
+2. Newsletter v2 :
+   - **L'essentiel** ;
+   - **Opportunités à saisir**, avec échéances et badges ;
+   - **Versant français / versant italien** (miroir 50/50) ;
+   - **Agenda des rendez-vous d'affaires** ;
+   - **Partenaires recherchés** (EEN).
+3. Page publique en FR et IT, rubriques et filtres, opportunités ouvertes triées par
+   échéance.
+4. Prise de contact avec les partenaires du § 8.4 (EEN ALPS et EEN AURA, chambres
+   italiennes de Lyon et de Nice, Chambre valdôtaine) pour présenter l'édition IT et demander
+   le relais.
+
+*Sortie : les éditions FR et IT partent chaque semaine et au moins 2 partenaires relaient.*
+
+### Phase 3 — Relier, marches 0 et 1 (4 semaines)
+
+1. Formulaire « On cherche / On propose » (sans e-mail public, double accord), avec file de
+   validation dans l'admin.
+2. « Bandi décodés » et « Signalez un obstacle ».
+3. Guichet « À qui m'adresser ? » (5 demandes par semaine au plus), avec suivi dans l'admin
+   et relance automatique un mois après chaque mise en relation.
+4. Premières fiches pratiques « Passer les Alpes » (2 sur les 6).
+
+*Sortie : au moins 1 annonce par semaine et les premières mises en relation abouties.*
+
+### Phase 4 — Rencontres et réseau (trimestre suivant)
+
+- Webinaires co-organisés, une rencontre « Sabaudo » greffée sur un grand rendez-vous
+  (Wave by Vento à Turin, Savoiexpo, Capitale French Tech).
+- Annuaire des « passeurs », baromètre trimestriel, portraits.
+- Vague 2 des sources, puis extraction de la bibliothèque commune avec l'Agenda
+  (cultura-core).
+
+### Ce qui ne change pas
+
+- La newsletter ne part **jamais** sans validation de Franck.
+- **Code par défaut, IA pour la langue et le jugement** ([LLM_OU_CODE.md](LLM_OU_CODE.md)).
+- Toute nouvelle source passe par les critères du § 7.2, y compris celles proposées par la
+  communauté.
 
 ## 12. Indicateurs
 
