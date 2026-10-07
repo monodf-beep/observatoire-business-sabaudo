@@ -251,6 +251,41 @@ L'observatoire repère, traduit, oriente et relance.
 | **Écosystèmes innovation** : French Tech Alpes et Côte d'Azur, Sistema Poli / Piemonte Innova, EXPAND (pôle d'innovation numérique Piémont et Vallée d'Aoste), I3P, Pépinières de la Vallée d'Aoste, Savoie Technolac, MonacoTech | Cœur de cible : candidats aux portraits, relais des appels, co-organisation |
 | **Université franco-italienne** | Talents bilingues |
 
+### 8.5 Piste pour plus tard : l'atelier de co-rédaction bilingue (Studio journalisme)
+
+> Idée de Franck (octobre 2026), à documenter maintenant, à construire plus tard.
+
+**Le constat.** Une partie de l'outil **Studio journalisme** permet déjà d'écrire un texte
+avec les versions **française et italienne côte à côte**. Le benchmark (§ 8.2) montre que
+les échanges naissent quand on aide les gens à **monter un projet ensemble**. Or un projet
+Interreg (microprojet Alcotra, Espace Alpin) ou un projet commun entre deux entreprises
+s'écrit justement à deux, dans deux langues.
+
+**L'idée.** Réutiliser cette fonction côte à côte comme **atelier de co-rédaction** pour
+les partenaires que l'Observatoire met en relation :
+
+- **Dossiers Interreg** : un partenaire savoyard et un partenaire piémontais ou valdôtain
+  rédigent le même dossier, chacun dans sa langue, et les deux versions restent alignées
+  paragraphe par paragraphe ;
+- **Projets communs** : accords de partenariat, présentations conjointes, réponses à un
+  appel d'offres en groupement ;
+- **Contenus de l'Observatoire** : fiches « Passer les Alpes », portraits, « Bandi décodés »,
+  déjà publiés en FR et en IT.
+
+**Comment ça s'insère.** C'est le prolongement naturel de l'escalier des échanges : on
+repère l'appel (Financements), on trouve le partenaire (annonces, EEN, mise en relation),
+puis on **écrit ensemble** (atelier). Dans le plan d'action, ça vient **après** la phase 3,
+quand les premières mises en relation existent.
+
+**À préciser avant de construire.**
+1. Quelle partie exacte du Studio journalisme on réutilise : l'éditeur côte à côte seul, ou
+   aussi la traduction et la relecture assistées par l'IA ?
+2. Où vit l'atelier : dans le Studio, dans l'Observatoire, ou dans la bibliothèque commune
+   (cultura-core, voir [PLAN_ECOSYSTEME.md](PLAN_ECOSYSTEME.md)) ?
+3. Accès : réservé aux binômes mis en relation par l'Observatoire, ou ouvert plus largement ?
+4. Modèles de dossier : partir des grilles officielles Alcotra et Espace Alpin pour guider
+   la rédaction.
+
 ## 9. Les produits
 
 | Produit | Langue | Cadence | Contenu |
@@ -350,6 +385,8 @@ atteint.
 - Annuaire des « passeurs », baromètre trimestriel, portraits.
 - Vague 2 des sources, puis extraction de la bibliothèque commune avec l'Agenda
   (cultura-core).
+- Atelier de co-rédaction bilingue (§ 8.5), qui réutilise l'éditeur FR/IT côte à côte du
+  Studio journalisme pour les dossiers Interreg et les projets communs.
 
 ### Ce qui ne change pas
 
